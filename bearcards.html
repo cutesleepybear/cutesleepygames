@@ -20,11 +20,12 @@
 const db = getFirestore(app);
   window.firebaseAuth = auth;
   window.firebaseDb = db;
-  window.fbSignIn = signInWithEmailAndPassword;
-  window.fbSignUp = createUserWithEmailAndPassword;
-  window.fbOnAuth = onAuthStateChanged;
-  window.fbDoc = doc;
-  window.fbGetDoc = getDoc;</script>
+  window.firebaseSignIn = signInWithEmailAndPassword;
+  window.firebaseSignUp = createUserWithEmailAndPassword;  
+  window.firebaseOnAuth = onAuthStateChanged;              
+  window.firebaseDoc = doc;
+  window.firebaseGetDoc = getDoc;
+</script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -621,26 +622,41 @@ function showOverlay(title, sub) {
 }
 
 initGame();
-// ============ LOGIN LOGIC ============
+// Handle Login
 document.getElementById('btn-login').addEventListener('click', async () => {
   const email = document.getElementById('login-email').value;
   const pass = document.getElementById('login-pass').value;
   try {
     document.getElementById('login-msg').innerText = "Logging in...";
-    await window.fbSignIn(window.firebaseAuth, email, pass);
+    await window.firebaseSignIn(window.firebaseAuth, email, pass); // <--- Changed this
   } catch (e) {
     document.getElementById('login-msg').innerText = e.message;
   }
 });
 
+// Handle Signup
 document.getElementById('btn-signup').addEventListener('click', async () => {
   const email = document.getElementById('login-email').value;
   const pass = document.getElementById('login-pass').value;
   try {
     document.getElementById('login-msg').innerText = "Creating account...";
-    await window.fbSignUp(window.firebaseAuth, email, pass);
+    await window.firebaseSignUp(window.firebaseAuth, email, pass); // <--- Changed this
   } catch (e) {
     document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+// Listen for login state changes
+window.firebaseOnAuth(window.firebaseAuth, async (user) => { // <--- Changed this
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('game-container').style.display = 'flex';
+    
+    // (Database check code goes here)
+    log(`Welcome, Ranger ${user.email}!`, 'sys');
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('game-container').style.display = 'none';
   }
 });
 
