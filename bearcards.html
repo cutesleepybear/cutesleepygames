@@ -1,31 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  const firebaseConfig = {
-    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
-    authDomain: "cute-sleepy-games.firebaseapp.com",
-    projectId: "cute-sleepy-games",
-    storageBucket: "cute-sleepy-games.firebasestorage.app",
-    messagingSenderId: "249264537283",
-    appId: "1:249264537283:web:811dce511556eda6a96c76"
-  };
- const app = initializeApp(firebaseConfig);
- const auth = getAuth(app);
-const db = getFirestore(app);
-  window.firebaseAuth = auth;
-  window.firebaseDb = db;
-  window.firebaseSignIn = signInWithEmailAndPassword;
-  window.firebaseSignUp = createUserWithEmailAndPassword;  
-  window.firebaseOnAuth = onAuthStateChanged;              
-  window.firebaseDoc = doc;
-  window.firebaseGetDoc = getDoc;
-</script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -98,43 +72,116 @@ const db = getFirestore(app);
 </style>
 </head>
 <body>
-  <div id="login-screen" style="position: fixed; inset: 0; background: #1a2e1a; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f0e6d2; font-family: sans-serif;">
-  <h2>🐻 Bear Ranger Login</h2>
-  <div style="background: #2a2115; padding: 20px; border-radius: 10px; border: 2px solid #5a4a2f;">
-    <input type="email" id="login-email" placeholder="Email" style="display:block; margin-bottom:10px; padding:8px; border-radius:4px; border:none;"><br>
-    <input type="password" id="login-pass" placeholder="Password" style="display:block; margin-bottom:10px; padding:8px; border-radius:4px; border:none;"><br>
-    <button id="btn-login" style="padding: 8px 12px; cursor:pointer;">Log In</button>
-    <button id="btn-signup" style="padding: 8px 12px; cursor:pointer;">Sign Up</button>
-    <p id="login-msg" style="color: #ff8a65; font-size: 0.8rem;"></p>
-  </div>
-</div>
-<div id="game-container" style="display: none; width: 100%; flex-direction: column; align-items: center;">  </div>
-  <h1>🐻 BEAR CARDS 🐻</h1>
-  <div class="subtitle">Defeat all 3 of the rival ranger's bears</div>
 
-  <div class="arena">
-    <div class="side">
-      <div class="side-label">Rival Ranger</div>
-      <div class="team" id="cpu-team"></div>
+  <!-- LOGIN SCREEN OVERLAY -->
+  <div id="login-screen" style="position: fixed; inset: 0; background: radial-gradient(circle at 50% 0%, #2d4a2d, #1a2e1a 60%, #0f1a0f); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f0e6d2; font-family: 'Segoe UI', system-ui, sans-serif;">
+    <h2 style="font-size: 2rem; margin-bottom: 20px;">🐻 Bear Ranger Login</h2>
+    <div style="background: #2a2115; padding: 30px; border-radius: 12px; border: 2px solid #5a4a2f; width: 300px; text-align: center;">
+      <input type="email" id="login-email" placeholder="Email" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #5a4a2f; background: #1a1408; color: white;">
+      <input type="password" id="login-pass" placeholder="Password" style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #5a4a2f; background: #1a1408; color: white;">
+      
+      <button id="btn-login" style="width: 100%; margin-bottom: 10px; padding: 10px; cursor: pointer;">Log In</button>
+      <button id="btn-signup" style="width: 100%; padding: 10px; cursor: pointer; background: #35502a; border-color: #6a8a4a;">Sign Up</button>
+      
+      <p id="login-msg" style="color: #ff8a65; font-size: 0.8rem; margin-top: 15px; min-height: 20px;"></p>
     </div>
-    <div class="divider">— battlefield —</div>
-    <div class="side">
-      <div class="team" id="player-team"></div>
-      <div class="side-label">Your Bears</div>
+  </div>
+
+  <!-- THE ACTUAL GAME (Hidden by default until login) -->
+  <div id="game-container" style="display: none; width: 100%; flex-direction: column; align-items: center;">
+    
+    <h1>🐻 BEAR CARDS 🐻</h1>
+    <div class="subtitle">Defeat all 3 of the rival ranger's bears</div>
+
+    <div class="arena">
+      <div class="side">
+        <div class="side-label">Rival Ranger</div>
+        <div class="team" id="cpu-team"></div>
+      </div>
+      <div class="divider">— battlefield —</div>
+      <div class="side">
+        <div class="team" id="player-team"></div>
+        <div class="side-label">Your Bears</div>
+      </div>
+      <div class="turn-banner" id="turn-banner"></div>
+      <div class="log" id="log"></div>
+      <div class="items" id="items"></div>
+      <div class="actions" id="actions"></div>
     </div>
-    <div class="turn-banner" id="turn-banner"></div>
-    <div class="log" id="log"></div>
-    <div class="items" id="items"></div>
-    <div class="actions" id="actions"></div>
-  </div>
 
-  <div class="overlay hidden" id="overlay">
-    <h2 id="over-title"></h2>
-    <p id="over-sub"></p>
-    <button onclick="location.reload()">Play Again</button>
-  </div>
+    <div class="overlay hidden" id="overlay">
+      <h2 id="over-title"></h2>
+      <p id="over-sub"></p>
+      <button onclick="location.reload()">Play Again</button>
+    </div>
 
-<script>
+  </div> <!-- END GAME CONTAINER -->
+
+<script type="module">
+// ============ FIREBASE SETUP ============
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// ⚠️ PASTE YOUR FIREBASE CONFIG HERE ⚠️
+const firebaseConfig = {
+  apiKey: "AIzaSyDQipiNih4ZqWWh4Nz0LEPd7L_Tm-D_1I",
+  authDomain: "cute-sleepy-games.firebaseapp.com",
+  projectId: "cute-sleepy-games",
+  storageBucket: "cute-sleepy-games.firebasestorage.app",
+  messagingSenderId: "249264537283",
+  appId: "1:249264537283:web:811dce511556eda6a96c76"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ============ LOGIN LOGIC ============
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    document.getElementById('login-msg').innerText = "Logging in...";
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+document.getElementById('btn-signup').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    document.getElementById('login-msg').innerText = "Creating account...";
+    await createUserWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    // User is logged in!
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('game-container').style.display = 'flex';
+    
+    // Check database
+    const docRef = doc(db, "saves", user.uid);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      log(`Welcome back, Ranger ${user.email}!`, 'sys');
+    } else {
+      log(`Welcome to your first game, Ranger ${user.email}!`, 'sys');
+    }
+  } else {
+    // User is logged out
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('game-container').style.display = 'none';
+  }
+});
+
 // ============ BEAR DATA (26 bears) ============
 const BEARS = [
   { id:'brown',   emoji:'🐻',  name:'Brown Bear',     type:'Forest',      hp:100, atk:30, ability:'Forage',        abilDesc:'Heals 10 HP each turn' },
@@ -187,22 +234,13 @@ const ITEMS = [
   { id:'log',    emoji:'🪵', name:'Log Trap',     desc:'Enemy skips next turn', used:false },
 ];
 
-// ============ STATE ============
 let state = {};
 
 function makeBear(base) {
   return {
-    ...base,
-    maxHp: base.hp,
-    alive: true,
-    bonusAtk: 0,
-    frozenTurns: 0,
-    cuddleOnMe: 0,
-    burnTurns: 0,
-    poisonTurns: 0,
-    stunnedTurns: 0,
-    overchargeStacks: 0,
-    firstHitDone: false,
+    ...base, maxHp: base.hp, alive: true, bonusAtk: 0,
+    frozenTurns: 0, cuddleOnMe: 0, burnTurns: 0, poisonTurns: 0,
+    stunnedTurns: 0, overchargeStacks: 0, firstHitDone: false,
   };
 }
 
@@ -238,12 +276,12 @@ function initGame() {
 
 function log(msg, cls='') {
   const el = document.getElementById('log');
+  if (!el) return;
   const p = document.createElement('p');
   p.className = cls; p.textContent = msg;
   el.appendChild(p); el.scrollTop = el.scrollHeight;
 }
 
-// ============ RENDER ============
 function render() {
   renderTeam('cpu-team', state.cpu, false);
   renderTeam('player-team', state.player, true);
@@ -262,6 +300,7 @@ function statusText(bear) {
 
 function renderTeam(containerId, side, clickable) {
   const el = document.getElementById(containerId);
+  if (!el) return;
   el.innerHTML = '';
   side.team.forEach((bear, idx) => {
     const card = document.createElement('div');
@@ -289,6 +328,7 @@ function renderTeam(containerId, side, clickable) {
 
 function renderItems() {
   const el = document.getElementById('items');
+  if (!el) return;
   el.innerHTML = '';
   if (state.turn !== 'player' || state.over) return;
   state.player.items.forEach((item) => {
@@ -302,6 +342,7 @@ function renderItems() {
 
 function renderActions() {
   const el = document.getElementById('actions');
+  if (!el) return;
   el.innerHTML = '';
   if (state.turn !== 'player' || state.over) return;
   const atkBtn = document.createElement('button');
@@ -315,9 +356,11 @@ function renderActions() {
   el.appendChild(hint);
 }
 
-function setBanner(text) { document.getElementById('turn-banner').textContent = text; }
+function setBanner(text) { 
+  const el = document.getElementById('turn-banner');
+  if (el) el.textContent = text; 
+}
 
-// ============ COMBAT ============
 function typeBonus(attacker, defender) {
   if (attacker.type === 'Chaos') return 0;
   const list = ADVANTAGE[attacker.type] || [];
@@ -333,13 +376,10 @@ function calcDamage(attacker, defender) {
   if (attacker.ability === 'Crescent Mark' && attacker.hp < attacker.maxHp / 2) dmg += 10;
   if (attacker.ability === 'Overcharge') dmg += attacker.overchargeStacks;
   if (attacker.ability === 'Ambush' && !attacker.firstHitDone) dmg += 15;
-
   dmg += typeBonus(attacker, defender);
-
   if (defender.ability === 'Bamboo Shield') dmg -= 10;
   if (defender.ability === 'Shaggy Coat') dmg -= 5;
   if (attacker.cuddleOnMe > 0) { dmg -= attacker.cuddleOnMe; attacker.cuddleOnMe = 0; }
-
   return Math.max(1, Math.round(dmg));
 }
 
@@ -405,7 +445,7 @@ function doAttack(attackerSide, defenderSide, attackerName, defenderName) {
   const tb = typeBonus(atkBear, defBear);
   const typeNote = tb ? ` (type +${tb})` : '';
   log(`${attackerName}'s ${atkBear.name} attacks ${defenderName}'s ${defBear.name} for ${dmg} dmg${typeNote}`, cls);
-  applyHit(defenderSide, defenderSide.active, dmg, atkBear);
+  applyHit(defenderSide, defenderSide.active, dmg);
 
   if (atkBear.ability === 'Honey Tongue') {
     atkBear.hp = Math.min(atkBear.maxHp, atkBear.hp + 8);
@@ -510,7 +550,6 @@ function tickStatuses(side, sideName) {
       if (bear.hp <= 0) { bear.alive = false; log(`${bear.name} succumbs to poison!`, 'big'); }
     }
   });
-  // auto-swap if active died from status
   if (!side.team[side.active].alive) {
     const next = side.team.findIndex(b => b.alive);
     if (next !== -1) {
@@ -550,7 +589,6 @@ function endPlayerTurn() {
 function cpuTurn() {
   if (state.over) return;
 
-  // start-of-cpu-turn statuses & passives
   tickStatuses(state.cpu, "Rival's");
   passiveTurnHeal(state.cpu, "Rival's");
   if (checkWin()) { render(); return; }
@@ -621,65 +659,8 @@ function showOverlay(title, sub) {
   render();
 }
 
+// BOOT UP THE GAME
 initGame();
-// Handle Login
-document.getElementById('btn-login').addEventListener('click', async () => {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
-  try {
-    document.getElementById('login-msg').innerText = "Logging in...";
-    await window.firebaseSignIn(window.firebaseAuth, email, pass); // <--- Changed this
-  } catch (e) {
-    document.getElementById('login-msg').innerText = e.message;
-  }
-});
-
-// Handle Signup
-document.getElementById('btn-signup').addEventListener('click', async () => {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
-  try {
-    document.getElementById('login-msg').innerText = "Creating account...";
-    await window.firebaseSignUp(window.firebaseAuth, email, pass); // <--- Changed this
-  } catch (e) {
-    document.getElementById('login-msg').innerText = e.message;
-  }
-});
-
-// Listen for login state changes
-window.firebaseOnAuth(window.firebaseAuth, async (user) => { // <--- Changed this
-  if (user) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('game-container').style.display = 'flex';
-    
-    // (Database check code goes here)
-    log(`Welcome, Ranger ${user.email}!`, 'sys');
-  } else {
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('game-container').style.display = 'none';
-  }
-});
-
-window.fbOnAuth(window.firebaseAuth, async (user) => {
-  if (user) {
-    // Logged in! Hide login, show game.
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('game-container').style.display = 'flex';
-    
-    // Check if they have saved data
-    const docRef = window.fbDoc(window.firebaseDb, "saves", user.uid);
-    const docSnap = await window.fbGetDoc(docRef);
-    if (docSnap.exists()) {
-      log(`Welcome back, Ranger ${user.email}!`, 'sys');
-    } else {
-      log(`Welcome to your first game, Ranger ${user.email}!`, 'sys');
-    }
-  } else {
-    // Logged out! Show login, hide game.
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('game-container').style.display = 'none';
-  }
-});
 </script>
 </body>
 </html>
