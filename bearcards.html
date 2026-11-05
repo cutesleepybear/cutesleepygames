@@ -1,5 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
+    authDomain: "cute-sleepy-games.firebaseapp.com",
+    projectId: "cute-sleepy-games",
+    storageBucket: "cute-sleepy-games.firebasestorage.app",
+    messagingSenderId: "249264537283",
+    appId: "1:249264537283:web:811dce511556eda6a96c76"
+  };
+ const app = initializeApp(firebaseConfig);
+ const auth = getAuth(app);
+const db = getFirestore(app);
+  window.firebaseAuth = auth;
+  window.firebaseDb = db;
+  window.fbSignIn = signInWithEmailAndPassword;
+  window.fbSignUp = createUserWithEmailAndPassword;
+  window.fbOnAuth = onAuthStateChanged;
+  window.fbDoc = doc;
+  window.fbGetDoc = getDoc;</script>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -72,6 +97,17 @@
 </style>
 </head>
 <body>
+  <div id="login-screen" style="position: fixed; inset: 0; background: #1a2e1a; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f0e6d2; font-family: sans-serif;">
+  <h2>🐻 Bear Ranger Login</h2>
+  <div style="background: #2a2115; padding: 20px; border-radius: 10px; border: 2px solid #5a4a2f;">
+    <input type="email" id="login-email" placeholder="Email" style="display:block; margin-bottom:10px; padding:8px; border-radius:4px; border:none;"><br>
+    <input type="password" id="login-pass" placeholder="Password" style="display:block; margin-bottom:10px; padding:8px; border-radius:4px; border:none;"><br>
+    <button id="btn-login" style="padding: 8px 12px; cursor:pointer;">Log In</button>
+    <button id="btn-signup" style="padding: 8px 12px; cursor:pointer;">Sign Up</button>
+    <p id="login-msg" style="color: #ff8a65; font-size: 0.8rem;"></p>
+  </div>
+</div>
+<div id="game-container" style="display: none; width: 100%; flex-direction: column; align-items: center;">  </div>
   <h1>🐻 BEAR CARDS 🐻</h1>
   <div class="subtitle">Defeat all 3 of the rival ranger's bears</div>
 
@@ -585,6 +621,49 @@ function showOverlay(title, sub) {
 }
 
 initGame();
+// ============ LOGIN LOGIC ============
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    document.getElementById('login-msg').innerText = "Logging in...";
+    await window.fbSignIn(window.firebaseAuth, email, pass);
+  } catch (e) {
+    document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+document.getElementById('btn-signup').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    document.getElementById('login-msg').innerText = "Creating account...";
+    await window.fbSignUp(window.firebaseAuth, email, pass);
+  } catch (e) {
+    document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+window.fbOnAuth(window.firebaseAuth, async (user) => {
+  if (user) {
+    // Logged in! Hide login, show game.
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('game-container').style.display = 'flex';
+    
+    // Check if they have saved data
+    const docRef = window.fbDoc(window.firebaseDb, "saves", user.uid);
+    const docSnap = await window.fbGetDoc(docRef);
+    if (docSnap.exists()) {
+      log(`Welcome back, Ranger ${user.email}!`, 'sys');
+    } else {
+      log(`Welcome to your first game, Ranger ${user.email}!`, 'sys');
+    }
+  } else {
+    // Logged out! Show login, hide game.
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('game-container').style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
