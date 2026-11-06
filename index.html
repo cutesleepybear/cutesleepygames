@@ -4,31 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🐻 My Arcade</title>
-
-<!-- ============ FIREBASE SETUP ============ -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-  // Make sure your API key is correct here!
-  const firebaseConfig = {
-    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
-    authDomain: "cute-sleepy-games.firebaseapp.com",
-    projectId: "cute-sleepy-games",
-    storageBucket: "cute-sleepy-games.firebasestorage.app",
-    messagingSenderId: "249264537283",
-    appId: "1:249264537283:web:811dce511556eda6a96c76"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  window.firebaseAuth = auth;
-  window.fbSignIn = signInWithEmailAndPassword;
-  window.fbSignUp = createUserWithEmailAndPassword;
-  window.fbOnAuth = onAuthStateChanged;
-</script>
-
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -92,13 +67,13 @@
   
   #login-msg { color: #ff8ae2; font-size: 0.85rem; margin-top: 15px; min-height: 20px; }
   
-  /* Hide the hub until logged in (optional) */
+  /* Hide the hub until logged in */
   #hub-content { display: none; flex-direction: column; align-items: center; width: 100%; }
 </style>
 </head>
 <body>
 
-  <!-- ============ LOGIN MODAL (Pops up over the hub) ============ -->
+  <!-- ============ LOGIN MODAL ============ -->
   <div id="login-screen">
     <div class="login-box">
       <h2>🐻 Arcade Login</h2>
@@ -114,7 +89,7 @@
   <div id="hub-content">
     <div class="hub-header">
       <h1>🐻 My Arcade</h1>
-      <p>Welcome back buddy!</p>
+      <p>Welcome back, Ranger!</p>
     </div>
     
     <div class="game-grid">
@@ -134,42 +109,59 @@
     </div>
   </div>
 
-<script>
-// ============ LOGIN LOGIC FOR THE HUB ============
-document.getElementById('btn-login').addEventListener('click', async () => {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
-  try {
-    document.getElementById('login-msg').innerText = "Logging in...";
-    await window.fbSignIn(window.firebaseAuth, email, pass);
-  } catch (e) {
-    document.getElementById('login-msg').innerText = e.message;
-  }
-});
+<!-- ============ MAIN SCRIPT (FIREBASE + LOGIN) ============ -->
+<script type="module">
+  // 1. Import Firebase
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-document.getElementById('btn-signup').addEventListener('click', async () => {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
-  try {
-    document.getElementById('login-msg').innerText = "Creating account...";
-    await window.fbSignUp(window.firebaseAuth, email, pass);
-  } catch (e) {
-    document.getElementById('login-msg').innerText = e.message;
-  }
-});
+  // 2. Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
+    authDomain: "cute-sleepy-games.firebaseapp.com",
+    projectId: "cute-sleepy-games",
+    storageBucket: "cute-sleepy-games.firebasestorage.app",
+    messagingSenderId: "249264537283",
+    appId: "1:249264537283:web:811dce511556eda6a96c76"
+  };
 
-// Check if user is logged in
-window.fbOnAuth(window.firebaseAuth, (user) => {
-  if (user) {
-    // User is logged in! Hide modal, show the hub.
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('hub-content').style.display = 'flex';
-  } else {
-    // User is logged out! Show modal, hide the hub.
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('hub-content').style.display = 'none';
-  }
-});
+  // 3. Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // 4. Setup Login Logic
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    try {
+      document.getElementById('login-msg').innerText = "Logging in...";
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      document.getElementById('login-msg').innerText = e.message;
+    }
+  });
+
+  document.getElementById('btn-signup').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    try {
+      document.getElementById('login-msg').innerText = "Creating account...";
+      await createUserWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      document.getElementById('login-msg').innerText = e.message;
+    }
+  });
+
+  // 5. Check Auth State
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('hub-content').style.display = 'flex';
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('hub-content').style.display = 'none';
+    }
+  });
 </script>
 </body>
 </html>
