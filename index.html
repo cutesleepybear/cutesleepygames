@@ -1,16 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>🐻 Cute Sleepy Games 🐻</title>
-  <style>
-    body { font-family: sans-serif; background: #e8a9e5; color: #e875a5; text-align: center; padding: 40px; }
-    a { display: block; margin: 16px auto; padding: 14px; max-width: 300px;
-        background: #e290ea; color: #f0e6d2; text-decoration: none; border-radius: 10px; }
-    a:hover { background: #f88ba3; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐻 My Arcade</title>
+
+<!-- ============ FIREBASE SETUP ============ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  // Make sure your API key is correct here!
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
+    authDomain: "cute-sleepy-games.firebaseapp.com",
+    projectId: "cute-sleepy-games",
+    storageBucket: "cute-sleepy-games.firebasestorage.app",
+    messagingSenderId: "249264537283",
+    appId: "1:249264537283:web:811dce511556eda6a96c76"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  window.firebaseAuth = auth;
+  window.fbSignIn = signInWithEmailAndPassword;
+  window.fbSignUp = createUserWithEmailAndPassword;
+  window.fbOnAuth = onAuthStateChanged;
+</script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: radial-gradient(circle at 50% 0%, #2d4a2d, #1a2e1a 60%, #0f1a0f);
+    color: #f0e6d2; min-height: 100vh; padding: 20px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  
+  /* Hub Menu Styles */
+  .hub-header { text-align: center; margin-bottom: 40px; margin-top: 40px; }
+  .hub-header h1 { font-size: 2.5rem; color: #f0c060; text-shadow: 0 0 10px rgba(240,192,96,0.5); }
+  .hub-header p { color: #9ab89a; font-size: 1.1rem; margin-top: 10px; }
+  
+  .game-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 900px; }
+  .game-card {
+    background: linear-gradient(160deg, #3a2f1f, #2a2115);
+    border: 2px solid #5a4a2f; border-radius: 16px; padding: 30px 20px;
+    width: 250px; text-align: center; text-decoration: none; color: inherit;
+    transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; display: block;
+  }
+  .game-card:hover { transform: translateY(-5px); border-color: #f0c060; box-shadow: 0 0 20px rgba(240,192,96,0.3); }
+  .game-card h2 { font-size: 1.5rem; margin-bottom: 10px; }
+  .game-card p { color: #9ab89a; font-size: 0.9rem; }
+
+  /* ============ PINK/PURPLE LOGIN MODAL ============ */
+  #login-screen {
+    position: fixed; inset: 0; 
+    background: rgba(20, 10, 30, 0.85);
+    backdrop-filter: blur(8px); 
+    z-index: 9999; 
+    display: flex; flex-direction: column; align-items: center; justify-content: center; 
+  }
+  
+  .login-box {
+    background: linear-gradient(160deg, #4a2a5a, #2a1535);
+    padding: 30px; border-radius: 16px; 
+    border: 2px solid #ff8ae2; 
+    box-shadow: 0 0 25px rgba(255, 138, 226, 0.4); 
+    width: 320px; text-align: center; color: #ffd6f6;
+  }
+  .login-box h2 { color: #ff8ae2; margin-bottom: 20px; text-shadow: 0 0 10px rgba(255, 138, 226, 0.5); }
+  
+  .login-box input {
+    width: 100%; padding: 12px; margin-bottom: 15px; 
+    border-radius: 8px; border: 1px solid #ff8ae2; 
+    background: #1a0a25; color: white; font-size: 1rem;
+  }
+  .login-box input:focus { outline: none; border-color: #d47fff; box-shadow: 0 0 8px #d47fff; }
+  
+  .login-box button {
+    width: 100%; padding: 12px; cursor: pointer; font-weight: bold;
+    background: linear-gradient(90deg, #ff8ae2, #d47fff); 
+    color: #2a1535; border: none; border-radius: 8px; margin-bottom: 10px;
+    font-size: 1rem; transition: transform 0.1s;
+  }
+  .login-box button:hover { transform: scale(1.02); }
+  
+  .login-box .signup-btn { background: transparent; border: 2px solid #ff8ae2; color: #ff8ae2; }
+  .login-box .signup-btn:hover { background: rgba(255, 138, 226, 0.1); }
+  
+  #login-msg { color: #ff8ae2; font-size: 0.85rem; margin-top: 15px; min-height: 20px; }
+  
+  /* Hide the hub until logged in (optional) */
+  #hub-content { display: none; flex-direction: column; align-items: center; width: 100%; }
+</style>
 </head>
 <body>
-  <h1>🐻 My Arcade 🐻</h1>
-  <a href="bearcards.html">Play Bear Cards</a>
+
+  <!-- ============ LOGIN MODAL (Pops up over the hub) ============ -->
+  <div id="login-screen">
+    <div class="login-box">
+      <h2>🐻 Arcade Login</h2>
+      <input type="email" id="login-email" placeholder="Email">
+      <input type="password" id="login-pass" placeholder="Password">
+      <button id="btn-login">Log In</button>
+      <button id="btn-signup" class="signup-btn">Sign Up</button>
+      <p id="login-msg"></p>
+    </div>
+  </div>
+
+  <!-- ============ MAIN ARCADE HUB ============ -->
+  <div id="hub-content">
+    <div class="hub-header">
+      <h1>🐻 My Arcade</h1>
+      <p>Welcome back buddy!</p>
+    </div>
+    
+    <div class="game-grid">
+      <!-- Bear Cards Game Link -->
+      <a href="bearcards.html" class="game-card">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🐻🐼🐻‍❄️</div>
+        <h2>Bear Cards</h2>
+        <p>Battle the rival ranger in this collectible card game.</p>
+      </a>
+      
+      <!-- Future games go here -->
+      <div class="game-card" style="opacity: 0.5; cursor: not-allowed;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🚧</div>
+        <h2>Coming Soon</h2>
+        <p>More games will be added here.</p>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ============ LOGIN LOGIC FOR THE HUB ============
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    document.getElementById('login-msg').innerText = "Logging in...";
+    await window.fbSignIn(window.firebaseAuth, email, pass);
+  } catch (e) {
+    document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+document.getElementById('btn-signup').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    document.getElementById('login-msg').innerText = "Creating account...";
+    await window.fbSignUp(window.firebaseAuth, email, pass);
+  } catch (e) {
+    document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+// Check if user is logged in
+window.fbOnAuth(window.firebaseAuth, (user) => {
+  if (user) {
+    // User is logged in! Hide modal, show the hub.
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('hub-content').style.display = 'flex';
+  } else {
+    // User is logged out! Show modal, hide the hub.
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('hub-content').style.display = 'none';
+  }
+});
+</script>
 </body>
 </html>
