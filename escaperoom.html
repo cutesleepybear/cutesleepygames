@@ -35,6 +35,20 @@
 
   .subtitle { text-align: center; font-size: 0.8rem; color: #888; margin-bottom: 20px; font-family: sans-serif; }
 
+  /* CLUE BOARD */
+  #clue-board {
+    display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;
+  }
+  .clue-slot {
+    width: 50px; height: 60px; border: 2px dashed #333; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; font-weight: bold; color: #555; background: #111;
+  }
+  .clue-slot.found {
+    border: 2px solid #00ff41; color: #00ff41; box-shadow: 0 0 15px rgba(0,255,65,0.5);
+    background: #0a1a0a; text-shadow: 0 0 10px #00ff41;
+  }
+
   #log {
     background: #111; border: 1px solid #333; border-radius: 8px;
     padding: 20px; height: 350px; overflow-y: auto; font-size: 0.95rem;
@@ -99,6 +113,14 @@
         <div id="timer">00:00</div>
       </div>
     </div>
+    
+    <!-- CLUE BOARD -->
+    <div id="clue-board">
+      <div class="clue-slot" id="slot-1">?</div>
+      <div class="clue-slot" id="slot-2">?</div>
+      <div class="clue-slot" id="slot-3">?</div>
+    </div>
+
     <div class="subtitle">Commands: look, inventory, examine [object], take [item], use [item] on [object], code [number]</div>
 
     <div id="log"></div>
@@ -122,14 +144,14 @@
     <div class="tutorial-box">
       <h2>📖 How to Play</h2>
       <p>You are locked in a room. You must find the 3-digit code to escape.</p>
-      <p><strong>Warning:</strong> This is a logic puzzle. You will need to find tools, use them on locked objects to get clues, and solve a riddle to get the code. The puzzle changes every time!</p>
+      <p><strong>Warning:</strong> The code is split into 3 separate digits. You will need to find tools, solve math riddles, and search the room to collect all three digits.</p>
       <hr style="border-color: #333; margin: 20px 0;">
       <p><strong>Useful Commands:</strong></p>
       <p><code>look</code> <span class="example">Shows everything in the room.</span></p>
-      <p><code>examine [object]</code> <span class="example">Looks closely at an object to find clues or items.</span></p>
+      <p><code>examine [object]</code> <span class="example">Looks closely at an object.</span></p>
       <p><code>take [item]</code> <span class="example">Puts an item in your inventory.</span></p>
-      <p><code>use [item] on [object]</code> <span class="example">Uses an item.</span></p>
-      <p><code>code [number]</code> <span class="example">Tries to unlock the door.</span></p>
+      <p><code>use [item] on [object]</code> <span class="example">Uses a tool on something.</span></p>
+      <p><code>code [number]</code> <span class="example">Tries to unlock the door (e.g., "code 492").</span></p>
       <button onclick="toggleTutorial()" style="margin-top: 20px; width: 100%;">Got it, let me play!</button>
     </div>
   </div>
@@ -158,7 +180,8 @@
     startTime: null,
     timerInterval: null,
     gameOver: false,
-    flags: { toolFound: false, containerOpened: false, clueFound: false },
+    flags: { toolFound: false, containerOpened: false, mathFound: false, symbolFound: false },
+    foundDigits: { d1: false, d2: false, d3: false },
     wins: 0,
     losses: 0
   };
@@ -167,19 +190,21 @@
   let pauseTime = 0;
 
   const ROOM_BASE = [
-    { title: "The Abandoned Lab", targets: ["dusty shelves", "computer terminal", "trash can", "vent", "broken fuse box", "loose floorboard"] },
-    { title: "The Old Workshop", targets: ["workbench", "tool rack", "pile of sawdust", "rusty barrel", "loose floorboard", "drain"] },
-    { title: "The Dark Cellar", targets: ["wine rack", "crates", "drain", "broken fuse box", "loose floorboard", "dusty shelves"] }
+    { title: "The Abandoned Lab", targets: ["dusty shelves", "computer terminal", "trash can", "vent", "broken fuse box", "loose floorboard", "strange symbol on wall"] },
+    { title: "The Old Workshop", targets: ["workbench", "tool rack", "pile of sawdust", "rusty barrel", "loose floorboard", "drain", "strange symbol on wall"] },
+    { title: "The Dark Cellar", targets: ["wine rack", "crates", "drain", "broken fuse box", "loose floorboard", "dusty shelves", "strange symbol on wall"] }
   ];
 
   const PUZZLE_TYPES = [
-    { tool: "crowbar", container: "wooden crate", action: "pry open", clue: "dusty diary", clueMsg: "You open the diary. A note inside says:" },
-    { tool: "UV flashlight", container: "blank wall", action: "shine on", clue: "hidden writing", clueMsg: "You turn off the lights and shine the UV light. Glowing text appears:" },
-    { tool: "magnet on a string", container: "floor drain", action: "fish through", clue: "rusty key", clueMsg: "You fish the key out of the drain. A tag attached to it says:" },
-    { tool: "soldering iron", container: "fuse box", action: "repair", clue: "terminal screen", clueMsg: "The fuse box sparks to life. The computer screen lights up with:" },
-    { tool: "small shovel", container: "loose floorboard", action: "dig under", clue: "buried lockbox", clueMsg: "You pry up the board and dig. You find a lockbox with a note:" },
-    { tool: "glass cutter", container: "glass display case", action: "cut open", clue: "manila folder", clueMsg: "You cut a hole in the glass and grab the folder. It says:" }
+    { tool: "crowbar", container: "wooden crate", action: "pry open", clue: "dusty diary" },
+    { tool: "UV flashlight", container: "blank wall", action: "shine on", clue: "hidden writing" },
+    { tool: "magnet on a string", container: "floor drain", action: "fish through", clue: "rusty key" },
+    { tool: "soldering iron", container: "fuse box", action: "repair", clue: "terminal screen" },
+    { tool: "small shovel", container: "loose floorboard", action: "dig under", clue: "buried lockbox" },
+    { tool: "glass cutter", container: "glass display case", action: "cut open", clue: "manila folder" }
   ];
+
+  const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX'];
 
   function log(msg, type = 'room') {
     const el = document.getElementById('log');
@@ -197,6 +222,16 @@
 
   function updateStatsDisplay() {
     document.getElementById('stats').innerText = `W: ${state.wins} | L: ${state.losses}`;
+  }
+
+  function revealDigit(slot, digit) {
+    const el = document.getElementById(`slot-${slot}`);
+    el.innerText = digit;
+    el.classList.add('found');
+    
+    if (slot === 1) state.foundDigits.d1 = true;
+    if (slot === 2) state.foundDigits.d2 = true;
+    if (slot === 3) state.foundDigits.d3 = true;
   }
 
   function startTimer() {
@@ -247,32 +282,57 @@
     const baseRoom = ROOM_BASE[Math.floor(Math.random() * ROOM_BASE.length)];
     const puzzleType = PUZZLE_TYPES[Math.floor(Math.random() * PUZZLE_TYPES.length)];
     
+    // Generate a random 3-digit code
     const code = String(Math.floor(Math.random() * 900) + 100);
-    const c = parseInt(code);
-    const num1 = Math.floor(Math.random() * 50) + 10;
-    const num2 = c - num1;
-    const mathRiddle = (num2 > 0) ? `${num1} + ${num2} = ?` : `${c + 100} - 100 = ?`;
+    const d1 = code[0];
+    const d2 = code[1];
+    const d3 = code[2];
 
+    // Create Math Riddle for Digit 2
+    const num1 = Math.floor(Math.random() * 50) + 10;
+    const num2 = parseInt(d2) - num1;
+    const mathRiddle = (num2 > 0) ? `${num1} + ${num2} = ?` : `${parseInt(d2) + 100} - 100 = ?`;
+
+    // Shuffle targets to randomize locations
     const shuffledTargets = shuffle([...baseRoom.targets]);
+    
+    // Assign locations
+    const symbolLoc = shuffledTargets.find(t => t.includes('symbol'));
+    const availableTargets = shuffledTargets.filter(t => !t.includes('symbol'));
 
     state.currentRoom = {
       title: baseRoom.title,
       code: code,
+      digits: { d1, d2, d3 },
       winMsg: "The door clicks open! You escaped!",
       targets: shuffledTargets,
       puzzle: puzzleType,
       mathRiddle: mathRiddle,
-      toolLocation: shuffledTargets[0],
-      containerLocation: shuffledTargets[1]
+      
+      // Locations
+      toolLocation: availableTargets[0],
+      containerLocation: availableTargets[1],
+      mathLocation: availableTargets[2],
+      symbolLocation: symbolLoc
     };
 
-    state.flags = { toolFound: false, containerOpened: false, clueFound: false };
+    state.flags = { toolFound: false, containerOpened: false, mathFound: false, symbolFound: false };
+    state.foundDigits = { d1: false, d2: false, d3: false };
     state.inventory = [];
+    
+    // Reset UI
     updateInventory();
+    document.getElementById('slot-1').innerText = "?";
+    document.getElementById('slot-1').classList.remove('found');
+    document.getElementById('slot-2').innerText = "?";
+    document.getElementById('slot-2').classList.remove('found');
+    document.getElementById('slot-3').innerText = "?";
+    document.getElementById('slot-3').classList.remove('found');
 
     document.getElementById('room-title').innerText = state.currentRoom.title;
     log(`You wake up in ${state.currentRoom.title}. The exit door is locked with a 3-digit code.`, "sys");
     log(`You look around and see: ${state.currentRoom.targets.join(', ')}.`, "room");
+    log(`Hint: The code is split into three separate digits. You need to find all of them.`, "sys");
     
     startTimer();
   }
@@ -286,20 +346,16 @@
     if (!cmd) return;
 
     log(`> ${cmd}`, 'action');
-    const words = cmd.split(' ');
     const room = state.currentRoom;
 
-    // Extracts keywords from the puzzle tool to make matching easier
-    // e.g., "UV flashlight" becomes ["uv", "flashlight"]
-    const toolKeywords = room.puzzle.tool.toLowerCase().split(' ').filter(w => w.length > 2);
-    const containerKeywords = room.puzzle.container.toLowerCase().split(' ').filter(w => w.length > 2);
-
-    const hasToolWord = toolKeywords.some(kw => cmd.includes(kw));
-    const hasContainerWord = containerKeywords.some(kw => cmd.includes(kw));
+    // Helper to check keywords
+    const toolKw = room.puzzle.tool.toLowerCase().split(' ').filter(w => w.length > 2);
+    const contKw = room.puzzle.container.toLowerCase().split(' ').filter(w => w.length > 2);
     
-    // Check if the user typed the actual location
-    const hasToolLocWord = room.toolLocation.split(' ').some(kw => cmd.includes(kw));
-    const hasContainerLocWord = room.containerLocation.split(' ').some(kw => cmd.includes(kw));
+    const hasTool = toolKw.some(kw => cmd.includes(kw)) || cmd.includes(room.toolLocation);
+    const hasContainer = contKw.some(kw => cmd.includes(kw)) || cmd.includes(room.containerLocation);
+    const hasMathLoc = cmd.includes(room.mathLocation);
+    const hasSymbolLoc = cmd.includes('symbol') || cmd.includes(room.symbolLocation);
 
     if (cmd === 'look' || cmd === 'l') {
       log("You look around the room:", "sys");
@@ -308,31 +364,48 @@
     else if (cmd === 'inventory' || cmd === 'i') {
       log(`You are carrying: ${state.inventory.length ? state.inventory.join(', ') : 'nothing'}`, 'sys');
     } 
-    else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check') {
-      if (words.length < 2) { log(`What do you want to ${words[0]}? Try "look" to see the room.`, "error"); return; }
+    else if (cmd.startsWith('examine') || cmd.startsWith('search') || cmd.startsWith('check')) {
+      if (cmd.split(' ').length < 2) { log(`What do you want to examine?`, "error"); return; }
       
       let found = false;
-      if (hasToolLocWord) {
+
+      if (cmd.includes(room.toolLocation)) {
         if (!state.flags.toolFound) log(`You search the ${room.toolLocation} and find a ${room.puzzle.tool}.`, "sys");
         else log("You already searched here.", "room");
         found = true;
       } 
-      else if (hasContainerLocWord) {
-        if (state.flags.containerOpened) log(`You look inside the opened ${room.puzzle.container}. There is a ${room.puzzle.clue} here.`, "sys");
+      else if (cmd.includes(room.containerLocation)) {
+        if (state.flags.containerOpened) {
+           if (!state.flags.clueFound) log(`You look inside the opened ${room.puzzle.container}.`, "sys");
+           else log("There is nothing else inside.", "room");
+        }
         else log(`It's a ${room.puzzle.container}. It's locked tight. You need a ${room.puzzle.tool} to ${room.puzzle.action} it.`, "room");
         found = true;
       }
-      else if (room.targets.some(t => t.split(' ').some(kw => cmd.includes(kw)))) {
+      else if (hasMathLoc) {
+        if (!state.flags.mathFound) {
+          log(`You examine the ${room.mathLocation} and find a riddle: "${room.mathRiddle}"`, "room");
+          log(`Solve it to find the SECOND digit.`, "sys");
+          state.flags.mathFound = true;
+        } else log("You already solved the riddle here.", "room");
+        found = true;
+      }
+      else if (hasSymbolLoc) {
+        if (!state.flags.symbolFound) {
+          log(`You look closely at the symbol. The Roman numeral for the THIRD digit is: ${ROMAN[parseInt(room.digits.d3)-1]}`, "room");
+          state.flags.symbolFound = true;
+        } else log("You already found the symbol.", "room");
+        found = true;
+      }
+      else if (room.targets.some(t => cmd.includes(t))) {
         log("You look closely, but there's nothing useful here.", "room");
         found = true;
       }
 
       if (!found) log("I don't see that in this room.", "error");
     } 
-    else if (words[0] === 'take' || words[0] === 'get') {
-      if (words.length < 2) { log(`What do you want to ${words[0]}?`, "error"); return; }
-
-      if (hasToolWord || hasToolLocWord) {
+    else if (cmd.startsWith('take') || cmd.startsWith('get')) {
+      if (cmd.includes(room.toolLocation) || hasTool) {
         if (!state.flags.toolFound) {
           state.inventory.push(room.puzzle.tool);
           updateInventory();
@@ -340,48 +413,40 @@
           state.flags.toolFound = true;
         } else log("There is nothing else to take here.", "error");
       } 
-      else if (cmd.includes('diary') || cmd.includes('key') || cmd.includes('writing') || cmd.includes('folder') || cmd.includes('lockbox') || cmd.includes('screen') || hasContainerLocWord) {
-        if (state.flags.containerOpened && !state.flags.clueFound) {
-           state.inventory.push(room.puzzle.clue);
-           updateInventory();
-           log(`You take the ${room.puzzle.clue}.`, "sys");
-           state.flags.clueFound = true;
-           log(`${room.puzzle.clueMsg} "${room.mathRiddle}"`, "room");
-        } else log("You can't take that right now.", "error");
+      else if (hasContainer && state.flags.containerOpened && !state.flags.clueFound) {
+        state.inventory.push(room.puzzle.clue);
+        updateInventory();
+        log(`You take the ${room.puzzle.clue}.`, "sys");
+        log(`It says: "The FIRST digit is ${room.digits.d1}".`, "win");
+        revealDigit(1, room.digits.d1);
+        state.flags.clueFound = true;
       }
       else log("You can't take that.", "error");
     }
-    else if (words[0] === 'use') {
-      
-      // If they type the tool and the container (or their locations)
-      if ((hasToolWord || hasToolLocWord) && (hasContainerWord || hasContainerLocWord)) {
+    else if (cmd.startsWith('use')) {
+      if (hasTool && hasContainer) {
         if (state.inventory.includes(room.puzzle.tool) || state.flags.toolFound) {
           if (!state.flags.containerOpened) {
             state.flags.containerOpened = true;
             log(`You use the ${room.puzzle.tool} to ${room.puzzle.action} the ${room.puzzle.container}!`, "sys");
             log(`Inside, you find a ${room.puzzle.clue}.`, "sys");
-            log(`${room.puzzle.clueMsg} "${room.mathRiddle}"`, "room");
+            log(`It says: "The FIRST digit is ${room.digits.d1}".`, "win");
+            revealDigit(1, room.digits.d1);
             state.flags.clueFound = true;
-            state.inventory.push(room.puzzle.clue);
-            updateInventory();
           } else log("It's already open.", "room");
-        } else {
-          log(`You don't have the ${room.puzzle.tool}.`, "error");
-        }
+        } else log(`You don't have the ${room.puzzle.tool}.`, "error");
       } 
-      // If they have the tool but are trying to use it on the wrong thing
-      else if (hasToolWord || hasToolLocWord) {
-        log(`You try to use the ${room.puzzle.tool}, but it doesn't work on that. You should use it on the ${room.puzzle.container}.`, "error");
+      else if (hasTool) {
+        log(`You try to use the ${room.puzzle.tool}, but it doesn't work on that.`, "error");
       }
-      // Entering code shortcut
       else {
-        const attemptedCode = words[words.length - 1];
+        const attemptedCode = cmd.split(' ').pop();
         if (attemptedCode === room.code) winGame();
         else log("That doesn't work.", "error");
       }
     } 
-    else if (words[0] === 'code' || words[0] === 'enter') {
-      const attemptedCode = words[words.length - 1];
+    else if (cmd.startsWith('code') || cmd.startsWith('enter')) {
+      const attemptedCode = cmd.split(' ').pop();
       if (attemptedCode === room.code) winGame();
       else log("The lock flashes red. Incorrect code.", "error");
     }
