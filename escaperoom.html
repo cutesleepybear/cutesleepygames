@@ -9,7 +9,7 @@
   body {
     font-family: 'Courier New', Courier, monospace;
     background: #0a0a0a;
-    color: #00ff41; /* Matrix green text */
+    color: #00ff41;
     min-height: 100vh; padding: 20px;
     display: flex; flex-direction: column; align-items: center;
   }
@@ -74,10 +74,9 @@
       <h1 id="room-title">Loading...</h1>
       <div id="timer">00:00</div>
     </div>
-    <div class="subtitle">Type commands to interact. Try "look", "inventory", "use [item]", "examine [object]", or "code [number]".</div>
+    <div class="subtitle">Commands: look, inventory, examine [object], use [code]</div>
 
     <div id="log"></div>
-
     <div class="inventory" id="inventory">
       Inventory: <span id="inv-items">Empty</span>
     </div>
@@ -89,7 +88,7 @@
   </div>
 
   <div id="win-screen">
-    <h2 id="win-title">YOU ESCAPED!</h2>
+    <h2>YOU ESCAPED!</h2>
     <p id="win-sub">Your stats have been saved to the cloud.</p>
     <button onclick="window.location.reload()" style="padding: 15px 30px; font-size: 1.2rem;">Play Again</button>
   </div>
@@ -112,34 +111,6 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // ============ ROOM DATA ============
-  const ROOMS = [
-    {
-      title: "The Study",
-      intro: "You wake up in a dusty old study. The door is locked, and a computer terminal blinks on the desk.",
-      look: ["A wooden desk with a computer terminal.", "A bookshelf filled with dusty books.", "A locked door."],
-      items: { "book": "You pull a book off the shelf. It's titled 'The History of 1337'.", "terminal": "The screen says: 'ENTER PASSWORD'." },
-      code: "1337",
-      winMsg: "The terminal flashes green. 'ACCESS GRANTED'. The door clicks open!"
-    },
-    {
-      title: "The Vault",
-      intro: "You are trapped in a bank vault. A heavy metal door stands before you, with a 3-digit safe dial.",
-      look: ["A heavy metal door.", "A dead guard's desk.", "A vent near the floor."],
-      items: { "desk": "You search the desk and find a piece of paper that says: 'Code is 42 + 7'.", "vent": "You look in the vent and find a screwdriver." },
-      code: "49",
-      winMsg: "You turn the dial to 4... 9... CLUNK. The vault door swings open!"
-    },
-    {
-      title: "The Cellar",
-      intro: "It's pitch black. You can barely see a faint light under a door.",
-      look: ["A locked wooden door.", "A pile of crates.", "A strange symbol on the wall."],
-      items: { "crates": "You move the crates and find a flashlight.", "symbol": "The symbol looks like a triangle with an eye inside. It's the Illuminati." },
-      code: "666",
-      winMsg: "You enter 666. The door unlocks. You escape the cellar!"
-    }
-  ];
-
   let state = {
     currentRoom: null,
     inventory: [],
@@ -147,6 +118,46 @@
     timerInterval: null,
     escaped: false
   };
+
+  // ============ RANDOM GENERATION DATA ============
+  const ROOM_TYPES = [
+    {
+      title: "The Study",
+      intro: "You wake up in a dusty study. The door is locked, and a computer blinks on the desk.",
+      targets: ["bookshelf", "desk", "painting", "fireplace"],
+      winMsg: "The screen flashes green. 'ACCESS GRANTED'. The door clicks open!",
+      codePrompt: "The screen says: 'ENTER PASSWORD'."
+    },
+    {
+      title: "The Vault",
+      intro: "You are trapped in a bank vault. A heavy metal door stands before you.",
+      targets: ["guard's desk", "vent", "toolbox", "filing cabinet"],
+      winMsg: "CLUNK. The vault door swings open!",
+      codePrompt: "The safe says: 'ENTER 3-DIGIT CODE'."
+    },
+    {
+      title: "The Cellar",
+      intro: "It's dark and damp. You see a locked wooden door.",
+      targets: ["crates", "wine rack", "pile of bones", "drain", "shelf"],
+      winMsg: "The heavy lock falls off. You escape the cellar!",
+      codePrompt: "The door has a 3-digit combination lock."
+    },
+    {
+      title: "The Lab",
+      intro: "You're in a sterile laboratory. The exit door requires a keycard code.",
+      targets: ["microscope", "fume hood", "computer", "trash can", "cabinet"],
+      winMsg: "The door hisses open. You step into the hallway.",
+      codePrompt: "A digital pad blinks: 'ENTER CODE'."
+    }
+  ];
+
+  const HIDING_SPOTS = [
+    "You search it and find a sticky note that says: 'Code: {CODE}'.",
+    "Taped underneath, you find a note: 'The code is {CODE}'.",
+    "Inside, someone scratched the numbers {CODE} into the wood.",
+    "You shake it and a piece of paper falls out. It says '{CODE}'.",
+    "Hidden in a false bottom, you find: '{CODE}'."
+  ];
 
   window.playerStats = { escapes: 0 };
 
@@ -175,19 +186,44 @@
     }, 1000);
   }
 
-  // ============ GAME LOGIC ============
+  // ============ PROCEDURAL GENERATION ============
   function startGame() {
     document.getElementById('game-container').style.display = 'block';
     
-    // Pick a random room
-    state.currentRoom = ROOMS[Math.floor(Math.random() * ROOMS.length)];
+    // 1. Pick a random room type
+    const baseRoom = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
+    
+    // 2. Generate a RANDOM 3-digit code (100-999)
+    const code = String(Math.floor(Math.random() * 900) + 100);
+    
+    // 3. Pick which object hides the code
+    const clueTarget = baseRoom.targets[Math.floor(Math.random() * baseRoom.targets.length)];
+    
+    // 4. Pick the text for the hidden clue
+    const clueText = HIDING_SPOTS[Math.floor(Math.random() * HIDING_SPOTS.length)].replace("{CODE}", code);
+
+    // 5. Create the dynamic room object
+    state.currentRoom = {
+      title: baseRoom.title,
+      intro: baseRoom.intro,
+      code: code,
+      winMsg: baseRoom.winMsg,
+      codePrompt: baseRoom.codePrompt,
+      targets: baseRoom.targets,
+      clueTarget: clueTarget,
+      clueText: clueText
+    };
+
     document.getElementById('room-title').innerText = state.currentRoom.title;
 
     log(state.currentRoom.intro, "sys");
-    log("Type 'look' to inspect your surroundings.", "sys");
+    log(`You look around and see: ${state.currentRoom.targets.join(', ')}.`, "room");
+    log("Type 'examine [object]' to investigate.", "sys");
+    
     startTimer();
   }
 
+  // ============ COMMAND PARSER ============
   function processCommand() {
     if (state.escaped) return;
 
@@ -198,51 +234,61 @@
 
     log(`> ${cmd}`, 'action');
     const words = cmd.split(' ');
+    const room = state.currentRoom;
 
+    // 1. Looking around
     if (cmd === 'look' || cmd === 'l') {
       log("You look around the room:", "sys");
-      state.currentRoom.look.forEach(item => log(`- ${item}`, "room"));
+      room.targets.forEach(item => log(`- ${item}`, "room"));
     } 
+    
+    // 2. Inventory
     else if (cmd === 'inventory' || cmd === 'i') {
       log(`You are carrying: ${state.inventory.length ? state.inventory.join(', ') : 'nothing'}`, 'sys');
     } 
-    else if (words[0] === 'examine' || words[0] === 'search') {
+    
+    // 3. Examining objects
+    else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check') {
       const obj = words.slice(1).join(' ');
-      let found = false;
-      for (const key in state.currentRoom.items) {
-        if (obj.includes(key) || key.includes(obj)) {
-          log(state.currentRoom.items[key], "room");
-          // If it's an item, add to inventory
-          if (!state.inventory.includes(key) && key !== 'desk' && key !== 'symbol' && key !== 'terminal') {
-            state.inventory.push(key);
-            updateInventory();
-            log(`(Added ${key} to inventory)`, "sys");
-          }
-          found = true;
-          break;
+      
+      // Did they examine the clue object?
+      if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
+        if (obj.includes(room.clueTarget) || room.clueTarget.includes(obj)) {
+          log(room.clueText, "room"); // Reveal the code!
+        } else {
+          log("You look closely, but there's nothing useful here.", "room");
         }
+      } else {
+        log("I don't see that in this room.", "error");
       }
-      if (!found) log("You don't see anything special there.", "error");
     } 
-    else if (words[0] === 'use' || words[0] === 'unlock') {
-      // If they type "use 1337" or "code 1337"
-      const potentialCode = words[words.length - 1];
-      if (cmd === `code ${state.currentRoom.code}` || potentialCode === state.currentRoom.code) {
+    
+    // 4. Entering the code
+    else if (words[0] === 'use' || words[0] === 'code' || words[0] === 'enter') {
+      const attemptedCode = words[words.length - 1];
+      
+      if (attemptedCode === room.code) {
+        winGame();
+      } else if (cmd.includes(room.code)) {
         winGame();
       } else {
-        log("That doesn't work.", "error");
+        log("The lock flashes red. Incorrect code.", "error");
       }
     } 
+    
+    // 5. Help
     else if (cmd === 'help') {
-      log("Commands: look, inventory, examine [object], use [code], help", "sys");
+      log("Commands: look, inventory, examine [object], code [number]", "sys");
     } 
+    
+    // 6. Secret shortcut: just typing the code works
+    else if (cmd === room.code) {
+      winGame();
+    } 
+    
+    // 7. Fallback
     else {
-      // Secret shortcut: just typing the code works
-      if (cmd === state.currentRoom.code) {
-        winGame();
-      } else {
-        log("I don't understand that command. Type 'help' for a list.", "error");
-      }
+      log("I don't understand that command. Type 'help' for a list.", "error");
     }
   }
 
