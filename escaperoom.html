@@ -118,14 +118,14 @@
     <div class="tutorial-box">
       <h2>📖 How to Play</h2>
       <p>You are locked in a room. You must find the 3-digit code to escape.</p>
-      <p><strong>Warning:</strong> The puzzle changes every time you play! You might need to repair a tool, solve a riddle, or find a hidden note.</p>
+      <p><strong>Warning:</strong> Every game is a completely different multi-stage puzzle. You have to read the room and figure out the chain of events.</p>
       <hr style="border-color: #333; margin: 20px 0;">
       <p><strong>Useful Commands:</strong></p>
       <p><code>look</code> <span class="example">Shows everything in the room.</span></p>
-      <p><code>examine [object]</code> <span class="example">Looks closely at an object to find clues.</span></p>
+      <p><code>examine [object]</code> <span class="example">Looks closely at an object to find clues or items.</span></p>
       <p><code>take [item]</code> <span class="example">Puts an item in your inventory.</span></p>
-      <p><code>use [item]</code> <span class="example">Uses an item (e.g., "use spring on lockpick").</span></p>
-      <p><code>code [number]</code> <span class="example">Tries to unlock the door (e.g., "code 492").</span></p>
+      <p><code>use [item] on [object]</code> <span class="example">Uses an item.</span></p>
+      <p><code>code [number]</code> <span class="example">Tries to unlock the door.</span></p>
       <button onclick="toggleTutorial()" style="margin-top: 20px; width: 100%;">Got it, let me play!</button>
     </div>
   </div>
@@ -154,25 +154,53 @@
     startTime: null,
     timerInterval: null,
     escaped: false,
-    flags: { toolRepaired: false, boxOpened: false },
-    puzzleType: null
+    flags: {}
   };
   
   let isPaused = false;
   let pauseTime = 0;
 
-  const ROOM_TYPES = [
+  const ROOM_BASE = [
+    { title: "The Abandoned Lab", targets: ["dusty shelves", "computer terminal", "trash can", "vent", "broken fuse box", "loose floorboard"] },
+    { title: "The Old Workshop", targets: ["workbench", "tool rack", "pile of sawdust", "rusty barrel", "loose floorboard", "drain"] },
+    { title: "The Dark Cellar", targets: ["wine rack", "crates", "drain", "broken fuse box", "loose floorboard", "dusty shelves"] }
+  ];
+
+  const PUZZLE_TYPES = [
     {
-      title: "The Abandoned Lab",
-      intro: "You wake up in a sterile lab. The exit door has a heavy digital lock.",
-      targets: ["broken glass case", "computer terminal", "metal cabinet", "trash can", "vent"],
-      winMsg: "The digital lock flashes green. 'ACCESS GRANTED'. The door slides open!"
+      name: "Crowbar",
+      tool: "crowbar",
+      action: "pry",
+      container: "crate",
+      clue: "diary"
     },
     {
-      title: "The Old Workshop",
-      intro: "You are locked in a dusty carpenter's workshop. The heavy wooden door won't budge.",
-      targets: ["workbench", "tool rack", "pile of sawdust", "locked strongbox", "rusty barrel"],
-      winMsg: "CLUNK. The heavy wooden door swings open!"
+      name: "UV Light",
+      tool: "UV flashlight",
+      action: "shine",
+      container: "wall",
+      clue: "hidden writing"
+    },
+    {
+      name: "Magnet",
+      tool: "magnet",
+      action: "fish",
+      container: "drain",
+      clue: "rusty key"
+    },
+    {
+      name: "Wire",
+      tool: "copper wire",
+      action: "repair",
+      container: "fuse box",
+      clue: "powered terminal"
+    },
+    {
+      name: "Shovel",
+      tool: "small shovel",
+      action: "dig",
+      container: "loose floorboard",
+      clue: "buried box"
     }
   ];
 
@@ -217,46 +245,55 @@
     }
   }
 
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
   function startGame() {
     document.getElementById('game-container').style.display = 'block';
     
-    const baseRoom = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
-    const code = String(Math.floor(Math.random() * 900) + 100);
+    const baseRoom = ROOM_BASE[Math.floor(Math.random() * ROOM_BASE.length)];
+    const puzzleType = PUZZLE_TYPES[Math.floor(Math.random() * PUZZLE_TYPES.length)];
     
-    // Pick a random puzzle type: 0 = Repair, 1 = Hidden, 2 = Math
-    const pType = Math.floor(Math.random() * 3);
+    const code = String(Math.floor(Math.random() * 900) + 100);
+    const c = parseInt(code);
+    const num1 = Math.floor(Math.random() * 50) + 10;
+    const num2 = c - num1;
+    const mathRiddle = (num2 > 0) ? `${num1} + ${num2} = ?` : `${c + 100} - 100 = ?`;
+
+    // Shuffle the targets so item locations are random
+    const shuffledTargets = shuffle([...baseRoom.targets]);
 
     state.currentRoom = {
       title: baseRoom.title,
-      intro: baseRoom.intro,
       code: code,
-      winMsg: baseRoom.winMsg,
-      targets: baseRoom.targets,
-      puzzleType: pType,
+      winMsg: "The door clicks open! You escaped!",
+      targets: shuffledTargets,
+      puzzle: puzzleType,
+      mathRiddle: mathRiddle,
       
-      // Repair puzzle items
-      brokenTool: "broken lockpick",
-      missingPart: "missing spring",
-      lockedBox: "locked box",
-      
-      // Locations
-      toolLocation: baseRoom.targets[0],
-      partLocation: baseRoom.targets[2],
-      boxLocation: baseRoom.targets[3],
-      hiddenLocation: baseRoom.targets[1], // Used for hidden code
-      mathLocation: baseRoom.targets[4]    // Used for math riddle
+      // Assign locations based on the shuffled array
+      toolLocation: shuffledTargets[0],
+      containerLocation: shuffledTargets[1],
+      clueLocation: shuffledTargets[2],
+      redHerring1: shuffledTargets[3],
+      redHerring2: shuffledTargets[4],
+      redHerring3: shuffledTargets[5]
     };
 
+    // Reset flags
+    state.flags = { toolFound: false, containerOpened: false, clueFound: false };
+    state.inventory = [];
+
     document.getElementById('room-title').innerText = state.currentRoom.title;
-    log(state.currentRoom.intro, "sys");
+    log(`You wake up in ${state.currentRoom.title}. The exit door is locked with a 3-digit code.`, "sys");
     log(`You look around and see: ${state.currentRoom.targets.join(', ')}.`, "room");
     log("Find a way out. Type 'help' if you are stuck.", "sys");
     
-    // Give a tiny hint about what kind of puzzle it is based on the room description
-    if (pType === 0) log("Hint: The door mechanism looks broken. You'll need tools.", "sys");
-    if (pType === 1) log("Hint: You feel like someone left a note with the code somewhere.", "sys");
-    if (pType === 2) log("Hint: The lock requires a specific calculation.", "sys");
-
     startTimer();
   }
 
@@ -283,114 +320,88 @@
       const obj = words.slice(1).join(' ');
       let found = false;
 
-      // PUZZLE 1: REPAIR
-      if (room.puzzleType === 0) {
-        if (obj.includes(room.toolLocation) || room.toolLocation.includes(obj)) {
-          if (!state.inventory.includes(room.brokenTool) && !state.flags.toolRepaired) {
-            log(`You see a ${room.brokenTool} sitting there. It looks damaged.`, "room");
-          } else log("You already took the tool from here.", "room");
-          found = true;
-        } 
-        else if (obj.includes(room.partLocation) || room.partLocation.includes(obj)) {
-          if (!state.inventory.includes(room.missingPart) && !state.flags.toolRepaired) {
-            log(`You dig through it and spot a ${room.missingPart}.`, "room");
-          } else log("You already searched here.", "room");
-          found = true;
+      // 1. Searching the tool location
+      if (obj.includes(room.toolLocation) || room.toolLocation.includes(obj)) {
+        if (!state.flags.toolFound) {
+          log(`You search the ${room.toolLocation} and find a ${room.puzzle.tool}.`, "sys");
+        } else {
+          log("You already searched here.", "room");
         }
-        else if (obj.includes(room.boxLocation) || room.boxLocation.includes(obj)) {
-          if (state.flags.boxOpened) log(`The ${room.lockedBox} is empty.`, "room");
-          else log(`It's a locked box. You need a tool to open it.`, "room");
-          found = true;
-        }
+        found = true;
       } 
-      
-      // PUZZLE 2: HIDDEN NOTE
-      else if (room.puzzleType === 1) {
-        if (obj.includes(room.hiddenLocation) || room.hiddenLocation.includes(obj)) {
-          log(`You examine the ${room.hiddenLocation} closely and find a piece of paper taped under it.`, "sys");
-          log(`It says: 'The code is ${room.code}'.`, "room");
-          found = true;
-        }
-      } 
-      
-      // PUZZLE 3: MATH RIDDLE
-      else if (room.puzzleType === 2) {
-        if (obj.includes(room.mathLocation) || room.mathLocation.includes(obj)) {
-          log(`You find a scratchpad with a riddle on it:`, "sys");
-          // Generate a math problem that equals the code
-          const c = parseInt(room.code);
-          const num1 = Math.floor(Math.random() * 50) + 10;
-          const num2 = c - num1; 
-          if (num2 > 0) {
-            log(`"${num1} + ${num2} = ?"`, "room");
+      // 2. Searching the container location
+      else if (obj.includes(room.containerLocation) || room.containerLocation.includes(obj)) {
+        if (state.flags.containerOpened) {
+          if (!state.flags.clueFound) {
+             log(`You look inside the opened ${room.puzzle.container}. There is a ${room.puzzle.clue} here.`, "sys");
           } else {
-            log(`"${c + 100} - 100 = ?"`, "room");
+             log(`You already took the clue from the ${room.puzzle.container}.`, "room");
           }
-          found = true;
+        } else {
+          log(`It's a ${room.puzzle.container}. It's locked tight. You need a tool to ${room.puzzle.action} it open.`, "room");
         }
+        found = true;
+      }
+      // 3. Searching red herrings
+      else if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
+        log("You look closely, but there's nothing useful here.", "room");
+        found = true;
       }
 
-      if (!found) {
-        if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
-          log("You look closely, but there's nothing useful here.", "room");
-        } else {
-          log("I don't see that in this room.", "error");
-        }
-      }
+      if (!found) log("I don't see that in this room.", "error");
     } 
     else if (words[0] === 'take' || words[0] === 'get') {
       const obj = words.slice(1).join(' ');
       
-      // You can only take things in the Repair puzzle
-      if (room.puzzleType === 0) {
-        if (obj.includes(room.toolLocation) || obj.includes('tool') || obj.includes('lockpick')) {
-          if (!state.inventory.includes(room.brokenTool) && !state.flags.toolRepaired) {
-            state.inventory.push(room.brokenTool);
-            updateInventory();
-            log(`You take the ${room.brokenTool}.`, "sys");
-          } else log("There is no tool to take here.", "error");
-        }
-        else if (obj.includes(room.partLocation) || obj.includes('spring') || obj.includes('part')) {
-          if (!state.inventory.includes(room.missingPart) && !state.flags.toolRepaired) {
-            state.inventory.push(room.missingPart);
-            updateInventory();
-            log(`You take the ${room.missingPart}.`, "sys");
-          } else log("There is no part to take here.", "error");
-        }
-        else log("You can't take that.", "error");
-      } else {
-        log("There's nothing to take here.", "error");
-      }
-    }
-    else if (words[0] === 'use' || words[0] === 'combine' || words[0] === 'repair') {
-      
-      if (room.puzzleType === 0 && (cmd.includes('lockpick') || cmd.includes('tool'))) {
-        if (cmd.includes('spring') || cmd.includes('part')) {
-          if (state.inventory.includes(room.brokenTool) && state.inventory.includes(room.missingPart)) {
-            state.flags.toolRepaired = true;
-            state.inventory = state.inventory.filter(i => i !== room.brokenTool && i !== room.missingPart);
-            state.inventory.push('repaired lockpick');
-            updateInventory();
-            log("You combine the parts and repair the lockpick! It's now fully functional.", "win");
-          } else {
-            log("You don't have both the tool and the missing part.", "error");
-          }
-        } else if (cmd.includes('box') || cmd.includes('strongbox') || cmd.includes('cabinet') || cmd.includes('barrel')) {
-          if (state.flags.toolRepaired) {
-            if (!state.flags.boxOpened) {
-              state.flags.boxOpened = true;
-              log(`You use the repaired lockpick to pop open the ${room.lockedBox}.`, "sys");
-              log(`Inside, you find a note: 'The code is ${room.code}'.`, "room");
-            } else {
-              log("The box is already open.", "room");
-            }
-          } else {
-            log("Your lockpick is broken. You need to repair it first.", "error");
-          }
+      if (obj.includes(room.toolLocation) || obj.includes(room.puzzle.tool)) {
+        if (!state.flags.toolFound) {
+          state.inventory.push(room.puzzle.tool);
+          updateInventory();
+          log(`You take the ${room.puzzle.tool}.`, "sys");
+          state.flags.toolFound = true;
         } else {
-          log("Use it on what?", "error");
+          log("There is nothing else to take here.", "error");
         }
       } 
+      else if (obj.includes(room.puzzle.clue) || obj.includes(room.containerLocation)) {
+        if (state.flags.containerOpened && !state.flags.clueFound) {
+           state.inventory.push(room.puzzle.clue);
+           updateInventory();
+           log(`You take the ${room.puzzle.clue}.`, "sys");
+           state.flags.clueFound = true;
+           
+           // Reveal the clue!
+           if (room.puzzle.name === "UV Light") {
+              log(`You shine the UV light on the ${room.puzzle.container}. Hidden writing appears: "${room.mathRiddle}"`, "room");
+           } else if (room.puzzle.name === "Wire") {
+              log(`You repair the fuse box. The terminal powers on and displays: "${room.mathRiddle}"`, "room");
+           } else {
+              log(`You inspect the ${room.puzzle.clue}. It says: "${room.mathRiddle}"`, "room");
+           }
+        } else {
+          log("You can't take that right now.", "error");
+        }
+      }
+      else {
+        log("You can't take that.", "error");
+      }
+    }
+    else if (words[0] === 'use') {
+      
+      // Using tool on container
+      if (cmd.includes(room.puzzle.tool) && (cmd.includes(room.puzzle.container) || cmd.includes(room.containerLocation))) {
+        if (state.inventory.includes(room.puzzle.tool)) {
+          if (!state.flags.containerOpened) {
+            state.flags.containerOpened = true;
+            log(`You use the ${room.puzzle.tool} to ${room.puzzle.action} open the ${room.puzzle.container}!`, "sys");
+          } else {
+            log("It's already open.", "room");
+          }
+        } else {
+          log(`You don't have a ${room.puzzle.tool}.`, "error");
+        }
+      } 
+      // Entering code shortcut
       else {
         const attemptedCode = words[words.length - 1];
         if (attemptedCode === room.code) {
