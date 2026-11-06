@@ -74,7 +74,7 @@
       <h1 id="room-title">Loading...</h1>
       <div id="timer">00:00</div>
     </div>
-    <div class="subtitle">Commands: look, inventory, examine [object], use [item/code]</div>
+    <div class="subtitle">Commands: look, inventory, examine [object], take [item], use [item], repair [item], code [number]</div>
 
     <div id="log"></div>
     <div class="inventory" id="inventory">
@@ -171,27 +171,27 @@
     
     const baseRoom = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
     const code = String(Math.floor(Math.random() * 900) + 100);
-    const clueTarget = baseRoom.targets[Math.floor(Math.random() * baseRoom.targets.length)];
     
     state.currentRoom = {
       title: baseRoom.title,
       intro: baseRoom.intro,
       code: code,
       winMsg: baseRoom.winMsg,
-      codePrompt: baseRoom.codePrompt,
       targets: baseRoom.targets,
-      clueTarget: clueTarget,
       // Items needed for the puzzle
       brokenTool: "broken lockpick",
       missingPart: "missing spring",
-      lockedBox: "locked strongbox"
+      lockedBox: "locked box",
+      toolLocation: baseRoom.targets[0], // first item hides the tool
+      partLocation: baseRoom.targets[2], // third item hides the part
+      boxLocation: baseRoom.targets[3]   // fourth item is the locked box
     };
 
     document.getElementById('room-title').innerText = state.currentRoom.title;
 
     log(state.currentRoom.intro, "sys");
     log(`You look around and see: ${state.currentRoom.targets.join(', ')}.`, "room");
-    log("Hint: You need to open the container that holds the code, but you'll need a tool first.", "sys");
+    log("Find a way out. Good luck.", "sys");
     
     startTimer();
   }
@@ -220,76 +220,96 @@
       log(`You are carrying: ${state.inventory.length ? state.inventory.join(', ') : 'nothing'}`, 'sys');
     } 
     
-    // 3. Examining & Taking
-    else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check' || words[0] === 'take' || words[0] === 'get') {
+    // 3. Examining objects
+    else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check') {
       const obj = words.slice(1).join(' ');
       
-      if (obj.includes('glass case') || obj.includes('tool rack')) {
-        if (!state.inventory.includes(room.brokenTool)) {
-          log(`You find a ${room.brokenTool}. It looks damaged.`, "room");
-          if (words[0] === 'take' || words[0] === 'get') {
-            state.inventory.push(room.brokenTool);
-            updateInventory();
-            log(`(Added ${room.brokenTool} to inventory)`, "sys");
-          } else {
-            log("You'll need to take it.", "sys");
-          }
+      if (obj.includes(room.toolLocation) || room.toolLocation.includes(obj)) {
+        if (!state.inventory.includes(room.brokenTool) && !state.flags.toolRepaired) {
+          log(`You see a ${room.brokenTool} sitting there. It looks damaged.`, "room");
         } else {
-          log("You already took the tool.", "room");
+          log("You already took the broken tool from here.", "room");
         }
       } 
-      else if (obj.includes('trash') || obj.includes('sawdust') || obj.includes('vent')) {
-        if (!state.inventory.includes(room.missingPart)) {
-          log(`You dig through it and find a ${room.missingPart}.`, "room");
-          if (words[0] === 'take' || words[0] === 'get') {
-            state.inventory.push(room.missingPart);
-            updateInventory();
-            log(`(Added ${room.missingPart} to inventory)`, "sys");
-          } else {
-            log("You should take it.", "sys");
-          }
+      else if (obj.includes(room.partLocation) || room.partLocation.includes(obj)) {
+        if (!state.inventory.includes(room.missingPart) && !state.flags.toolRepaired) {
+          log(`You dig through it and spot a ${room.missingPart}.`, "room");
         } else {
           log("You already searched here.", "room");
         }
       }
-      else if (obj.includes('strongbox') || obj.includes('cabinet') || obj.includes('barrel')) {
+      else if (obj.includes(room.boxLocation) || room.boxLocation.includes(obj)) {
         if (state.flags.boxOpened) {
-          log(`The ${room.lockedBox} is already open and empty.`, "room");
-        } else if (state.flags.toolRepaired) {
-          log(`You use the repaired lockpick to easily pop open the ${room.lockedBox}.`, "room");
-          log(`Inside, you find a note: 'The code is ${room.code}'.`, "room");
-          state.flags.boxOpened = true;
+          log(`The ${room.lockedBox} is empty.`, "room");
         } else {
-          log(`It's locked tight. You'd need a working lockpick to open this.`, "room");
+          log(`It's a locked box. You need a tool to open it.`, "room");
         }
       }
       else if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
-        if (obj.includes(room.clueTarget) || room.clueTarget.includes(obj)) {
-          log(`You find a note: 'The code is ${room.code}'.`, "room");
-        } else {
-          log("You look closely, but there's nothing useful here.", "room");
-        }
+        log("You look closely, but there's nothing useful here.", "room");
       } else {
         log("I don't see that in this room.", "error");
       }
     } 
     
-    // 4. Crafting / Using Items
+    // 4. Taking items
+    else if (words[0] === 'take' || words[0] === 'get') {
+      const obj = words.slice(1).join(' ');
+      
+      if (obj.includes(room.toolLocation) || obj.includes('tool')) {
+        if (!state.inventory.includes(room.brokenTool) && !state.flags.toolRepaired) {
+          state.inventory.push(room.brokenTool);
+          updateInventory();
+          log(`You take the ${room.brokenTool}.`, "sys");
+        } else {
+          log("There is no tool to take.", "error");
+        }
+      }
+      else if (obj.includes(room.partLocation) || obj.includes('spring') || obj.includes('part')) {
+        if (!state.inventory.includes(room.missingPart) && !state.flags.toolRepaired) {
+          state.inventory.push(room.missingPart);
+          updateInventory();
+          log(`You take the ${room.missingPart}.`, "sys");
+        } else {
+          log("There is no part to take.", "error");
+        }
+      }
+      else {
+        log("You can't take that.", "error");
+      }
+    }
+    
+    // 5. Crafting / Using Items
     else if (words[0] === 'use' || words[0] === 'combine' || words[0] === 'repair') {
       
       // Repairing the tool
-      if ((cmd.includes('lockpick') || cmd.includes('tool')) && cmd.includes('spring')) {
+      if ((cmd.includes('lockpick') || cmd.includes('tool')) && (cmd.includes('spring') || cmd.includes('part'))) {
         if (state.inventory.includes(room.brokenTool) && state.inventory.includes(room.missingPart)) {
           state.flags.toolRepaired = true;
           state.inventory = state.inventory.filter(i => i !== room.brokenTool && i !== room.missingPart);
           state.inventory.push('repaired lockpick');
           updateInventory();
-          log("You combine the parts and repair the lockpick! It's now fully functional.", "win");
+          log("You repair the lockpick! It's now fully functional.", "win");
         } else {
-          log("You don't have the right parts for that.", "error");
+          log("You don't have the right parts.", "error");
         }
       }
       
+      // Opening the box with the tool
+      else if (cmd.includes('lockpick') && cmd.includes('box')) {
+        if (state.flags.toolRepaired && state.inventory.includes('repaired lockpick')) {
+          if (!state.flags.boxOpened) {
+            state.flags.boxOpened = true;
+            log(`You use the repaired lockpick to pop open the ${room.lockedBox}.`, "sys");
+            log(`Inside, you find a note: 'The code is ${room.code}'.`, "room");
+          } else {
+            log("The box is already open.", "room");
+          }
+        } else {
+          log("You need a working lockpick to open the box.", "error");
+        }
+      }
+
       // Entering the code
       else {
         const attemptedCode = words[words.length - 1];
@@ -303,17 +323,27 @@
       }
     } 
     
-    // 5. Help
+    // 6. Code shortcut
+    else if (words[0] === 'code' || words[0] === 'enter') {
+      const attemptedCode = words[words.length - 1];
+      if (attemptedCode === room.code) {
+        winGame();
+      } else {
+        log("The lock flashes red. Incorrect code.", "error");
+      }
+    }
+
+    // 7. Help
     else if (cmd === 'help') {
-      log("Commands: look, inventory, examine [object], take [item], use [item/code], repair [item]", "sys");
+      log("Commands: look, inventory, examine [object], take [item], use [item], code [number]", "sys");
     } 
     
-    // 6. Secret shortcut: just typing the code works
+    // 8. Secret shortcut: just typing the code works
     else if (cmd === room.code) {
       winGame();
     } 
     
-    // 7. Fallback
+    // 9. Fallback
     else {
       log("I don't understand that command. Type 'help' for a list.", "error");
     }
@@ -326,7 +356,6 @@
     
     window.playerStats.escapes++;
     
-    // Save to Firebase
     if (auth.currentUser) {
       const docRef = doc(db, "saves", auth.currentUser.uid);
       const docSnap = await getDoc(docRef);
@@ -345,12 +374,10 @@
     }, 1500);
   }
 
-  // Allow pressing "Enter" to submit
   document.getElementById('command-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') processCommand();
   });
 
-  // ============ CHECK LOGIN ============
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       startGame();
