@@ -74,7 +74,7 @@
       <h1 id="room-title">Loading...</h1>
       <div id="timer">00:00</div>
     </div>
-    <div class="subtitle">Commands: look, inventory, examine [object], use [code]</div>
+    <div class="subtitle">Commands: look, inventory, examine [object], use [item/code]</div>
 
     <div id="log"></div>
     <div class="inventory" id="inventory">
@@ -116,47 +116,26 @@
     inventory: [],
     startTime: null,
     timerInterval: null,
-    escaped: false
+    escaped: false,
+    flags: { toolRepaired: false, boxOpened: false }
   };
 
   // ============ RANDOM GENERATION DATA ============
   const ROOM_TYPES = [
     {
-      title: "The Study",
-      intro: "You wake up in a dusty study. The door is locked, and a computer blinks on the desk.",
-      targets: ["bookshelf", "desk", "painting", "fireplace"],
-      winMsg: "The screen flashes green. 'ACCESS GRANTED'. The door clicks open!",
-      codePrompt: "The screen says: 'ENTER PASSWORD'."
+      title: "The Abandoned Lab",
+      intro: "You wake up in a sterile lab. The exit door has a heavy digital lock.",
+      targets: ["broken glass case", "computer terminal", "metal cabinet", "trash can", "vent"],
+      codePrompt: "The digital lock blinks: 'ENTER 3-DIGIT CODE'.",
+      winMsg: "The digital lock flashes green. 'ACCESS GRANTED'. The door slides open!"
     },
     {
-      title: "The Vault",
-      intro: "You are trapped in a bank vault. A heavy metal door stands before you.",
-      targets: ["guard's desk", "vent", "toolbox", "filing cabinet"],
-      winMsg: "CLUNK. The vault door swings open!",
-      codePrompt: "The safe says: 'ENTER 3-DIGIT CODE'."
-    },
-    {
-      title: "The Cellar",
-      intro: "It's dark and damp. You see a locked wooden door.",
-      targets: ["crates", "wine rack", "pile of bones", "drain", "shelf"],
-      winMsg: "The heavy lock falls off. You escape the cellar!",
-      codePrompt: "The door has a 3-digit combination lock."
-    },
-    {
-      title: "The Lab",
-      intro: "You're in a sterile laboratory. The exit door requires a keycard code.",
-      targets: ["microscope", "fume hood", "computer", "trash can", "cabinet"],
-      winMsg: "The door hisses open. You step into the hallway.",
-      codePrompt: "A digital pad blinks: 'ENTER CODE'."
+      title: "The Old Workshop",
+      intro: "You are locked in a dusty carpenter's workshop. The heavy wooden door won't budge.",
+      targets: ["workbench", "tool rack", "pile of sawdust", "locked strongbox", "rusty barrel"],
+      codePrompt: "The door has a 3-digit combination lock.",
+      winMsg: "CLUNK. The heavy wooden door swings open!"
     }
-  ];
-
-  const HIDING_SPOTS = [
-    "You search it and find a sticky note that says: 'Code: {CODE}'.",
-    "Taped underneath, you find a note: 'The code is {CODE}'.",
-    "Inside, someone scratched the numbers {CODE} into the wood.",
-    "You shake it and a piece of paper falls out. It says '{CODE}'.",
-    "Hidden in a false bottom, you find: '{CODE}'."
   ];
 
   window.playerStats = { escapes: 0 };
@@ -190,19 +169,10 @@
   function startGame() {
     document.getElementById('game-container').style.display = 'block';
     
-    // 1. Pick a random room type
     const baseRoom = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
-    
-    // 2. Generate a RANDOM 3-digit code (100-999)
     const code = String(Math.floor(Math.random() * 900) + 100);
-    
-    // 3. Pick which object hides the code
     const clueTarget = baseRoom.targets[Math.floor(Math.random() * baseRoom.targets.length)];
     
-    // 4. Pick the text for the hidden clue
-    const clueText = HIDING_SPOTS[Math.floor(Math.random() * HIDING_SPOTS.length)].replace("{CODE}", code);
-
-    // 5. Create the dynamic room object
     state.currentRoom = {
       title: baseRoom.title,
       intro: baseRoom.intro,
@@ -211,14 +181,17 @@
       codePrompt: baseRoom.codePrompt,
       targets: baseRoom.targets,
       clueTarget: clueTarget,
-      clueText: clueText
+      // Items needed for the puzzle
+      brokenTool: "broken lockpick",
+      missingPart: "missing spring",
+      lockedBox: "locked strongbox"
     };
 
     document.getElementById('room-title').innerText = state.currentRoom.title;
 
     log(state.currentRoom.intro, "sys");
     log(`You look around and see: ${state.currentRoom.targets.join(', ')}.`, "room");
-    log("Type 'examine [object]' to investigate.", "sys");
+    log("Hint: You need to open the container that holds the code, but you'll need a tool first.", "sys");
     
     startTimer();
   }
@@ -247,14 +220,52 @@
       log(`You are carrying: ${state.inventory.length ? state.inventory.join(', ') : 'nothing'}`, 'sys');
     } 
     
-    // 3. Examining objects
-    else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check') {
+    // 3. Examining & Taking
+    else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check' || words[0] === 'take' || words[0] === 'get') {
       const obj = words.slice(1).join(' ');
       
-      // Did they examine the clue object?
-      if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
+      if (obj.includes('glass case') || obj.includes('tool rack')) {
+        if (!state.inventory.includes(room.brokenTool)) {
+          log(`You find a ${room.brokenTool}. It looks damaged.`, "room");
+          if (words[0] === 'take' || words[0] === 'get') {
+            state.inventory.push(room.brokenTool);
+            updateInventory();
+            log(`(Added ${room.brokenTool} to inventory)`, "sys");
+          } else {
+            log("You'll need to take it.", "sys");
+          }
+        } else {
+          log("You already took the tool.", "room");
+        }
+      } 
+      else if (obj.includes('trash') || obj.includes('sawdust') || obj.includes('vent')) {
+        if (!state.inventory.includes(room.missingPart)) {
+          log(`You dig through it and find a ${room.missingPart}.`, "room");
+          if (words[0] === 'take' || words[0] === 'get') {
+            state.inventory.push(room.missingPart);
+            updateInventory();
+            log(`(Added ${room.missingPart} to inventory)`, "sys");
+          } else {
+            log("You should take it.", "sys");
+          }
+        } else {
+          log("You already searched here.", "room");
+        }
+      }
+      else if (obj.includes('strongbox') || obj.includes('cabinet') || obj.includes('barrel')) {
+        if (state.flags.boxOpened) {
+          log(`The ${room.lockedBox} is already open and empty.`, "room");
+        } else if (state.flags.toolRepaired) {
+          log(`You use the repaired lockpick to easily pop open the ${room.lockedBox}.`, "room");
+          log(`Inside, you find a note: 'The code is ${room.code}'.`, "room");
+          state.flags.boxOpened = true;
+        } else {
+          log(`It's locked tight. You'd need a working lockpick to open this.`, "room");
+        }
+      }
+      else if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
         if (obj.includes(room.clueTarget) || room.clueTarget.includes(obj)) {
-          log(room.clueText, "room"); // Reveal the code!
+          log(`You find a note: 'The code is ${room.code}'.`, "room");
         } else {
           log("You look closely, but there's nothing useful here.", "room");
         }
@@ -263,22 +274,38 @@
       }
     } 
     
-    // 4. Entering the code
-    else if (words[0] === 'use' || words[0] === 'code' || words[0] === 'enter') {
-      const attemptedCode = words[words.length - 1];
+    // 4. Crafting / Using Items
+    else if (words[0] === 'use' || words[0] === 'combine' || words[0] === 'repair') {
       
-      if (attemptedCode === room.code) {
-        winGame();
-      } else if (cmd.includes(room.code)) {
-        winGame();
-      } else {
-        log("The lock flashes red. Incorrect code.", "error");
+      // Repairing the tool
+      if ((cmd.includes('lockpick') || cmd.includes('tool')) && cmd.includes('spring')) {
+        if (state.inventory.includes(room.brokenTool) && state.inventory.includes(room.missingPart)) {
+          state.flags.toolRepaired = true;
+          state.inventory = state.inventory.filter(i => i !== room.brokenTool && i !== room.missingPart);
+          state.inventory.push('repaired lockpick');
+          updateInventory();
+          log("You combine the parts and repair the lockpick! It's now fully functional.", "win");
+        } else {
+          log("You don't have the right parts for that.", "error");
+        }
+      }
+      
+      // Entering the code
+      else {
+        const attemptedCode = words[words.length - 1];
+        if (attemptedCode === room.code) {
+          winGame();
+        } else if (cmd.includes(room.code)) {
+          winGame();
+        } else {
+          log("That doesn't work.", "error");
+        }
       }
     } 
     
     // 5. Help
     else if (cmd === 'help') {
-      log("Commands: look, inventory, examine [object], code [number]", "sys");
+      log("Commands: look, inventory, examine [object], take [item], use [item/code], repair [item]", "sys");
     } 
     
     // 6. Secret shortcut: just typing the code works
