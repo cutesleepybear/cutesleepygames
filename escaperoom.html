@@ -24,7 +24,6 @@
   .header-right { display: flex; gap: 15px; align-items: center; }
   #timer { font-size: 1.2rem; color: #ff3333; font-weight: bold; }
   
-  /* Tutorial Button */
   .tut-btn { 
     background: transparent; border: 1px solid #00ff41; color: #00ff41; 
     padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; cursor: pointer; 
@@ -66,7 +65,6 @@
   }
   button:hover { background: #fff; box-shadow: 0 0 15px #fff; }
 
-  /* Overlays */
   .overlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
     flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 1000; padding: 20px;
@@ -74,7 +72,6 @@
   #win-screen h2 { font-size: 3rem; color: #ffff00; text-shadow: 0 0 20px #ffff00; margin-bottom: 20px; }
   #win-screen p { color: #ccc; margin-bottom: 30px; font-family: sans-serif; }
 
-  /* Tutorial Box */
   .tutorial-box {
     background: #111; border: 2px solid #00ff41; border-radius: 10px;
     padding: 30px; max-width: 600px; text-align: left; color: #ccc;
@@ -111,19 +108,17 @@
     </div>
   </div>
 
-  <!-- WIN SCREEN -->
   <div id="win-screen" class="overlay">
     <h2>YOU ESCAPED!</h2>
     <p id="win-sub">Your stats have been saved to the cloud.</p>
     <button onclick="window.location.reload()" style="padding: 15px 30px; font-size: 1.2rem;">Play Again</button>
   </div>
 
-  <!-- TUTORIAL OVERLAY -->
   <div id="tutorial-screen" class="overlay">
     <div class="tutorial-box">
       <h2>📖 How to Play</h2>
       <p>You are locked in a room. You must find the 3-digit code to escape.</p>
-      <p><strong>The Puzzle:</strong> There is a locked box holding the code. You need a tool to open it. The tool is broken, so you must find the missing part and repair it.</p>
+      <p><strong>Warning:</strong> The puzzle changes every time you play! You might need to repair a tool, solve a riddle, or find a hidden note.</p>
       <hr style="border-color: #333; margin: 20px 0;">
       <p><strong>Useful Commands:</strong></p>
       <p><code>look</code> <span class="example">Shows everything in the room.</span></p>
@@ -159,10 +154,10 @@
     startTime: null,
     timerInterval: null,
     escaped: false,
-    flags: { toolRepaired: false, boxOpened: false }
+    flags: { toolRepaired: false, boxOpened: false },
+    puzzleType: null
   };
   
-  // Tracking for pause
   let isPaused = false;
   let pauseTime = 0;
 
@@ -208,7 +203,6 @@
     }, 1000);
   }
 
-  // Pause Logic
   window.toggleTutorial = function() {
     const tut = document.getElementById('tutorial-screen');
     if (tut.style.display === 'flex') {
@@ -229,18 +223,28 @@
     const baseRoom = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
     const code = String(Math.floor(Math.random() * 900) + 100);
     
+    // Pick a random puzzle type: 0 = Repair, 1 = Hidden, 2 = Math
+    const pType = Math.floor(Math.random() * 3);
+
     state.currentRoom = {
       title: baseRoom.title,
       intro: baseRoom.intro,
       code: code,
       winMsg: baseRoom.winMsg,
       targets: baseRoom.targets,
+      puzzleType: pType,
+      
+      // Repair puzzle items
       brokenTool: "broken lockpick",
       missingPart: "missing spring",
       lockedBox: "locked box",
+      
+      // Locations
       toolLocation: baseRoom.targets[0],
       partLocation: baseRoom.targets[2],
-      boxLocation: baseRoom.targets[3]
+      boxLocation: baseRoom.targets[3],
+      hiddenLocation: baseRoom.targets[1], // Used for hidden code
+      mathLocation: baseRoom.targets[4]    // Used for math riddle
     };
 
     document.getElementById('room-title').innerText = state.currentRoom.title;
@@ -248,6 +252,11 @@
     log(`You look around and see: ${state.currentRoom.targets.join(', ')}.`, "room");
     log("Find a way out. Type 'help' if you are stuck.", "sys");
     
+    // Give a tiny hint about what kind of puzzle it is based on the room description
+    if (pType === 0) log("Hint: The door mechanism looks broken. You'll need tools.", "sys");
+    if (pType === 1) log("Hint: You feel like someone left a note with the code somewhere.", "sys");
+    if (pType === 2) log("Hint: The lock requires a specific calculation.", "sys");
+
     startTimer();
   }
 
@@ -272,62 +281,90 @@
     } 
     else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check') {
       const obj = words.slice(1).join(' ');
-      
-      if (obj.includes(room.toolLocation) || room.toolLocation.includes(obj)) {
-        if (!state.inventory.includes(room.brokenTool) && !state.flags.toolRepaired) {
-          log(`You see a ${room.brokenTool} sitting there. It looks damaged.`, "room");
-        } else {
-          log("You already took the tool from here.", "room");
+      let found = false;
+
+      // PUZZLE 1: REPAIR
+      if (room.puzzleType === 0) {
+        if (obj.includes(room.toolLocation) || room.toolLocation.includes(obj)) {
+          if (!state.inventory.includes(room.brokenTool) && !state.flags.toolRepaired) {
+            log(`You see a ${room.brokenTool} sitting there. It looks damaged.`, "room");
+          } else log("You already took the tool from here.", "room");
+          found = true;
+        } 
+        else if (obj.includes(room.partLocation) || room.partLocation.includes(obj)) {
+          if (!state.inventory.includes(room.missingPart) && !state.flags.toolRepaired) {
+            log(`You dig through it and spot a ${room.missingPart}.`, "room");
+          } else log("You already searched here.", "room");
+          found = true;
+        }
+        else if (obj.includes(room.boxLocation) || room.boxLocation.includes(obj)) {
+          if (state.flags.boxOpened) log(`The ${room.lockedBox} is empty.`, "room");
+          else log(`It's a locked box. You need a tool to open it.`, "room");
+          found = true;
         }
       } 
-      else if (obj.includes(room.partLocation) || room.partLocation.includes(obj)) {
-        if (!state.inventory.includes(room.missingPart) && !state.flags.toolRepaired) {
-          log(`You dig through it and spot a ${room.missingPart}.`, "room");
-        } else {
-          log("You already searched here.", "room");
+      
+      // PUZZLE 2: HIDDEN NOTE
+      else if (room.puzzleType === 1) {
+        if (obj.includes(room.hiddenLocation) || room.hiddenLocation.includes(obj)) {
+          log(`You examine the ${room.hiddenLocation} closely and find a piece of paper taped under it.`, "sys");
+          log(`It says: 'The code is ${room.code}'.`, "room");
+          found = true;
+        }
+      } 
+      
+      // PUZZLE 3: MATH RIDDLE
+      else if (room.puzzleType === 2) {
+        if (obj.includes(room.mathLocation) || room.mathLocation.includes(obj)) {
+          log(`You find a scratchpad with a riddle on it:`, "sys");
+          // Generate a math problem that equals the code
+          const c = parseInt(room.code);
+          const num1 = Math.floor(Math.random() * 50) + 10;
+          const num2 = c - num1; 
+          if (num2 > 0) {
+            log(`"${num1} + ${num2} = ?"`, "room");
+          } else {
+            log(`"${c + 100} - 100 = ?"`, "room");
+          }
+          found = true;
         }
       }
-      else if (obj.includes(room.boxLocation) || room.boxLocation.includes(obj)) {
-        if (state.flags.boxOpened) {
-          log(`The ${room.lockedBox} is empty.`, "room");
+
+      if (!found) {
+        if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
+          log("You look closely, but there's nothing useful here.", "room");
         } else {
-          log(`It's a locked box. You need a tool to open it.`, "room");
+          log("I don't see that in this room.", "error");
         }
-      }
-      else if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
-        log("You look closely, but there's nothing useful here.", "room");
-      } else {
-        log("I don't see that in this room.", "error");
       }
     } 
     else if (words[0] === 'take' || words[0] === 'get') {
       const obj = words.slice(1).join(' ');
       
-      if (obj.includes(room.toolLocation) || obj.includes('tool') || obj.includes('lockpick')) {
-        if (!state.inventory.includes(room.brokenTool) && !state.flags.toolRepaired) {
-          state.inventory.push(room.brokenTool);
-          updateInventory();
-          log(`You take the ${room.brokenTool}.`, "sys");
-        } else {
-          log("There is no tool to take here.", "error");
+      // You can only take things in the Repair puzzle
+      if (room.puzzleType === 0) {
+        if (obj.includes(room.toolLocation) || obj.includes('tool') || obj.includes('lockpick')) {
+          if (!state.inventory.includes(room.brokenTool) && !state.flags.toolRepaired) {
+            state.inventory.push(room.brokenTool);
+            updateInventory();
+            log(`You take the ${room.brokenTool}.`, "sys");
+          } else log("There is no tool to take here.", "error");
         }
-      }
-      else if (obj.includes(room.partLocation) || obj.includes('spring') || obj.includes('part')) {
-        if (!state.inventory.includes(room.missingPart) && !state.flags.toolRepaired) {
-          state.inventory.push(room.missingPart);
-          updateInventory();
-          log(`You take the ${room.missingPart}.`, "sys");
-        } else {
-          log("There is no part to take here.", "error");
+        else if (obj.includes(room.partLocation) || obj.includes('spring') || obj.includes('part')) {
+          if (!state.inventory.includes(room.missingPart) && !state.flags.toolRepaired) {
+            state.inventory.push(room.missingPart);
+            updateInventory();
+            log(`You take the ${room.missingPart}.`, "sys");
+          } else log("There is no part to take here.", "error");
         }
-      }
-      else {
-        log("You can't take that.", "error");
+        else log("You can't take that.", "error");
+      } else {
+        log("There's nothing to take here.", "error");
       }
     }
     else if (words[0] === 'use' || words[0] === 'combine' || words[0] === 'repair') {
       
-      if (cmd.includes('lockpick') || cmd.includes('tool')) {
+      if (room.puzzleType === 0 && (cmd.includes('lockpick') || cmd.includes('tool'))) {
         if (cmd.includes('spring') || cmd.includes('part')) {
           if (state.inventory.includes(room.brokenTool) && state.inventory.includes(room.missingPart)) {
             state.flags.toolRepaired = true;
