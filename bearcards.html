@@ -4,6 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🐻 Bear Cards</title>
+
+<!-- ============ FIREBASE SETUP ============ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  // ADDED: The missing imports!
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // YOUR CONFIG
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
+    authDomain: "cute-sleepy-games.firebaseapp.com",
+    projectId: "cute-sleepy-games",
+    storageBucket: "cute-sleepy-games.firebasestorage.app",
+    messagingSenderId: "249264537283",
+    appId: "1:249264537283:web:811dce511556eda6a96c76"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Make them global so the main script can use them
+  window.firebaseAuth = auth;
+  window.firebaseDb = db;
+  window.fbSignIn = signInWithEmailAndPassword;
+  window.fbSignUp = createUserWithEmailAndPassword;
+  window.fbOnAuth = onAuthStateChanged;
+  window.fbDoc = doc;
+  window.fbGetDoc = getDoc;
+  window.fbSetDoc = setDoc; // ADDED: Needed for saving
+</script>
+
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -73,25 +106,28 @@
 </head>
 <body>
 
-  <!-- LOGIN SCREEN OVERLAY -->
+  <!-- LOGIN SCREEN -->
   <div id="login-screen" style="position: fixed; inset: 0; background: radial-gradient(circle at 50% 0%, #2d4a2d, #1a2e1a 60%, #0f1a0f); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #f0e6d2; font-family: 'Segoe UI', system-ui, sans-serif;">
     <h2 style="font-size: 2rem; margin-bottom: 20px;">🐻 Bear Ranger Login</h2>
     <div style="background: #2a2115; padding: 30px; border-radius: 12px; border: 2px solid #5a4a2f; width: 300px; text-align: center;">
       <input type="email" id="login-email" placeholder="Email" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #5a4a2f; background: #1a1408; color: white;">
       <input type="password" id="login-pass" placeholder="Password" style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #5a4a2f; background: #1a1408; color: white;">
-      
       <button id="btn-login" style="width: 100%; margin-bottom: 10px; padding: 10px; cursor: pointer;">Log In</button>
       <button id="btn-signup" style="width: 100%; padding: 10px; cursor: pointer; background: #35502a; border-color: #6a8a4a;">Sign Up</button>
-      
       <p id="login-msg" style="color: #ff8a65; font-size: 0.8rem; margin-top: 15px; min-height: 20px;"></p>
     </div>
   </div>
 
-  <!-- THE ACTUAL GAME (Hidden by default until login) -->
+  <!-- GAME CONTAINER -->
   <div id="game-container" style="display: none; width: 100%; flex-direction: column; align-items: center;">
     
     <h1>🐻 BEAR CARDS 🐻</h1>
     <div class="subtitle">Defeat all 3 of the rival ranger's bears</div>
+    
+    <!-- WIN/LOSS TRACKER -->
+    <div id="record-display" style="font-size: 0.9rem; color: #f0c060; margin-bottom: 16px; font-weight: bold; text-align: center;">
+      Wins: 0 | Losses: 0
+    </div>
 
     <div class="arena">
       <div class="side">
@@ -112,77 +148,13 @@
     <div class="overlay hidden" id="overlay">
       <h2 id="over-title"></h2>
       <p id="over-sub"></p>
-      <button onclick="location.reload()">Play Again</button>
+      <button onclick="initGame()">Play Again</button>
     </div>
 
   </div> <!-- END GAME CONTAINER -->
 
-<script type="module">
-// ============ FIREBASE SETUP ============
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-// ⚠️ PASTE YOUR FIREBASE CONFIG HERE ⚠️
-const firebaseConfig = {
-  apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
-  authDomain: "cute-sleepy-games.firebaseapp.com",
-  projectId: "cute-sleepy-games",
-  storageBucket: "cute-sleepy-games.firebasestorage.app",
-  messagingSenderId: "249264537283",
-  appId: "1:249264537283:web:811dce511556eda6a96c76"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// ============ LOGIN LOGIC ============
-document.getElementById('btn-login').addEventListener('click', async () => {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
-  try {
-    document.getElementById('login-msg').innerText = "Logging in...";
-    await signInWithEmailAndPassword(auth, email, pass);
-  } catch (e) {
-    document.getElementById('login-msg').innerText = e.message;
-  }
-});
-
-document.getElementById('btn-signup').addEventListener('click', async () => {
-  const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
-  try {
-    document.getElementById('login-msg').innerText = "Creating account...";
-    await createUserWithEmailAndPassword(auth, email, pass);
-  } catch (e) {
-    document.getElementById('login-msg').innerText = e.message;
-  }
-});
-
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    // User is logged in!
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('game-container').style.display = 'flex';
-    
-    // Check database
-    const docRef = doc(db, "saves", user.uid);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      log(`Welcome back, Ranger ${user.email}!`, 'sys');
-    } else {
-      log(`Welcome to your first game, Ranger ${user.email}!`, 'sys');
-    }
-  } else {
-    // User is logged out
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('game-container').style.display = 'none';
-  }
-});
-
-// ============ BEAR DATA (26 bears) ============
+<script>
+// ============ BEAR DATA ============
 const BEARS = [
   { id:'brown',   emoji:'🐻',  name:'Brown Bear',     type:'Forest',      hp:100, atk:30, ability:'Forage',        abilDesc:'Heals 10 HP each turn' },
   { id:'panda',   emoji:'🐼',  name:'Panda',          type:'Bamboo',      hp:110, atk:25, ability:'Bamboo Shield', abilDesc:'Takes 10 less damage' },
@@ -235,6 +207,7 @@ const ITEMS = [
 ];
 
 let state = {};
+let playerStats = { wins: 0, losses: 0 };
 
 function makeBear(base) {
   return {
@@ -276,7 +249,6 @@ function initGame() {
 
 function log(msg, cls='') {
   const el = document.getElementById('log');
-  if (!el) return;
   const p = document.createElement('p');
   p.className = cls; p.textContent = msg;
   el.appendChild(p); el.scrollTop = el.scrollHeight;
@@ -300,7 +272,6 @@ function statusText(bear) {
 
 function renderTeam(containerId, side, clickable) {
   const el = document.getElementById(containerId);
-  if (!el) return;
   el.innerHTML = '';
   side.team.forEach((bear, idx) => {
     const card = document.createElement('div');
@@ -328,7 +299,6 @@ function renderTeam(containerId, side, clickable) {
 
 function renderItems() {
   const el = document.getElementById('items');
-  if (!el) return;
   el.innerHTML = '';
   if (state.turn !== 'player' || state.over) return;
   state.player.items.forEach((item) => {
@@ -342,7 +312,6 @@ function renderItems() {
 
 function renderActions() {
   const el = document.getElementById('actions');
-  if (!el) return;
   el.innerHTML = '';
   if (state.turn !== 'player' || state.over) return;
   const atkBtn = document.createElement('button');
@@ -356,10 +325,7 @@ function renderActions() {
   el.appendChild(hint);
 }
 
-function setBanner(text) { 
-  const el = document.getElementById('turn-banner');
-  if (el) el.textContent = text; 
-}
+function setBanner(text) { document.getElementById('turn-banner').textContent = text; }
 
 function typeBonus(attacker, defender) {
   if (attacker.type === 'Chaos') return 0;
@@ -445,7 +411,7 @@ function doAttack(attackerSide, defenderSide, attackerName, defenderName) {
   const tb = typeBonus(atkBear, defBear);
   const typeNote = tb ? ` (type +${tb})` : '';
   log(`${attackerName}'s ${atkBear.name} attacks ${defenderName}'s ${defBear.name} for ${dmg} dmg${typeNote}`, cls);
-  applyHit(defenderSide, defenderSide.active, dmg);
+  applyHit(defenderSide, defenderSide.active, dmg, atkBear);
 
   if (atkBear.ability === 'Honey Tongue') {
     atkBear.hp = Math.min(atkBear.maxHp, atkBear.hp + 8);
@@ -588,7 +554,6 @@ function endPlayerTurn() {
 
 function cpuTurn() {
   if (state.over) return;
-
   tickStatuses(state.cpu, "Rival's");
   passiveTurnHeal(state.cpu, "Rival's");
   if (checkWin()) { render(); return; }
@@ -636,16 +601,37 @@ function endCpuTurn() {
   render();
 }
 
-function checkWin() {
+// ============ WIN/LOSS SAVING ============
+async function checkWin() {
   const cpuAlive = state.cpu.team.some(b => b.alive);
   const playerAlive = state.player.team.some(b => b.alive);
+  
   if (!cpuAlive) {
     state.over = true;
+    playerStats.wins++;
+    document.getElementById('record-display').innerText = `Wins: ${playerStats.wins} | Losses: ${playerStats.losses}`;
+    
+    // Save to Firebase
+    if (window.firebaseAuth.currentUser) {
+      const user = window.firebaseAuth.currentUser;
+      await window.fbSetDoc(window.fbDoc(window.firebaseDb, "saves", user.uid), playerStats);
+    }
+    
     showOverlay('🏆 Victory!', "You defeated all the rival's bears!");
     return true;
   }
+  
   if (!playerAlive) {
     state.over = true;
+    playerStats.losses++;
+    document.getElementById('record-display').innerText = `Wins: ${playerStats.wins} | Losses: ${playerStats.losses}`;
+    
+    // Save to Firebase
+    if (window.firebaseAuth.currentUser) {
+      const user = window.firebaseAuth.currentUser;
+      await window.fbSetDoc(window.fbDoc(window.firebaseDb, "saves", user.uid), playerStats);
+    }
+    
     showOverlay('💀 Defeat...', 'All your bears were knocked out.');
     return true;
   }
@@ -659,8 +645,51 @@ function showOverlay(title, sub) {
   render();
 }
 
-// BOOT UP THE GAME
-initGame();
+// ============ LOGIN LOGIC ============
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    document.getElementById('login-msg').innerText = "Logging in...";
+    await window.fbSignIn(window.firebaseAuth, email, pass);
+  } catch (e) {
+    document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+document.getElementById('btn-signup').addEventListener('click', async () => {
+  const email = document.getElementById('login-email').value;
+  const pass = document.getElementById('login-pass').value;
+  try {
+    document.getElementById('login-msg').innerText = "Creating account...";
+    await window.fbSignUp(window.firebaseAuth, email, pass);
+  } catch (e) {
+    document.getElementById('login-msg').innerText = e.message;
+  }
+});
+
+window.fbOnAuth(window.firebaseAuth, async (user) => {
+  if (user) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('game-container').style.display = 'flex';
+    
+    // Check database
+    const docRef = window.fbDoc(window.firebaseDb, "saves", user.uid);
+    const docSnap = await window.fbGetDoc(docRef);
+    if (docSnap.exists()) {
+      playerStats = docSnap.data();
+      document.getElementById('record-display').innerText = `Wins: ${playerStats.wins} | Losses: ${playerStats.losses}`;
+    } else {
+      await window.fbSetDoc(docRef, playerStats); // create new file
+    }
+    
+    log(`Welcome back, Ranger ${user.email}!`, 'sys');
+    initGame(); // Start the game after login
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('game-container').style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
