@@ -35,10 +35,7 @@
 
   .subtitle { text-align: center; font-size: 0.8rem; color: #888; margin-bottom: 20px; font-family: sans-serif; }
 
-  /* CLUE BOARD */
-  #clue-board {
-    display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;
-  }
+  #clue-board { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
   .clue-slot {
     width: 50px; height: 60px; border: 2px dashed #333; border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
@@ -114,7 +111,6 @@
       </div>
     </div>
     
-    <!-- CLUE BOARD -->
     <div id="clue-board">
       <div class="clue-slot" id="slot-1">?</div>
       <div class="clue-slot" id="slot-2">?</div>
@@ -144,7 +140,7 @@
     <div class="tutorial-box">
       <h2>📖 How to Play</h2>
       <p>You are locked in a room. You must find the 3-digit code to escape.</p>
-      <p><strong>Warning:</strong> The code is split into 3 separate digits. You will need to find tools, solve math riddles, and search the room to collect all three digits.</p>
+      <p><strong>Warning:</strong> The code is split into 3 separate digits. You will need to find tools, solve complex math riddles, and search the room to collect all three digits.</p>
       <hr style="border-color: #333; margin: 20px 0;">
       <p><strong>Useful Commands:</strong></p>
       <p><code>look</code> <span class="example">Shows everything in the room.</span></p>
@@ -181,7 +177,6 @@
     timerInterval: null,
     gameOver: false,
     flags: { toolFound: false, containerOpened: false, mathFound: false, symbolFound: false },
-    foundDigits: { d1: false, d2: false, d3: false },
     wins: 0,
     losses: 0
   };
@@ -228,10 +223,6 @@
     const el = document.getElementById(`slot-${slot}`);
     el.innerText = digit;
     el.classList.add('found');
-    
-    if (slot === 1) state.foundDigits.d1 = true;
-    if (slot === 2) state.foundDigits.d2 = true;
-    if (slot === 3) state.foundDigits.d3 = true;
   }
 
   function startTimer() {
@@ -265,6 +256,27 @@
     return array;
   }
 
+  // Generates a complex math riddle that equals the digit
+  function generateMathRiddle(digit) {
+    const d = parseInt(digit);
+    const type = Math.floor(Math.random() * 3); // 0=Add, 1=Multiply, 2=Divide
+    
+    if (type === 0) {
+      const a = Math.floor(Math.random() * 50) + 10;
+      const b = d - a;
+      return b > 0 ? `${a} + ${b} = ?` : `${a} - ${a - d} = ?`;
+    } else if (type === 1) {
+      const a = Math.floor(Math.random() * 8) + 2;
+      const b = d / a;
+      if (Number.isInteger(b) && b > 0) return `${a} * ${b} = ?`;
+      return `${d} * 1 = ?`;
+    } else {
+      const a = Math.floor(Math.random() * 5) + 2;
+      const b = d * a;
+      return `${b} / ${a} = ?`;
+    }
+  }
+
   async function startGame() {
     document.getElementById('game-container').style.display = 'block';
     
@@ -282,34 +294,39 @@
     const baseRoom = ROOM_BASE[Math.floor(Math.random() * ROOM_BASE.length)];
     const puzzleType = PUZZLE_TYPES[Math.floor(Math.random() * PUZZLE_TYPES.length)];
     
-    // Generate a random 3-digit code
     const code = String(Math.floor(Math.random() * 900) + 100);
-    const d1 = code[0];
-    const d2 = code[1];
-    const d3 = code[2];
-
-    // Create Math Riddle for Digit 2
-    const num1 = Math.floor(Math.random() * 50) + 10;
-    const num2 = parseInt(d2) - num1;
-    const mathRiddle = (num2 > 0) ? `${num1} + ${num2} = ?` : `${parseInt(d2) + 100} - 100 = ?`;
-
-    // Shuffle targets to randomize locations
-    const shuffledTargets = shuffle([...baseRoom.targets]);
+    const digits = [code[0], code[1], code[2]];
     
-    // Assign locations
+    // 1. Randomize which digit goes where (Container, Math, Symbol)
+    const shuffledDigits = shuffle([...digits]);
+    const containerDigit = shuffledDigits[0];
+    const mathDigit = shuffledDigits[1];
+    const symbolDigit = shuffledDigits[2];
+
+    const mathRiddle = generateMathRiddle(mathDigit);
+    
+    // 2. Figure out the slot number (1st, 2nd, or 3rd) for each location
+    const getSlotNum = (d) => code.indexOf(d) + 1;
+    const containerSlot = getSlotNum(containerDigit);
+    const mathSlot = getSlotNum(mathDigit);
+    const symbolSlot = getSlotNum(symbolDigit);
+
+    const shuffledTargets = shuffle([...baseRoom.targets]);
     const symbolLoc = shuffledTargets.find(t => t.includes('symbol'));
     const availableTargets = shuffledTargets.filter(t => !t.includes('symbol'));
 
     state.currentRoom = {
       title: baseRoom.title,
       code: code,
-      digits: { d1, d2, d3 },
       winMsg: "The door clicks open! You escaped!",
       targets: shuffledTargets,
       puzzle: puzzleType,
       mathRiddle: mathRiddle,
       
-      // Locations
+      // Data for rendering clues
+      containerDigit, mathDigit, symbolDigit,
+      containerSlot, mathSlot, symbolSlot,
+
       toolLocation: availableTargets[0],
       containerLocation: availableTargets[1],
       mathLocation: availableTargets[2],
@@ -317,10 +334,8 @@
     };
 
     state.flags = { toolFound: false, containerOpened: false, mathFound: false, symbolFound: false };
-    state.foundDigits = { d1: false, d2: false, d3: false };
     state.inventory = [];
     
-    // Reset UI
     updateInventory();
     document.getElementById('slot-1').innerText = "?";
     document.getElementById('slot-1').classList.remove('found');
@@ -348,7 +363,6 @@
     log(`> ${cmd}`, 'action');
     const room = state.currentRoom;
 
-    // Helper to check keywords
     const toolKw = room.puzzle.tool.toLowerCase().split(' ').filter(w => w.length > 2);
     const contKw = room.puzzle.container.toLowerCase().split(' ').filter(w => w.length > 2);
     
@@ -375,24 +389,21 @@
         found = true;
       } 
       else if (cmd.includes(room.containerLocation)) {
-        if (state.flags.containerOpened) {
-           if (!state.flags.clueFound) log(`You look inside the opened ${room.puzzle.container}.`, "sys");
-           else log("There is nothing else inside.", "room");
-        }
+        if (state.flags.containerOpened) log(`You look inside the opened ${room.puzzle.container}.`, "sys");
         else log(`It's a ${room.puzzle.container}. It's locked tight. You need a ${room.puzzle.tool} to ${room.puzzle.action} it.`, "room");
         found = true;
       }
       else if (hasMathLoc) {
         if (!state.flags.mathFound) {
           log(`You examine the ${room.mathLocation} and find a riddle: "${room.mathRiddle}"`, "room");
-          log(`Solve it to find the SECOND digit.`, "sys");
+          log(`Solve it to find the ${room.mathSlot === 1 ? 'FIRST' : room.mathSlot === 2 ? 'SECOND' : 'THIRD'} digit.`, "sys");
           state.flags.mathFound = true;
         } else log("You already solved the riddle here.", "room");
         found = true;
       }
       else if (hasSymbolLoc) {
         if (!state.flags.symbolFound) {
-          log(`You look closely at the symbol. The Roman numeral for the THIRD digit is: ${ROMAN[parseInt(room.digits.d3)-1]}`, "room");
+          log(`You look closely at the symbol. The Roman numeral for the ${room.symbolSlot === 1 ? 'FIRST' : room.symbolSlot === 2 ? 'SECOND' : 'THIRD'} digit is: ${ROMAN[parseInt(room.symbolDigit)-1]}`, "room");
           state.flags.symbolFound = true;
         } else log("You already found the symbol.", "room");
         found = true;
@@ -417,8 +428,8 @@
         state.inventory.push(room.puzzle.clue);
         updateInventory();
         log(`You take the ${room.puzzle.clue}.`, "sys");
-        log(`It says: "The FIRST digit is ${room.digits.d1}".`, "win");
-        revealDigit(1, room.digits.d1);
+        log(`It says: "The ${room.containerSlot === 1 ? 'FIRST' : room.containerSlot === 2 ? 'SECOND' : 'THIRD'} digit is ${room.containerDigit}".`, "win");
+        revealDigit(room.containerSlot, room.containerDigit);
         state.flags.clueFound = true;
       }
       else log("You can't take that.", "error");
@@ -430,8 +441,8 @@
             state.flags.containerOpened = true;
             log(`You use the ${room.puzzle.tool} to ${room.puzzle.action} the ${room.puzzle.container}!`, "sys");
             log(`Inside, you find a ${room.puzzle.clue}.`, "sys");
-            log(`It says: "The FIRST digit is ${room.digits.d1}".`, "win");
-            revealDigit(1, room.digits.d1);
+            log(`It says: "The ${room.containerSlot === 1 ? 'FIRST' : room.containerSlot === 2 ? 'SECOND' : 'THIRD'} digit is ${room.containerDigit}".`, "win");
+            revealDigit(room.containerSlot, room.containerDigit);
             state.flags.clueFound = true;
           } else log("It's already open.", "room");
         } else log(`You don't have the ${room.puzzle.tool}.`, "error");
