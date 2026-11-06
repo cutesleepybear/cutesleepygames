@@ -118,7 +118,6 @@
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // 2. Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
     authDomain: "cute-sleepy-games.firebaseapp.com",
@@ -131,26 +130,6 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-
-  // 3. Check Login & Load Data
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      document.getElementById('game-container').style.display = 'flex';
-      
-      const docRef = doc(db, "saves", user.uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        playerStats = docSnap.data();
-        document.getElementById('record-display').innerText = `Wins: ${playerStats.wins} | Losses: ${playerStats.losses}`;
-      } else {
-        await setDoc(docRef, playerStats);
-      }
-      
-      initGame();
-    } else {
-      window.location.href = "index.html"; // Kick back to hub if not logged in
-    }
-  });
 
   // ============ BEAR DATA ============
   const BEARS = [
@@ -638,6 +617,26 @@
     document.getElementById('overlay').classList.remove('hidden');
     render();
   }
+
+  // 3. Check Login & Load Data (Needs to be at the bottom so it runs AFTER all functions are defined)
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      document.getElementById('game-container').style.display = 'flex';
+      
+      const docRef = doc(db, "saves", user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        window.playerStats = docSnap.data();
+        document.getElementById('record-display').innerText = `Wins: ${window.playerStats.wins} | Losses: ${window.playerStats.losses}`;
+      } else {
+        await setDoc(docRef, window.playerStats);
+      }
+      
+      window.initGame();
+    } else {
+      window.location.href = "index.html"; // Kick back to hub if not logged in
+    }
+  });
 </script>
 </body>
 </html>
