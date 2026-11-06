@@ -99,7 +99,7 @@
         <div id="timer">00:00</div>
       </div>
     </div>
-    <div class="subtitle">Commands: look, inventory, examine [object], take [item], use [item], code [number]</div>
+    <div class="subtitle">Commands: look, inventory, examine [object], take [item], use [item] on [object], code [number]</div>
 
     <div id="log"></div>
     <div class="inventory" id="inventory">
@@ -159,7 +159,6 @@
     timerInterval: null,
     gameOver: false,
     flags: { toolFound: false, containerOpened: false, clueFound: false },
-    // Global Stats for this specific game
     wins: 0,
     losses: 0
   };
@@ -234,7 +233,6 @@
   async function startGame() {
     document.getElementById('game-container').style.display = 'block';
     
-    // Load Player XP/Stats from Firebase
     if (auth.currentUser) {
       const docRef = doc(db, "saves", auth.currentUser.uid);
       const docSnap = await getDoc(docRef);
@@ -291,6 +289,18 @@
     const words = cmd.split(' ');
     const room = state.currentRoom;
 
+    // Extracts keywords from the puzzle tool to make matching easier
+    // e.g., "UV flashlight" becomes ["uv", "flashlight"]
+    const toolKeywords = room.puzzle.tool.toLowerCase().split(' ').filter(w => w.length > 2);
+    const containerKeywords = room.puzzle.container.toLowerCase().split(' ').filter(w => w.length > 2);
+
+    const hasToolWord = toolKeywords.some(kw => cmd.includes(kw));
+    const hasContainerWord = containerKeywords.some(kw => cmd.includes(kw));
+    
+    // Check if the user typed the actual location
+    const hasToolLocWord = room.toolLocation.split(' ').some(kw => cmd.includes(kw));
+    const hasContainerLocWord = room.containerLocation.split(' ').some(kw => cmd.includes(kw));
+
     if (cmd === 'look' || cmd === 'l') {
       log("You look around the room:", "sys");
       room.targets.forEach(item => log(`- ${item}`, "room"));
@@ -299,23 +309,20 @@
       log(`You are carrying: ${state.inventory.length ? state.inventory.join(', ') : 'nothing'}`, 'sys');
     } 
     else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check') {
-      const obj = words.slice(1).join(' ');
+      if (words.length < 2) { log(`What do you want to ${words[0]}? Try "look" to see the room.`, "error"); return; }
       
-      if (!obj) { log(`What do you want to ${words[0]}? Try "look" to see the room.`, "error"); return; }
-
       let found = false;
-
-      if (obj.includes(room.toolLocation) || room.toolLocation.includes(obj)) {
+      if (hasToolLocWord) {
         if (!state.flags.toolFound) log(`You search the ${room.toolLocation} and find a ${room.puzzle.tool}.`, "sys");
         else log("You already searched here.", "room");
         found = true;
       } 
-      else if (obj.includes(room.containerLocation) || room.containerLocation.includes(obj)) {
+      else if (hasContainerLocWord) {
         if (state.flags.containerOpened) log(`You look inside the opened ${room.puzzle.container}. There is a ${room.puzzle.clue} here.`, "sys");
         else log(`It's a ${room.puzzle.container}. It's locked tight. You need a ${room.puzzle.tool} to ${room.puzzle.action} it.`, "room");
         found = true;
       }
-      else if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
+      else if (room.targets.some(t => t.split(' ').some(kw => cmd.includes(kw)))) {
         log("You look closely, but there's nothing useful here.", "room");
         found = true;
       }
@@ -323,10 +330,9 @@
       if (!found) log("I don't see that in this room.", "error");
     } 
     else if (words[0] === 'take' || words[0] === 'get') {
-      const obj = words.slice(1).join(' ');
-      if (!obj) { log(`What do you want to ${words[0]}?`, "error"); return; }
+      if (words.length < 2) { log(`What do you want to ${words[0]}?`, "error"); return; }
 
-      if (obj.includes(room.toolLocation) || obj.includes(room.puzzle.tool)) {
+      if (hasToolWord || hasToolLocWord) {
         if (!state.flags.toolFound) {
           state.inventory.push(room.puzzle.tool);
           updateInventory();
@@ -334,7 +340,7 @@
           state.flags.toolFound = true;
         } else log("There is nothing else to take here.", "error");
       } 
-      else if (obj.includes(room.puzzle.clue) || obj.includes(room.containerLocation)) {
+      else if (cmd.includes('diary') || cmd.includes('key') || cmd.includes('writing') || cmd.includes('folder') || cmd.includes('lockbox') || cmd.includes('screen') || hasContainerLocWord) {
         if (state.flags.containerOpened && !state.flags.clueFound) {
            state.inventory.push(room.puzzle.clue);
            updateInventory();
@@ -346,8 +352,10 @@
       else log("You can't take that.", "error");
     }
     else if (words[0] === 'use') {
-      if (cmd.includes(room.puzzle.tool) && (cmd.includes(room.puzzle.container) || cmd.includes(room.containerLocation))) {
-        if (state.inventory.includes(room.puzzle.tool)) {
+      
+      // If they type the tool and the container (or their locations)
+      if ((hasToolWord || hasToolLocWord) && (hasContainerWord || hasContainerLocWord)) {
+        if (state.inventory.includes(room.puzzle.tool) || state.flags.toolFound) {
           if (!state.flags.containerOpened) {
             state.flags.containerOpened = true;
             log(`You use the ${room.puzzle.tool} to ${room.puzzle.action} the ${room.puzzle.container}!`, "sys");
@@ -357,8 +365,15 @@
             state.inventory.push(room.puzzle.clue);
             updateInventory();
           } else log("It's already open.", "room");
-        } else log(`You don't have a ${room.puzzle.tool}.`, "error");
+        } else {
+          log(`You don't have the ${room.puzzle.tool}.`, "error");
+        }
       } 
+      // If they have the tool but are trying to use it on the wrong thing
+      else if (hasToolWord || hasToolLocWord) {
+        log(`You try to use the ${room.puzzle.tool}, but it doesn't work on that. You should use it on the ${room.puzzle.container}.`, "error");
+      }
+      // Entering code shortcut
       else {
         const attemptedCode = words[words.length - 1];
         if (attemptedCode === room.code) winGame();
@@ -371,7 +386,7 @@
       else log("The lock flashes red. Incorrect code.", "error");
     }
     else if (cmd === 'help') {
-      log("Commands: look, inventory, examine [object], take [item], use [item], code [number]", "sys");
+      log("Commands: look, inventory, examine [object], take [item], use [item] on [object], code [number]", "sys");
     } 
     else if (cmd === room.code) {
       winGame();
@@ -395,7 +410,6 @@
     }
     updateStatsDisplay();
 
-    // Update Firebase Profile
     if (auth.currentUser) {
       const docRef = doc(db, "saves", auth.currentUser.uid);
       const docSnap = await getDoc(docRef);
@@ -403,11 +417,8 @@
       let currentData = {};
       if (docSnap.exists()) currentData = docSnap.data();
       
-      // Update game specific stats
       currentData.escapeRoomWins = state.wins;
       currentData.escapeRoomLosses = state.losses;
-      
-      // Update GLOBAL Arcade Profile
       currentData.totalXP = (currentData.totalXP || 0) + xpGained;
       currentData.level = Math.floor(currentData.totalXP / 500) + 1;
       
