@@ -577,7 +577,25 @@
   async function checkWin() {
     const cpuAlive = state.cpu.team.some(b => b.alive);
     const playerAlive = state.player.team.some(b => b.alive);
+    // Inside checkWin() in bearcards.html:
+  if (!cpuAlive) {
+    state.over = true;
+    playerStats.wins++;
+    document.getElementById('record-display').innerText = `Wins: ${playerStats.wins} | Losses: ${playerStats.losses}`;
     
+    if (auth.currentUser) {
+      const docRef = doc(db, "saves", auth.currentUser.uid);
+      const docSnap = await getDoc(docRef);
+      let currentData = docSnap.exists() ? docSnap.data() : {};
+      
+      currentData.bearCardsWins = playerStats.wins;
+      currentData.totalXP = (currentData.totalXP || 0) + 100; // +100 XP for a win!
+      currentData.level = Math.floor(currentData.totalXP / 500) + 1;
+      
+      await setDoc(docRef, currentData);
+    }
+    // ... rest of win code
+  }
     if (!cpuAlive && !state.over) {
       state.over = true;
       window.playerStats.wins++;

@@ -4,30 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🐻 My Arcade</title>
-
-<!-- ============ FIREBASE SETUP ============ -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
-    authDomain: "cute-sleepy-games.firebaseapp.com",
-    projectId: "cute-sleepy-games",
-    storageBucket: "cute-sleepy-games.firebasestorage.app",
-    messagingSenderId: "249264537283",
-    appId: "1:249264537283:web:811dce511556eda6a96c76"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-
-  window.firebaseAuth = auth;
-  window.fbSignIn = signInWithEmailAndPassword;
-  window.fbSignUp = createUserWithEmailAndPassword;
-  window.fbOnAuth = onAuthStateChanged;
-</script>
-
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -37,8 +13,24 @@
     display: flex; flex-direction: column; align-items: center;
   }
   
+  /* Profile Bar */
+  #profile-bar {
+    display: none; width: 100%; max-width: 900px; background: rgba(0,0,0,0.6);
+    border: 2px solid #f0c060; border-radius: 12px; padding: 15px 25px;
+    margin-bottom: 30px; align-items: center; justify-content: space-between;
+    box-shadow: 0 0 15px rgba(240,192,96,0.2);
+  }
+  .level-box { display: flex; align-items: center; gap: 15px; }
+  .level-badge {
+    background: #f0c060; color: #000; font-weight: 900; font-size: 1.5rem;
+    padding: 5px 15px; border-radius: 8px; box-shadow: 0 0 10px #f0c060;
+  }
+  .xp-info { display: flex; flex-direction: column; gap: 5px; }
+  .xp-bar { width: 200px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
+  .xp-fill { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); width: 0%; transition: width 0.5s; }
+  
   /* Hub Menu Styles */
-  .hub-header { text-align: center; margin-bottom: 40px; margin-top: 40px; }
+  .hub-header { text-align: center; margin-bottom: 30px; }
   .hub-header h1 { font-size: 2.5rem; color: #f0c060; text-shadow: 0 0 10px rgba(240,192,96,0.5); }
   .hub-header p { color: #9ab89a; font-size: 1.1rem; margin-top: 10px; }
   
@@ -94,6 +86,82 @@
   /* Hide the hub until logged in */
   #hub-content { display: none; flex-direction: column; align-items: center; width: 100%; }
 </style>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
+    authDomain: "cute-sleepy-games.firebaseapp.com",
+    projectId: "cute-sleepy-games",
+    storageBucket: "cute-sleepy-games.firebasestorage.app",
+    messagingSenderId: "249264537283",
+    appId: "1:249264537283:web:811dce511556eda6a96c76"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Load Profile Data
+  async function loadProfile(user) {
+    const docRef = doc(db, "saves", user.uid);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const xp = data.totalXP || 0;
+      const level = Math.floor(xp / 500) + 1;
+      const xpProgress = xp % 500;
+      
+      document.getElementById('level-num').innerText = `Lv. ${level}`;
+      document.getElementById('xp-text').innerText = `${xpProgress} / 500 XP`;
+      document.getElementById('xp-fill').style.width = `${(xpProgress / 500) * 100}%`;
+      document.getElementById('profile-bar').style.display = 'flex';
+    } else {
+      // First time user
+      document.getElementById('level-num').innerText = `Lv. 1`;
+      document.getElementById('xp-text').innerText = `0 / 500 XP`;
+      document.getElementById('profile-bar').style.display = 'flex';
+    }
+  }
+
+  // Login Logic
+  document.getElementById('btn-login').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    try {
+      document.getElementById('login-msg').innerText = "Logging in...";
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      document.getElementById('login-msg').innerText = e.message;
+    }
+  });
+
+  document.getElementById('btn-signup').addEventListener('click', async () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    try {
+      document.getElementById('login-msg').innerText = "Creating account...";
+      await createUserWithEmailAndPassword(auth, email, pass);
+    } catch (e) {
+      document.getElementById('login-msg').innerText = e.message;
+    }
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('hub-content').style.display = 'flex';
+      loadProfile(user);
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('hub-content').style.display = 'none';
+    }
+  });
+</script>
 </head>
 <body>
 
@@ -111,9 +179,23 @@
 
   <!-- ============ MAIN ARCADE HUB ============ -->
   <div id="hub-content">
+    
+    <!-- PLAYER PROFILE BAR -->
+    <div id="profile-bar">
+      <div class="level-box">
+        <div class="level-badge" id="level-num">Lv. 1</div>
+        <div class="xp-info">
+          <div style="font-weight: bold; color: #f0c060;">Arcade Rank</div>
+          <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+          <div id="xp-text" style="font-size: 0.8rem; color: #9ab89a;">0 / 500 XP</div>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem;">🏆</div>
+    </div>
+
     <div class="hub-header">
       <h1>🐻 My Arcade</h1>
-      <p>Welcome back, Ranger!</p>
+      <p>Select a game to earn XP and level up!</p>
     </div>
     
     <div class="game-grid">
@@ -121,14 +203,14 @@
       <div class="game-card" onclick="window.location.href='bearcards.html'">
         <div style="font-size: 3rem; margin-bottom: 10px;">🐻🐼🐻‍❄️</div>
         <h2>Bear Cards</h2>
-        <p>Battle the rival ranger in this collectible card game.</p>
+        <p>Battle the rival ranger. (+100 XP Win)</p>
       </div>
       
       <!-- Escape Room Game -->
       <div class="game-card" onclick="window.location.href='escaperoom.html'">
         <div style="font-size: 3rem; margin-bottom: 10px;">🚪🔑</div>
         <h2>Escape Room</h2>
-        <p>Solve puzzles and find the codes to break out.</p>
+        <p>Solve puzzles to break out. (+150 XP Win)</p>
       </div>
       
       <!-- Future games go here -->
@@ -140,39 +222,5 @@
     </div>
   </div>
 
-<!-- ============ MAIN SCRIPT (LOGIN LOGIC) ============ -->
-<script type="module">
-  document.getElementById('btn-login').addEventListener('click', async () => {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-pass').value;
-    try {
-      document.getElementById('login-msg').innerText = "Logging in...";
-      await window.fbSignIn(window.firebaseAuth, email, pass);
-    } catch (e) {
-      document.getElementById('login-msg').innerText = e.message;
-    }
-  });
-
-  document.getElementById('btn-signup').addEventListener('click', async () => {
-    const email = document.getElementById('login-email').value;
-    const pass = document.getElementById('login-pass').value;
-    try {
-      document.getElementById('login-msg').innerText = "Creating account...";
-      await window.fbSignUp(window.firebaseAuth, email, pass);
-    } catch (e) {
-      document.getElementById('login-msg').innerText = e.message;
-    }
-  });
-
-  window.fbOnAuth(window.firebaseAuth, (user) => {
-    if (user) {
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('hub-content').style.display = 'flex';
-    } else {
-      document.getElementById('login-screen').style.display = 'flex';
-      document.getElementById('hub-content').style.display = 'none';
-    }
-  });
-</script>
 </body>
 </html>

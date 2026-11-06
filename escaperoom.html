@@ -23,12 +23,15 @@
   
   .header-right { display: flex; gap: 15px; align-items: center; }
   #timer { font-size: 1.2rem; color: #ff3333; font-weight: bold; }
+  #stats { font-size: 0.9rem; color: #00bfff; font-weight: bold; margin-right: 15px; }
   
-  .tut-btn { 
+  .tut-btn, .give-up-btn { 
     background: transparent; border: 1px solid #00ff41; color: #00ff41; 
     padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; cursor: pointer; 
   }
   .tut-btn:hover { background: rgba(0,255,65,0.2); }
+  .give-up-btn { border-color: #ff3333; color: #ff3333; }
+  .give-up-btn:hover { background: rgba(255,51,51,0.2); }
 
   .subtitle { text-align: center; font-size: 0.8rem; color: #888; margin-bottom: 20px; font-family: sans-serif; }
 
@@ -69,8 +72,8 @@
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
     flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 1000; padding: 20px;
   }
-  #win-screen h2 { font-size: 3rem; color: #ffff00; text-shadow: 0 0 20px #ffff00; margin-bottom: 20px; }
-  #win-screen p { color: #ccc; margin-bottom: 30px; font-family: sans-serif; }
+  #end-screen h2 { font-size: 3rem; text-shadow: 0 0 20px currentColor; margin-bottom: 20px; }
+  #end-screen p { color: #ccc; margin-bottom: 30px; font-family: sans-serif; }
 
   .tutorial-box {
     background: #111; border: 2px solid #00ff41; border-radius: 10px;
@@ -80,7 +83,6 @@
   .tutorial-box h2 { color: #00ff41; margin-bottom: 15px; font-size: 1.5rem; text-align: center; }
   .tutorial-box p { margin-bottom: 10px; line-height: 1.5; font-family: sans-serif; font-size: 0.95rem; }
   .tutorial-box code { color: #ffff00; background: #222; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
-  .tutorial-box .example { color: #888; font-style: italic; margin-left: 10px; display: block; margin-bottom: 10px; font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -91,7 +93,9 @@
     <div class="header">
       <h1 id="room-title">Loading...</h1>
       <div class="header-right">
+        <div id="stats">W: 0 | L: 0</div>
         <button class="tut-btn" onclick="toggleTutorial()">❓ How to Play</button>
+        <button class="give-up-btn" onclick="loseGame()">Give Up</button>
         <div id="timer">00:00</div>
       </div>
     </div>
@@ -108,9 +112,9 @@
     </div>
   </div>
 
-  <div id="win-screen" class="overlay">
-    <h2>YOU ESCAPED!</h2>
-    <p id="win-sub">Your stats have been saved to the cloud.</p>
+  <div id="end-screen" class="overlay">
+    <h2 id="end-title">YOU ESCAPED!</h2>
+    <p id="end-sub">Your stats have been saved to the cloud.</p>
     <button onclick="window.location.reload()" style="padding: 15px 30px; font-size: 1.2rem;">Play Again</button>
   </div>
 
@@ -153,8 +157,11 @@
     inventory: [],
     startTime: null,
     timerInterval: null,
-    escaped: false,
-    flags: { toolFound: false, containerOpened: false, clueFound: false }
+    gameOver: false,
+    flags: { toolFound: false, containerOpened: false, clueFound: false },
+    // Global Stats for this specific game
+    wins: 0,
+    losses: 0
   };
   
   let isPaused = false;
@@ -167,51 +174,13 @@
   ];
 
   const PUZZLE_TYPES = [
-    {
-      tool: "crowbar",
-      container: "wooden crate",
-      action: "pry open",
-      clue: "dusty diary",
-      clueMsg: "You open the diary. A note inside says:"
-    },
-    {
-      tool: "UV flashlight",
-      container: "blank wall",
-      action: "shine on",
-      clue: "hidden writing",
-      clueMsg: "You turn off the lights and shine the UV light. Glowing text appears:"
-    },
-    {
-      tool: "magnet on a string",
-      container: "floor drain",
-      action: "fish through",
-      clue: "rusty key",
-      clueMsg: "You fish the key out of the drain. A tag attached to it says:"
-    },
-    {
-      tool: "soldering iron",
-      container: "fuse box",
-      action: "repair",
-      clue: "terminal screen",
-      clueMsg: "The fuse box sparks to life. The computer screen lights up with:"
-    },
-    {
-      tool: "small shovel",
-      container: "loose floorboard",
-      action: "dig under",
-      clue: "buried lockbox",
-      clueMsg: "You pry up the board and dig. You find a lockbox with a note:"
-    },
-    {
-      tool: "glass cutter",
-      container: "glass display case",
-      action: "cut open",
-      clue: "manila folder",
-      clueMsg: "You cut a hole in the glass and grab the folder. It says:"
-    }
+    { tool: "crowbar", container: "wooden crate", action: "pry open", clue: "dusty diary", clueMsg: "You open the diary. A note inside says:" },
+    { tool: "UV flashlight", container: "blank wall", action: "shine on", clue: "hidden writing", clueMsg: "You turn off the lights and shine the UV light. Glowing text appears:" },
+    { tool: "magnet on a string", container: "floor drain", action: "fish through", clue: "rusty key", clueMsg: "You fish the key out of the drain. A tag attached to it says:" },
+    { tool: "soldering iron", container: "fuse box", action: "repair", clue: "terminal screen", clueMsg: "The fuse box sparks to life. The computer screen lights up with:" },
+    { tool: "small shovel", container: "loose floorboard", action: "dig under", clue: "buried lockbox", clueMsg: "You pry up the board and dig. You find a lockbox with a note:" },
+    { tool: "glass cutter", container: "glass display case", action: "cut open", clue: "manila folder", clueMsg: "You cut a hole in the glass and grab the folder. It says:" }
   ];
-
-  window.playerStats = { escapes: 0 };
 
   function log(msg, type = 'room') {
     const el = document.getElementById('log');
@@ -227,10 +196,14 @@
     el.innerText = state.inventory.length === 0 ? "Empty" : state.inventory.join(', ');
   }
 
+  function updateStatsDisplay() {
+    document.getElementById('stats').innerText = `W: ${state.wins} | L: ${state.losses}`;
+  }
+
   function startTimer() {
     state.startTime = Date.now();
     state.timerInterval = setInterval(() => {
-      if (isPaused) return;
+      if (isPaused || state.gameOver) return;
       const diff = Math.floor((Date.now() - state.startTime) / 1000) - pauseTime;
       const mins = String(Math.floor(diff / 60)).padStart(2, '0');
       const secs = String(diff % 60).padStart(2, '0');
@@ -243,9 +216,7 @@
     if (tut.style.display === 'flex') {
       tut.style.display = 'none';
       isPaused = false;
-      if (state.startTime) {
-        state.startTime = Date.now() - (pauseTime * 1000); 
-      }
+      if (state.startTime) state.startTime = Date.now() - (pauseTime * 1000); 
     } else {
       tut.style.display = 'flex';
       isPaused = true;
@@ -260,9 +231,21 @@
     return array;
   }
 
-  function startGame() {
+  async function startGame() {
     document.getElementById('game-container').style.display = 'block';
     
+    // Load Player XP/Stats from Firebase
+    if (auth.currentUser) {
+      const docRef = doc(db, "saves", auth.currentUser.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        state.wins = data.escapeRoomWins || 0;
+        state.losses = data.escapeRoomLosses || 0;
+        updateStatsDisplay();
+      }
+    }
+
     const baseRoom = ROOM_BASE[Math.floor(Math.random() * ROOM_BASE.length)];
     const puzzleType = PUZZLE_TYPES[Math.floor(Math.random() * PUZZLE_TYPES.length)];
     
@@ -272,7 +255,6 @@
     const num2 = c - num1;
     const mathRiddle = (num2 > 0) ? `${num1} + ${num2} = ?` : `${c + 100} - 100 = ?`;
 
-    // Shuffle targets to randomize locations
     const shuffledTargets = shuffle([...baseRoom.targets]);
 
     state.currentRoom = {
@@ -282,13 +264,8 @@
       targets: shuffledTargets,
       puzzle: puzzleType,
       mathRiddle: mathRiddle,
-      
       toolLocation: shuffledTargets[0],
-      containerLocation: shuffledTargets[1],
-      redHerring1: shuffledTargets[2],
-      redHerring2: shuffledTargets[3],
-      redHerring3: shuffledTargets[4],
-      redHerring4: shuffledTargets[5]
+      containerLocation: shuffledTargets[1]
     };
 
     state.flags = { toolFound: false, containerOpened: false, clueFound: false };
@@ -298,13 +275,12 @@
     document.getElementById('room-title').innerText = state.currentRoom.title;
     log(`You wake up in ${state.currentRoom.title}. The exit door is locked with a 3-digit code.`, "sys");
     log(`You look around and see: ${state.currentRoom.targets.join(', ')}.`, "room");
-    log("Find a way out. Type 'help' if you are stuck.", "sys");
     
     startTimer();
   }
 
   function processCommand() {
-    if (state.escaped || isPaused) return;
+    if (state.gameOver || isPaused) return;
 
     const input = document.getElementById('command-input');
     const cmd = input.value.toLowerCase().trim();
@@ -325,34 +301,20 @@
     else if (words[0] === 'examine' || words[0] === 'search' || words[0] === 'check') {
       const obj = words.slice(1).join(' ');
       
-      // If they didn't type an object
-      if (!obj) {
-        log(`What do you want to ${words[0]}? Try "look" to see the room.`, "error");
-        return;
-      }
+      if (!obj) { log(`What do you want to ${words[0]}? Try "look" to see the room.`, "error"); return; }
 
       let found = false;
 
-      // 1. Examining the Tool Location
       if (obj.includes(room.toolLocation) || room.toolLocation.includes(obj)) {
-        if (!state.flags.toolFound) {
-          log(`You search the ${room.toolLocation} and find a ${room.puzzle.tool}.`, "sys");
-        } else {
-          log("You already searched here.", "room");
-        }
+        if (!state.flags.toolFound) log(`You search the ${room.toolLocation} and find a ${room.puzzle.tool}.`, "sys");
+        else log("You already searched here.", "room");
         found = true;
       } 
-      // 2. Examining the Container Location
       else if (obj.includes(room.containerLocation) || room.containerLocation.includes(obj)) {
-        if (state.flags.containerOpened) {
-          log(`You look inside the opened ${room.puzzle.container}. There is a ${room.puzzle.clue} here.`, "sys");
-        } else {
-          // THE BIG CLUE: Tell the player they need a specific tool!
-          log(`It's a ${room.puzzle.container}. It's locked tight. You need a ${room.puzzle.tool} to ${room.puzzle.action} it.`, "room");
-        }
+        if (state.flags.containerOpened) log(`You look inside the opened ${room.puzzle.container}. There is a ${room.puzzle.clue} here.`, "sys");
+        else log(`It's a ${room.puzzle.container}. It's locked tight. You need a ${room.puzzle.tool} to ${room.puzzle.action} it.`, "room");
         found = true;
       }
-      // 3. Examining Red Herrings
       else if (room.targets.some(t => obj.includes(t) || t.includes(obj))) {
         log("You look closely, but there's nothing useful here.", "room");
         found = true;
@@ -362,11 +324,7 @@
     } 
     else if (words[0] === 'take' || words[0] === 'get') {
       const obj = words.slice(1).join(' ');
-      
-      if (!obj) {
-        log(`What do you want to ${words[0]}?`, "error");
-        return;
-      }
+      if (!obj) { log(`What do you want to ${words[0]}?`, "error"); return; }
 
       if (obj.includes(room.toolLocation) || obj.includes(room.puzzle.tool)) {
         if (!state.flags.toolFound) {
@@ -374,9 +332,7 @@
           updateInventory();
           log(`You take the ${room.puzzle.tool}.`, "sys");
           state.flags.toolFound = true;
-        } else {
-          log("There is nothing else to take here.", "error");
-        }
+        } else log("There is nothing else to take here.", "error");
       } 
       else if (obj.includes(room.puzzle.clue) || obj.includes(room.containerLocation)) {
         if (state.flags.containerOpened && !state.flags.clueFound) {
@@ -384,54 +340,35 @@
            updateInventory();
            log(`You take the ${room.puzzle.clue}.`, "sys");
            state.flags.clueFound = true;
-           
            log(`${room.puzzle.clueMsg} "${room.mathRiddle}"`, "room");
-        } else {
-          log("You can't take that right now.", "error");
-        }
+        } else log("You can't take that right now.", "error");
       }
-      else {
-        log("You can't take that.", "error");
-      }
+      else log("You can't take that.", "error");
     }
     else if (words[0] === 'use') {
-      
-      // Using tool on container
       if (cmd.includes(room.puzzle.tool) && (cmd.includes(room.puzzle.container) || cmd.includes(room.containerLocation))) {
         if (state.inventory.includes(room.puzzle.tool)) {
           if (!state.flags.containerOpened) {
             state.flags.containerOpened = true;
             log(`You use the ${room.puzzle.tool} to ${room.puzzle.action} the ${room.puzzle.container}!`, "sys");
-            // INSTANTLY REVEAL THE CLUE
             log(`Inside, you find a ${room.puzzle.clue}.`, "sys");
             log(`${room.puzzle.clueMsg} "${room.mathRiddle}"`, "room");
             state.flags.clueFound = true;
             state.inventory.push(room.puzzle.clue);
             updateInventory();
-          } else {
-            log("It's already open.", "room");
-          }
-        } else {
-          log(`You don't have a ${room.puzzle.tool}.`, "error");
-        }
+          } else log("It's already open.", "room");
+        } else log(`You don't have a ${room.puzzle.tool}.`, "error");
       } 
-      // Entering code shortcut
       else {
         const attemptedCode = words[words.length - 1];
-        if (attemptedCode === room.code) {
-          winGame();
-        } else {
-          log("That doesn't work.", "error");
-        }
+        if (attemptedCode === room.code) winGame();
+        else log("That doesn't work.", "error");
       }
     } 
     else if (words[0] === 'code' || words[0] === 'enter') {
       const attemptedCode = words[words.length - 1];
-      if (attemptedCode === room.code) {
-        winGame();
-      } else {
-        log("The lock flashes red. Incorrect code.", "error");
-      }
+      if (attemptedCode === room.code) winGame();
+      else log("The lock flashes red. Incorrect code.", "error");
     }
     else if (cmd === 'help') {
       log("Commands: look, inventory, examine [object], take [item], use [item], code [number]", "sys");
@@ -444,30 +381,50 @@
     }
   }
 
-  async function winGame() {
-    state.escaped = true;
+  async function saveProgress(isWin) {
+    state.gameOver = true;
     clearInterval(state.timerInterval);
-    log(state.currentRoom.winMsg, "win");
     
-    window.playerStats.escapes++;
-    
+    let xpGained = isWin ? 150 : 10;
+    if (isWin) {
+      state.wins++;
+      log("The door unlocks! You escaped!", "win");
+    } else {
+      state.losses++;
+      log("You give up and sit in the corner.", "error");
+    }
+    updateStatsDisplay();
+
+    // Update Firebase Profile
     if (auth.currentUser) {
       const docRef = doc(db, "saves", auth.currentUser.uid);
       const docSnap = await getDoc(docRef);
       
       let currentData = {};
-      if (docSnap.exists()) {
-        currentData = docSnap.data();
-      }
+      if (docSnap.exists()) currentData = docSnap.data();
       
-      currentData.escapeRoomWins = (currentData.escapeRoomWins || 0) + 1;
+      // Update game specific stats
+      currentData.escapeRoomWins = state.wins;
+      currentData.escapeRoomLosses = state.losses;
+      
+      // Update GLOBAL Arcade Profile
+      currentData.totalXP = (currentData.totalXP || 0) + xpGained;
+      currentData.level = Math.floor(currentData.totalXP / 500) + 1;
+      
       await setDoc(docRef, currentData);
+      
+      document.getElementById('end-sub').innerText = `You earned +${xpGained} XP! Check the Hub to see your new Level.`;
     }
 
     setTimeout(() => {
-      document.getElementById('win-screen').style.display = 'flex';
+      document.getElementById('end-screen').style.display = 'flex';
+      document.getElementById('end-title').innerText = isWin ? "YOU ESCAPED!" : "YOU GAVE UP...";
+      document.getElementById('end-title').style.color = isWin ? "#ffff00" : "#ff3333";
     }, 1500);
   }
+
+  window.winGame = () => saveProgress(true);
+  window.loseGame = () => saveProgress(false);
 
   document.getElementById('command-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') processCommand();
