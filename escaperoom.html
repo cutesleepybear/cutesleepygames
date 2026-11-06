@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚪 Escape Room</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: #0a0a0a;
+    color: #00ff41; /* Matrix green text */
+    min-height: 100vh; padding: 20px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .back-btn { position: absolute; top: 20px; left: 20px; text-decoration: none; color: #555; font-size: 0.9rem; border: 1px solid #333; padding: 5px 10px; border-radius: 6px; font-family: sans-serif; z-index: 100; }
+  .back-btn:hover { color: #00ff41; border-color: #00ff41; }
+  
+  #game-container { display: none; width: 100%; max-width: 800px; margin-top: 40px; }
+  
+  .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+  h1 { font-size: 1.8rem; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0,255,65,0.5); }
+  #timer { font-size: 1.2rem; color: #ff3333; font-weight: bold; }
+  
+  .subtitle { text-align: center; font-size: 0.8rem; color: #888; margin-bottom: 20px; font-family: sans-serif; }
+
+  #log {
+    background: #111; border: 1px solid #333; border-radius: 8px;
+    padding: 20px; height: 350px; overflow-y: auto; font-size: 0.95rem;
+    line-height: 1.6; margin-bottom: 20px;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+  }
+  .log-entry { margin-bottom: 10px; }
+  .log-entry.sys { color: #00ff41; }
+  .log-entry.room { color: #e0e0e0; }
+  .log-entry.error { color: #ff3333; }
+  .log-entry.win { color: #ffff00; font-weight: bold; font-size: 1.1rem; text-shadow: 0 0 10px #ffff00; }
+  .log-entry.action { color: #00bfff; margin-top: 15px; }
+
+  .inventory {
+    background: #111; border: 1px solid #333; padding: 10px 20px; border-radius: 8px;
+    margin-bottom: 20px; font-size: 0.9rem; display: flex; gap: 15px; flex-wrap: wrap;
+  }
+  .inventory span { color: #ffff00; }
+
+  .input-area { display: flex; gap: 10px; }
+  input[type="text"] {
+    flex: 1; padding: 12px; background: #000; border: 1px solid #333;
+    color: #00ff41; font-family: inherit; font-size: 1rem; border-radius: 6px;
+  }
+  input[type="text"]:focus { outline: none; border-color: #00ff41; box-shadow: 0 0 10px rgba(0,255,65,0.3); }
+  
+  button {
+    padding: 12px 24px; background: #00ff41; color: #000; border: none;
+    font-weight: bold; font-family: inherit; font-size: 1rem; border-radius: 6px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  button:hover { background: #fff; box-shadow: 0 0 15px #fff; }
+
+  #win-screen {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+    flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 1000;
+  }
+  #win-screen h2 { font-size: 3rem; color: #ffff00; text-shadow: 0 0 20px #ffff00; margin-bottom: 20px; }
+  #win-screen p { color: #ccc; margin-bottom: 30px; font-family: sans-serif; }
+</style>
+</head>
+<body>
+
+  <a href="index.html" class="back-btn">← Back to Hub</a>
+
+  <div id="game-container">
+    <div class="header">
+      <h1 id="room-title">Loading...</h1>
+      <div id="timer">00:00</div>
+    </div>
+    <div class="subtitle">Type commands to interact. Try "look", "inventory", "use [item]", "examine [object]", or "code [number]".</div>
+
+    <div id="log"></div>
+
+    <div class="inventory" id="inventory">
+      Inventory: <span id="inv-items">Empty</span>
+    </div>
+
+    <div class="input-area">
+      <input type="text" id="command-input" placeholder="Type a command..." autocomplete="off" autofocus>
+      <button onclick="processCommand()">Enter</button>
+    </div>
+  </div>
+
+  <div id="win-screen">
+    <h2 id="win-title">YOU ESCAPED!</h2>
+    <p id="win-sub">Your stats have been saved to the cloud.</p>
+    <button onclick="window.location.reload()" style="padding: 15px 30px; font-size: 1.2rem;">Play Again</button>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
+    authDomain: "cute-sleepy-games.firebaseapp.com",
+    projectId: "cute-sleepy-games",
+    storageBucket: "cute-sleepy-games.firebasestorage.app",
+    messagingSenderId: "249264537283",
+    appId: "1:249264537283:web:811dce511556eda6a96c76"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ============ ROOM DATA ============
+  const ROOMS = [
+    {
+      title: "The Study",
+      intro: "You wake up in a dusty old study. The door is locked, and a computer terminal blinks on the desk.",
+      look: ["A wooden desk with a computer terminal.", "A bookshelf filled with dusty books.", "A locked door."],
+      items: { "book": "You pull a book off the shelf. It's titled 'The History of 1337'.", "terminal": "The screen says: 'ENTER PASSWORD'." },
+      code: "1337",
+      winMsg: "The terminal flashes green. 'ACCESS GRANTED'. The door clicks open!"
+    },
+    {
+      title: "The Vault",
+      intro: "You are trapped in a bank vault. A heavy metal door stands before you, with a 3-digit safe dial.",
+      look: ["A heavy metal door.", "A dead guard's desk.", "A vent near the floor."],
+      items: { "desk": "You search the desk and find a piece of paper that says: 'Code is 42 + 7'.", "vent": "You look in the vent and find a screwdriver." },
+      code: "49",
+      winMsg: "You turn the dial to 4... 9... CLUNK. The vault door swings open!"
+    },
+    {
+      title: "The Cellar",
+      intro: "It's pitch black. You can barely see a faint light under a door.",
+      look: ["A locked wooden door.", "A pile of crates.", "A strange symbol on the wall."],
+      items: { "crates": "You move the crates and find a flashlight.", "symbol": "The symbol looks like a triangle with an eye inside. It's the Illuminati." },
+      code: "666",
+      winMsg: "You enter 666. The door unlocks. You escape the cellar!"
+    }
+  ];
+
+  let state = {
+    currentRoom: null,
+    inventory: [],
+    startTime: null,
+    timerInterval: null,
+    escaped: false
+  };
+
+  window.playerStats = { escapes: 0 };
+
+  // ============ LOGGING & UI ============
+  function log(msg, type = 'room') {
+    const el = document.getElementById('log');
+    const div = document.createElement('div');
+    div.className = `log-entry ${type}`;
+    div.innerText = msg;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function updateInventory() {
+    const el = document.getElementById('inv-items');
+    el.innerText = state.inventory.length === 0 ? "Empty" : state.inventory.join(', ');
+  }
+
+  function startTimer() {
+    state.startTime = Date.now();
+    state.timerInterval = setInterval(() => {
+      const diff = Math.floor((Date.now() - state.startTime) / 1000);
+      const mins = String(Math.floor(diff / 60)).padStart(2, '0');
+      const secs = String(diff % 60).padStart(2, '0');
+      document.getElementById('timer').innerText = `${mins}:${secs}`;
+    }, 1000);
+  }
+
+  // ============ GAME LOGIC ============
+  function startGame() {
+    document.getElementById('game-container').style.display = 'block';
+    
+    // Pick a random room
+    state.currentRoom = ROOMS[Math.floor(Math.random() * ROOMS.length)];
+    document.getElementById('room-title').innerText = state.currentRoom.title;
+
+    log(state.currentRoom.intro, "sys");
+    log("Type 'look' to inspect your surroundings.", "sys");
+    startTimer();
+  }
+
+  function processCommand() {
+    if (state.escaped) return;
+
+    const input = document.getElementById('command-input');
+    const cmd = input.value.toLowerCase().trim();
+    input.value = '';
+    if (!cmd) return;
+
+    log(`> ${cmd}`, 'action');
+    const words = cmd.split(' ');
+
+    if (cmd === 'look' || cmd === 'l') {
+      log("You look around the room:", "sys");
+      state.currentRoom.look.forEach(item => log(`- ${item}`, "room"));
+    } 
+    else if (cmd === 'inventory' || cmd === 'i') {
+      log(`You are carrying: ${state.inventory.length ? state.inventory.join(', ') : 'nothing'}`, 'sys');
+    } 
+    else if (words[0] === 'examine' || words[0] === 'search') {
+      const obj = words.slice(1).join(' ');
+      let found = false;
+      for (const key in state.currentRoom.items) {
+        if (obj.includes(key) || key.includes(obj)) {
+          log(state.currentRoom.items[key], "room");
+          // If it's an item, add to inventory
+          if (!state.inventory.includes(key) && key !== 'desk' && key !== 'symbol' && key !== 'terminal') {
+            state.inventory.push(key);
+            updateInventory();
+            log(`(Added ${key} to inventory)`, "sys");
+          }
+          found = true;
+          break;
+        }
+      }
+      if (!found) log("You don't see anything special there.", "error");
+    } 
+    else if (words[0] === 'use' || words[0] === 'unlock') {
+      // If they type "use 1337" or "code 1337"
+      const potentialCode = words[words.length - 1];
+      if (cmd === `code ${state.currentRoom.code}` || potentialCode === state.currentRoom.code) {
+        winGame();
+      } else {
+        log("That doesn't work.", "error");
+      }
+    } 
+    else if (cmd === 'help') {
+      log("Commands: look, inventory, examine [object], use [code], help", "sys");
+    } 
+    else {
+      // Secret shortcut: just typing the code works
+      if (cmd === state.currentRoom.code) {
+        winGame();
+      } else {
+        log("I don't understand that command. Type 'help' for a list.", "error");
+      }
+    }
+  }
+
+  async function winGame() {
+    state.escaped = true;
+    clearInterval(state.timerInterval);
+    log(state.currentRoom.winMsg, "win");
+    
+    window.playerStats.escapes++;
+    
+    // Save to Firebase
+    if (auth.currentUser) {
+      const docRef = doc(db, "saves", auth.currentUser.uid);
+      const docSnap = await getDoc(docRef);
+      
+      let currentData = {};
+      if (docSnap.exists()) {
+        currentData = docSnap.data();
+      }
+      
+      currentData.escapeRoomWins = (currentData.escapeRoomWins || 0) + 1;
+      await setDoc(docRef, currentData);
+    }
+
+    setTimeout(() => {
+      document.getElementById('win-screen').style.display = 'flex';
+    }, 1500);
+  }
+
+  // Allow pressing "Enter" to submit
+  document.getElementById('command-input').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') processCommand();
+  });
+
+  // ============ CHECK LOGIN ============
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      startGame();
+    } else {
+      window.location.href = "index.html";
+    }
+  });
+</script>
+</body>
+</html>
