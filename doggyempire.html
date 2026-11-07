@@ -25,7 +25,7 @@
 
   /* LAYOUT */
   .main-layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
-  .mansion { flex: 1; min-width: 600px; display: flex; flex-direction: column; gap: 15px; }
+  .mansion { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 15px; }
   
   /* ROOMS */
   .room { background: #fff; border-radius: 16px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #c8e6c9; position: relative; }
@@ -47,26 +47,21 @@
     display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
   }
   
-  /* The Dog Sprite (drawn with CSS) */
   .sprite-dog {
     width: 60px; height: 60px; background-color: #a1887f; 
     border-radius: 40% 40% 20% 20%; position: relative; margin-bottom: 5px;
   }
-  /* Ears */
   .sprite-dog::before, .sprite-dog::after {
     content: ''; position: absolute; width: 20px; height: 30px; background-color: #795548;
     border-radius: 50% 50% 0 0; top: -10px;
   }
   .sprite-dog::before { left: -5px; transform: rotate(-20deg); }
   .sprite-dog::after { right: -5px; transform: rotate(20deg); }
-  /* Eyes */
   .dog-eye { position: absolute; width: 8px; height: 8px; background: #000; border-radius: 50%; top: 20px; }
   .eye-left { left: 15px; }
   .eye-right { right: 15px; }
-  /* Nose */
   .dog-nose { position: absolute; width: 14px; height: 10px; background: #000; border-radius: 50%; top: 35px; left: 23px; }
 
-  /* The Skin Layer */
   .sprite-skin {
     position: absolute; inset: 0; z-index: 10; pointer-events: none;
     display: flex; align-items: center; justify-content: center;
@@ -90,9 +85,10 @@
   .btn-feed { background: #66bb6a; color: white; }
   .btn-move { background: #42a5f5; color: white; }
   .btn-skin { background: #ab47bc; color: white; }
+  .btn-pet:disabled { background: #ccc; cursor: not-allowed; }
 
   /* SHOP */
-  .shop { width: 350px; background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: sticky; top: 20px; }
+  .shop { width: 350px; background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
   .shop h2 { margin-bottom: 15px; font-size: 1.3rem; border-bottom: 2px solid #c8e6c9; padding-bottom: 10px; color: #1b5e20;}
   
   .shop-item { display: flex; justify-content: space-between; align-items: center; background: #fafafa; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;}
@@ -249,7 +245,8 @@
     pendingAdoptBreed: null,
     selectedPersonality: null,
     movingDogId: null,
-    skinDogId: null
+    skinDogId: null,
+    hasStarterDog: false
   };
 
   let saveTimeout;
@@ -262,6 +259,25 @@
     if (docSnap.exists()) {
       const data = docSnap.data().doggySave;
       if (data) state = { ...state, ...data };
+    }
+    
+    // Give starter dog if they don't have one
+    if (!state.hasStarterDog && state.dogs.length === 0) {
+      state.hasStarterDog = true;
+      state.dogs.push({
+        id: Date.now().toString(),
+        breedId: 'lab',
+        name: 'Teddy',
+        personality: 'Playful',
+        level: 1,
+        xp: 0,
+        maxXp: 100,
+        room: 'living',
+        skinId: 'none',
+        petCooldown: 0
+      });
+      state.coins = 15; // Give them a few coins to buy a bone
+      saveGame();
     }
     
     if (state.shelter.length === 0) generateShelter();
@@ -290,7 +306,7 @@
     state.shelter = shuffled.slice(0, 3);
   }
 
-  function refreshShelter() {
+  window.refreshShelter = function() {
     if (state.coins < 50) return alert("Not enough coins!");
     state.coins -= 50;
     generateShelter();
@@ -319,18 +335,18 @@
     }, 10000);
   }
 
-  function petDog(id) {
+  window.petDog = function(id) {
     const dog = state.dogs.find(d => d.id === id);
     if (!dog || dog.petCooldown > Date.now()) return;
     const reward = dog.personality === 'Playful' ? 3 : 1;
     state.coins += reward;
     dog.petCooldown = Date.now() + 3000;
     updateUI();
-    renderDogs();
+    renderRooms();
     saveGame();
   }
 
-  function feedDog(id) {
+  window.feedDog = function(id) {
     if (state.bones <= 0) return alert("You need a bone! Buy one in the shop.");
     const dog = state.dogs.find(d => d.id === id);
     if (!dog) return;
@@ -346,11 +362,11 @@
       dog.maxXp = Math.floor(dog.maxXp * 1.5);
     }
     updateUI();
-    renderDogs();
+    renderRooms();
     saveGame();
   }
 
-  function buyItem(item) {
+  window.buyItem = function(item) {
     if (item === 'bone') {
       if (state.coins < 10) return;
       state.coins -= 10;
@@ -418,7 +434,7 @@
                   <div class="dog-eye eye-right"></div>
                   <div class="dog-nose"></div>
                 </div>
-                ${skin.emoji ? `<div class="sprite-skin">${skin.emoji}</div>` : ''}
+                ${skin.emoji && skin.id !== 'none' ? `<div class="sprite-skin">${skin.emoji}</div>` : ''}
               </div>
               <div class="dog-name">${dog.name}</div>
               <div class="dog-breed">${breed.name}</div>
@@ -514,7 +530,7 @@
 
   window.confirmAdoption = function() {
     const name = document.getElementById('dog-name-input').value.trim() || state.pendingAdoptBreed.name;
-    const room = state.unlockedRooms[0]; // Put in first room
+    const room = state.unlockedRooms[0];
     
     state.coins -= state.pendingAdoptBreed.cost;
     state.dogs.push({
@@ -600,7 +616,6 @@
     document.getElementById('skin-modal').style.display = 'flex';
   }
 
-  // ============ PRESTIGE & SKINS ============
   window.unlockRoom = function(roomId, cost) {
     if (state.coins < cost) return;
     state.coins -= cost;
@@ -622,7 +637,6 @@
     state.unlockedRooms = ['living'];
     state.shelter = [];
     generateShelter();
-    
     renderAll();
     saveGame();
     alert(`Prestige complete! You now have ${state.pawPrints} 🐾. Every Paw Print gives +10% permanent coin bonus.`);
