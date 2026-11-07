@@ -52,7 +52,7 @@
   .give-up-btn:hover { background: rgba(255,51,51,0.2); }
 
   /* LAYOUT */
-  .layout { display: flex; gap: 20px; align-items: flex-start; }
+  .layout { display: flex; gap: 20px; align-items: flex-start; width: 100%;}
   .battlefield { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 300px; }
   
   .side { display: flex; flex-direction: column; gap: 8px; }
@@ -70,16 +70,6 @@
   .card.clickable { cursor: pointer; }
   .card.clickable:hover { border-color: #f0c060; transform: translateY(-3px); }
   .emoji { font-size: 2.6rem; line-height: 1; }
-  
-  /* Hide stats on small screens to save space, show on desktop */
-  @media (max-width: 600px) {
-    .card { width: 120px; padding: 8px; }
-    .emoji { font-size: 2rem; }
-    .name { font-size: 0.75rem; }
-    .type-tag { font-size: 0.55rem; }
-    .ability { display: none; }
-  }
-
   .name { font-size: 0.82rem; font-weight: 600; margin: 4px 0 2px; }
   .type-tag { display: inline-block; font-size: 0.62rem; padding: 1px 6px; border-radius: 8px; background: #5a4a2f; color: #f0e6d2; margin-bottom: 6px; }
   .hpbar { height: 8px; background: #1a1408; border-radius: 4px; overflow: hidden; margin: 4px 0 2px; }
@@ -122,24 +112,26 @@
   .item.used { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
   .item .iemoji { font-size: 1.4rem; }
 
-  /* MOBILE FIX: Make the sidebar stick to bottom and scroll horizontally */
+  /* MOBILE FIX */
   @media (max-width: 800px) {
     .layout { flex-direction: column; }
     .sidebar { 
       width: 100%; position: fixed; bottom: 0; left: 0; right: 0; 
       background: #1a2e1a; padding: 10px; border-top: 2px solid #5a4a2f; 
-      z-index: 1000; flex-direction: row; align-items: center; justify-content: space-between;
-      box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+      z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
     }
-    .log { display: none; } /* Hide log on mobile to save space, or make it collapsible */
-    .actions { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; gap: 10px;}
-    .turn-banner { width: 100%; margin-bottom: 0; font-size: 0.8rem;}
-    .items { width: 100%; margin-bottom: 5px; }
-    .item { padding: 5px; font-size: 0.6rem; }
-    .game-btn.attack { padding: 10px; font-size: 1rem; flex: 1;}
-    .game-btn { flex: 1; padding: 8px;}
-    #game-container { padding-bottom: 180px; } /* Space for the fixed bottom bar */
-    .card { width: 110px; } /* Even smaller on mobile */
+    .log { display: none; } 
+    .actions { flex-direction: row; justify-content: center; gap: 10px;}
+    .turn-banner { width: 100%; margin-bottom: 5px; font-size: 0.85rem; text-align: center;}
+    .items { width: 100%; margin-bottom: 10px; justify-content: center;}
+    .item { padding: 5px; font-size: 0.6rem; max-width: 100px;}
+    .game-btn.attack { padding: 12px; font-size: 1rem; flex: 2;}
+    .game-btn { flex: 1; padding: 10px; font-size: 0.9rem;}
+    #game-container { padding-bottom: 220px; } /* Make sure cards aren't hidden */
+    .card { width: 110px; padding: 8px; }
+    .emoji { font-size: 2rem; }
+    .name { font-size: 0.75rem; }
+    .ability { display: none; }
   }
 
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; text-align: center; padding: 20px; }
