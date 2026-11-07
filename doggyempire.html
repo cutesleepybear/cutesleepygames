@@ -16,25 +16,21 @@
 
   #game-container { display: none; width: 100%; max-width: 1200px; margin-top: 20px; }
   
-  /* HEADER */
   .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 25px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
   .header h1 { font-size: 1.8rem; color: #1b5e20; }
   .stats { display: flex; gap: 20px; font-weight: bold; font-size: 1.2rem; }
   .coins { color: #f57f17; }
   .paw-prints { color: #ab47bc; display: flex; align-items: center; gap: 5px;}
 
-  /* LAYOUT */
   .main-layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
   .mansion { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 15px; }
   
-  /* ROOMS */
   .room { background: #fff; border-radius: 16px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #c8e6c9; position: relative; }
   .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
   .room-header h2 { font-size: 1.2rem; color: #2e7d32; display: flex; gap: 10px; align-items: center; }
   .room-limit { font-size: 0.9rem; color: #777; }
   .dog-grid { display: flex; gap: 15px; flex-wrap: wrap; min-height: 120px; }
   
-  /* ============ CSS SPRITE ENGINE ============ */
   .dog-card {
     background: #f1f8e9; border: 2px solid #aed581; border-radius: 12px;
     padding: 10px; width: 170px; text-align: center; position: relative; transition: transform 0.2s;
@@ -87,7 +83,6 @@
   .btn-skin { background: #ab47bc; color: white; }
   .btn-pet:disabled { background: #ccc; cursor: not-allowed; }
 
-  /* SHOP */
   .shop { width: 350px; background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
   .shop h2 { margin-bottom: 15px; font-size: 1.3rem; border-bottom: 2px solid #c8e6c9; padding-bottom: 10px; color: #1b5e20;}
   
@@ -100,7 +95,6 @@
   .buy-btn.paw { background: #ab47bc; }
   .buy-btn.paw:hover { background: #8e24aa; }
 
-  /* MODALS */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;}
   .modal-content { background: #fff; padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; }
   .modal-content h2 { color: #2e7d32; margin-bottom: 5px; }
@@ -143,7 +137,6 @@
         <div id="dog-shop-container"></div>
         <button class="buy-btn" style="width: 100%; margin-top: 10px; background: #78909c;" onclick="refreshShelter()">Refresh (50 🪙)</button>
 
-        <!-- ENDGAME: PRESTIGE & SKINS -->
         <h2 style="margin-top: 20px;">✨ Prestige & Skins</h2>
         <div class="shop-item" id="prestige-container">
           <div class="shop-item-info">
@@ -161,7 +154,6 @@
     </div>
   </div>
 
-  <!-- MODALS -->
   <div class="modal" id="adopt-modal">
     <div class="modal-content">
       <h2>Adopt new dog!</h2>
@@ -265,6 +257,7 @@
     document.getElementById('game-container').style.display = 'block';
     renderAll();
     startPassiveIncome();
+    startCooldownTicker();
   }
 
   function saveGame() {
@@ -295,11 +288,11 @@
   }
 
   function calculateIncome(dog) {
-    let base = dog.level; // 1 coin per level
+    let base = dog.level; 
     if (dog.personality === 'Loyal') base *= 1.2;
     if (dog.personality === 'Lazy') base *= 1.3;
     const multiplier = 1 + (state.pawPrints * 0.1);
-    return Math.max(1, Math.floor(base * multiplier)); // Minimum 1
+    return Math.max(1, Math.floor(base * multiplier)); 
   }
 
   function startPassiveIncome() {
@@ -312,7 +305,27 @@
         updateUI();
         saveGame();
       }
-    }, 60000); // Generates money every 60 seconds
+    }, 60000); // Every 60 seconds
+  }
+
+  // THE REAL-TIME TICKER
+  function startCooldownTicker() {
+    setInterval(() => {
+      state.dogs.forEach(dog => {
+        const btn = document.getElementById(`pet-btn-${dog.id}`);
+        if (btn) {
+          const remaining = Math.ceil((dog.petCooldown - Date.now()) / 1000);
+          if (remaining > 0) {
+            btn.innerText = `Wait ${remaining}s...`;
+            btn.disabled = true;
+          } else {
+            const reward = dog.personality === 'Playful' ? 2 : 1;
+            btn.innerText = `Pet (+${reward} 🪙)`;
+            btn.disabled = false;
+          }
+        }
+      });
+    }, 1000);
   }
 
   window.petDog = function(id) {
@@ -321,10 +334,16 @@
     
     const reward = dog.personality === 'Playful' ? 2 : 1;
     state.coins += reward;
-    dog.petCooldown = Date.now() + 10000; // 10-second cooldown
+    dog.petCooldown = Date.now() + 10000; // 10s
     updateUI();
-    renderRooms();
     saveGame();
+    
+    // Instantly update the button visual
+    const btn = document.getElementById(`pet-btn-${dog.id}`);
+    if (btn) {
+      btn.innerText = `Wait 10s...`;
+      btn.disabled = true;
+    }
   }
 
   window.feedDog = function(id) {
@@ -333,18 +352,16 @@
     if (!dog) return;
     
     state.bones--;
-    let xpGain = 20; // Takes 5 bones to level up
+    let xpGain = 20; 
     if (dog.personality === 'Hungry') xpGain *= 2;
     
     dog.xp += xpGain;
     
-    // Check for Level Up
     if (dog.xp >= dog.maxXp) {
       dog.xp -= dog.maxXp;
       dog.level++;
-      dog.maxXp = Math.floor(dog.maxXp * 1.5); // Each level requires more XP
+      dog.maxXp = Math.floor(dog.maxXp * 1.5);
       
-      // Big Coin Reward for Leveling!
       const levelUpBonus = dog.level * 50; 
       state.coins += levelUpBonus;
       alert(`${dog.name} leveled up to Level ${dog.level}! You earned ${levelUpBonus} coins! 🪙`);
@@ -365,7 +382,6 @@
     saveGame();
   }
 
-  // ============ UI RENDERING ============
   function renderAll() {
     updateUI();
     renderRooms();
@@ -385,6 +401,19 @@
   function renderRooms() {
     const container = document.getElementById('mansion-container');
     container.innerHTML = '';
+
+    // If no dogs, show the free starter button!
+    if (state.dogs.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.style = "text-align: center; padding: 40px; background: #fff; border-radius: 16px; border: 2px dashed #aed581;";
+      emptyDiv.innerHTML = `
+        <h2>Your mansion is empty!</h2>
+        <p style="margin-bottom: 20px; color: #666;">Adopt your first dog to start playing.</p>
+        <button class="buy-btn" style="font-size: 1.2rem; padding: 12px 24px;" onclick="getStarterPack()">Claim Free Starter Dog 🐶</button>
+      `;
+      container.appendChild(emptyDiv);
+      return;
+    }
 
     ROOMS.forEach(room => {
       const isUnlocked = state.unlockedRooms.includes(room.id);
@@ -412,8 +441,13 @@
         roomDogs.forEach(dog => {
           const breed = BREEDS.find(b => b.id === dog.breedId);
           const skin = SKINS.find(s => s.id === dog.skinId) || SKINS[0];
-          const canPet = dog.petCooldown < Date.now();
           const xpPct = (dog.xp / dog.maxXp) * 100;
+          
+          // Calculate button state on load
+          const remaining = Math.ceil((dog.petCooldown - Date.now()) / 1000);
+          const isWaiting = remaining > 0;
+          const reward = dog.personality === 'Playful' ? 2 : 1;
+          const btnText = isWaiting ? `Wait ${remaining}s...` : `Pet (+${reward} 🪙)`;
 
           dogHTML += `
             <div class="dog-card">
@@ -433,7 +467,8 @@
               <div class="dog-level">Lv. ${dog.level} (${dog.xp}/${dog.maxXp} XP)</div>
               
               <div class="dog-actions">
-                <button class="btn-pet" id="pet-btn-${dog.id}" onclick="petDog('${dog.id}')" ${!canPet ? 'disabled' : ''}>Pet (+${dog.personality === 'Playful' ? 2 : 1} 🪙)</button>                <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed</button>
+                <button class="btn-pet" id="pet-btn-${dog.id}" onclick="petDog('${dog.id}')" ${isWaiting ? 'disabled' : ''}>${btnText}</button>
+                <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed</button>
                 <button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>
                 <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
               </div>
@@ -488,7 +523,6 @@
     });
   }
 
-  // ============ MODALS ============
   window.openAdoptModal = function(breedId) {
     const breed = BREEDS.find(b => b.id === breedId);
     if (state.coins < breed.cost) return alert("Not enough coins!");
@@ -642,7 +676,7 @@
     state.dogs.push({
       id: Date.now().toString(),
       breedId: 'lab',
-      name: 'Teddy',
+      name: 'Buster',
       personality: 'Playful',
       level: 1,
       xp: 0,
