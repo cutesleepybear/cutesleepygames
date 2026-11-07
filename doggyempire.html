@@ -119,6 +119,7 @@
       <h1>🐶 Doggy Simulator</h1>
       <div class="stats">
         <div class="coins">🪙 <span id="coin-display">0</span></div>
+        <div class="bones" style="color: #8d6e63;">🦴 <span id="bone-display">0</span></div>
         <div class="paw-prints" id="paw-display" style="display: none;">🐾 <span id="paw-count">0</span></div>
       </div>
     </div>
@@ -405,6 +406,9 @@
 
   function updateUI() {
     document.getElementById('coin-display').innerText = state.coins;
+    // ADD THIS LINE
+    document.getElementById('bone-display').innerText = state.bones;
+    
     document.getElementById('paw-count').innerText = state.pawPrints;
     if (state.pawPrints > 0 || state.unlockedSkins.length > 1) {
       document.getElementById('paw-display').style.display = 'flex';
@@ -487,8 +491,7 @@
               
               <div class="dog-actions">
                 <button class="btn-pet" id="pet-btn-${dog.id}" onclick="petDog('${dog.id}')" ${isWaiting ? 'disabled' : ''}>${btnText}</button>
-                <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed</button>
-                <button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>
+                <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed (${state.bones} 🦴)</button>                <button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>
                 <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
               </div>
             </div>
