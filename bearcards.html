@@ -23,8 +23,9 @@
   const auth = getAuth(app);
   const db = getFirestore(app);
   
-  window.db = db;
+  // Pass these to the global window so the game script can use them
   window.auth = auth;
+  window.db = db;
   window.fbDoc = doc;
   window.fbGetDoc = getDoc;
   window.fbSetDoc = setDoc;
@@ -112,7 +113,7 @@
   .item.used { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
   .item .iemoji { font-size: 1.4rem; }
 
-  /* MOBILE FIX */
+  /* MOBILE LAYOUT */
   @media (max-width: 800px) {
     .layout { flex-direction: column; }
     .sidebar { 
@@ -127,7 +128,7 @@
     .item { padding: 5px; font-size: 0.6rem; max-width: 100px;}
     .game-btn.attack { padding: 12px; font-size: 1rem; flex: 2;}
     .game-btn { flex: 1; padding: 10px; font-size: 0.9rem;}
-    #game-container { padding-bottom: 200px; } /* Space for bottom bar */
+    #game-container { padding-bottom: 200px; }
     .card { width: 110px; padding: 8px; }
     .emoji { font-size: 2rem; }
     .name { font-size: 0.75rem; }
@@ -187,6 +188,7 @@
   </div>
 
 <script>
+// ... (All of your BEARS, ADVANTAGE, ITEMS, and game logic go here)
 const BEARS = [
   { id:'brown',   emoji:'🐻',  name:'Brown Bear',     type:'Forest',      hp:100, atk:30, ability:'Forage',        abilDesc:'Heals 10 HP each turn' },
   { id:'panda',   emoji:'🐼',  name:'Panda',          type:'Bamboo',      hp:110, atk:25, ability:'Bamboo Shield', abilDesc:'Takes 10 less damage' },
