@@ -20,6 +20,8 @@ small{opacity:.8}
 #top{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;display:flex;justify-content:space-between;gap:8px;padding:10px;pointer-events:none}
 .chip{background:var(--pn);border:3px solid var(--ol);border-radius:18px;padding:5px 14px;font-weight:600;font-size:18px;box-shadow:0 4px 0 var(--bd);text-align:center}
 .money{min-width:120px}.money #cu{font-size:20px;font-weight:700}.money small{display:block;font-size:12px;color:#2b8a4b;font-weight:700;opacity:1;line-height:1}
+#hub{position:fixed;top:calc(env(safe-area-inset-top,0px) + 58px);left:10px;padding:6px 12px;font-size:14px;background:#9a8fa8;box-shadow:0 4px 0 #6f6580;z-index:5}
+#cs{position:fixed;top:calc(env(safe-area-inset-top,0px) + 100px);left:12px;font-size:12px;font-weight:600;opacity:.85}
 #side{position:fixed;left:8px;top:50%;transform:translateY(-55%);display:flex;flex-direction:column;gap:8px}
 .sb{width:60px;padding:5px 2px;font-size:11px;line-height:1.1;background:var(--pn);color:var(--tx);text-shadow:none;box-shadow:0 4px 0 var(--bd);position:relative}
 .sb span{display:block;font-size:24px}
@@ -85,9 +87,10 @@ small{opacity:.8}
 <button class="sb" onclick="openP('up')"><span>⚡</span>Upgrades<i class="bd" id="bUp"></i></button>
 <button class="sb" onclick="openP('ix')"><span>📖</span>Index</button>
 <button class="sb" onclick="openP('wd')"><span>🚀</span>Worlds<i class="bd" id="bWd"></i></button>
-<button class="sb" onclick="window.location.href='index.html'"><span>🚪</span>Hub</button>
 </div>
 <button id="ca" class="g" onclick="collectAll()" title="Collect all (R)"></button>
+<button id="hub" onclick="goHub()">🏠 Hub</button>
+<div id="cs"></div>
 <div id="tip"><b>Welcome! 🐾</b><br>Tap your pets to collect coins. Hatch eggs to find new pets, and merge 10 of the same into a rarer one!<br><button onclick="S.tut=1;hud();save()">Got it!</button></div>
 <div id="res"></div><div id="fl"></div><div id="toast"></div>
 <div id="dock"><div id="eggs"></div><div id="hbar">
@@ -96,31 +99,6 @@ small{opacity:.8}
 <button id="h3" class="b2" onclick="hatch(3)" title="Hatch x3 (3)"></button>
 </div></div>
 <div id="modal" onclick="if(event.target==this)closeP()"><div id="box"></div></div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
-    authDomain: "cute-sleepy-games.firebaseapp.com",
-    projectId: "cute-sleepy-games",
-    storageBucket: "cute-sleepy-games.firebasestorage.app",
-    messagingSenderId: "249264537283",
-    appId: "1:249264537283:web:811dce511556eda6a96c76"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  
-  window.firebaseAuth = getAuth(app);
-  window.firebaseDb = getFirestore(app);
-  window.fbDoc = doc;
-  window.fbGetDoc = getDoc;
-  window.fbSetDoc = setDoc;
-  window.fbOnAuth = onAuthStateChanged;
-</script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -130,6 +108,7 @@ const RC=['#9a9a9a','#4fb04f','#3b8fe8','#a05af0','#f5a01c','#ff4d6d','#27d3e8',
 const WT=[50,26,12,7,3.5,1.5,.45,.05],BV=[1,2.5,6,15,40,120,400,2000],WM=[1,50,500,2000,1e4,5e4];
 const UC=[0,2e4,3e5,3e6,3e7,3e8],TM=[1,3,10,40],TN=['','Shiny ','Insane ','Supreme '];
 const ECOL=[0xffe9a8,0x7ed957,0x4cc9f0,0xb06bff,0xff4d6d],MAXP=15;
+// eggs: [id,name,icon,cost,"r:pets|r:pets"]  c u r e l g h(ethereal) s(secret)
 const W=[
 {n:'Meadow',e:'🌿',c:'Coins',g:0x7ed957,sky:0xbfe9ff,eg:[
 ['basic','Basic Egg','🥚',10,'c:Cat,Dog|u:Bunny|r:Fox|s:Star Dragon'],
@@ -164,7 +143,7 @@ const W=[
 ['den','Den Egg','🏕️',2500000,'u:Brown Bear|r:Polar Bear|e:Grizzly|l:Sun Bear|g:Teddy King|s:Honey King'],
 ['hive','Hive Egg','🍯',10000000,'r:Beehive Bear|e:Bumble Bear|l:Queen Bee Bear|h:Honey Flufftopus|s:Honey King'],
 ['cosmicb','Starry Egg','🌟',50000000,'e:Star Bear|l:Moon Bear|g:Galaxy Bear|h:Cosmic Bear|s:Bear God']]}];
-
+// pet look from name
 const hs=s=>{let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
 function sty(n){const h=hs(n),L=n.toLowerCase(),has=(...a)=>a.some(x=>L.includes(x));let hue=h%360,s=.65,l=.62;
  if(has('lava','ember','magma','fire','flame','inferno','scorch','blaze','volcan','cinder','ifrit','demon','comet','meteor'))hue=h%40;
@@ -180,25 +159,11 @@ function sty(n){const h=hs(n),L=n.toLowerCase(),has=(...a)=>a.some(x=>L.includes
 const PL=[];
 W.forEach((w,wi)=>{const m={},L=PL[wi]=[];w.eg=w.eg.map(a=>{const pool=a[4].split('|').map(s=>{const[k,v]=s.split(':');return[RK[k],v.split(',').map(n=>{let x=m[n];if(x===undefined)x=m[n]=L.push(Object.assign({n,r:RK[k]},sty(n)))-1;return x})]});return{id:a[0],n:a[1],i:a[2],c:a[3],pool}})});
 const fmt=n=>{n=Math.floor(n);if(n<1e3)return n+'';const s=['','K','M','B','T','Qa','Qi'];let i=0,x=n;while(x>=1000&&i<6){x/=1000;i++}return x.toFixed(x<10?2:1)+s[i]};
-const fresh=()=>({cw:0,cur:[100,0,0,0,0,0],un:[1,0,0,0,0,0],inv:{},hab:[[],[],[],[],[],[]],show:[null,null,null,null,null,null],egg:[0,0,0,0,0,0],up:{tri:0,auto:0,luck:0,inc:0},seen:{},autoOn:false,tut:0});
-
-let S = fresh();
-const save = async () => {
-  if (!window.firebaseAuth || !window.firebaseAuth.currentUser) return;
-  try {
-    const docRef = window.fbDoc(window.firebaseDb, "saves", window.firebaseAuth.currentUser.uid);
-    const docSnap = await window.fbGetDoc(docRef);
-    let currentData = docSnap.exists() ? docSnap.data() : {};
-    
-    currentData.pocketPetsSave = S;
-    currentData.totalXP = (currentData.totalXP || 0) + 2; 
-    currentData.level = Math.floor(currentData.totalXP / 500) + 1;
-
-    await window.fbSetDoc(docRef, currentData);
-  } catch (e) { console.error("Save error", e); }
-};
-
-const pk=k=>k.split(':').map(Number);
+const fresh=()=>({cw:0,cur:[100,0,0,0,0,0],un:[1,0,0,0,0,0],inv:{},hab:[[],[],[],[],[],[]],show:[null,null,null,null,null,null],egg:[0,0,0,0,0,0],up:{tri:0,auto:0,luck:0,inc:0},seen:{},autoOn:false});
+let S=fresh();
+try{const l=localStorage.getItem('pocketpets3d_v2');if(l)S=Object.assign(fresh(),JSON.parse(l))}catch(e){}
+const save=()=>{if(window.cloudReady!==false)S.ts=Date.now();try{localStorage.setItem('pocketpets3d_v2',JSON.stringify(S))}catch(e){}if(window.cloudSave)window.cloudSave()};
+async function goHub(){try{if(window.cloudFlush)await Promise.race([window.cloudFlush(),new Promise(r=>setTimeout(r,2500))])}catch(e){}location.href='index.html'}const pk=k=>k.split(':').map(Number);
 const pr=(w,i)=>PL[w][i].r;
 const val=k=>{const[w,i,t]=pk(k);return BV[pr(w,i)]*WM[w]*TM[t]};
 const nm=k=>{const[w,i,t]=pk(k);return TN[t]+PL[w][i].n};
@@ -371,7 +336,7 @@ cv.addEventListener('pointerdown',e=>{
  const p=P[o.userData.pi];const g=p.st+Math.max(val(p.key)*.5,WM[S.cw])*incM();p.st=0;p.bump=1;give(g);pop(e.clientX,e.clientY,g);coinBurst(p.g.position);if(!S.tut){S.tut=1;hud()}});
 function give(g){S.cur[S.cw]+=g}
 function pop(x,y,g){const d=document.createElement('div');d.className='pop';d.style.left=x-20+'px';d.style.top=y-30+'px';d.textContent='+'+(g<10?g.toFixed(1):fmt(g));document.body.appendChild(d);setTimeout(()=>d.remove(),1000)}
-function collectAll(){let t=0;P.forEach(p=>{t+=p.st;p.st=0;p.bump=1});if(t>=1){give(t);pop(innerWidth/2,innerHeight/2,t)}hud();save()}
+function collectAll(){let t=0;P.forEach(p=>{t+=p.st;p.st=0;p.bump=1});if(t>=1){give(t);pop(innerWidth/2,innerHeight/2,t)}hud()}
 function odds(e){const l=1+.25*S.up.luck,w=e.pool.map(g=>WT[g[0]]*(g[0]>=2?l:1)),s=w.reduce((a,b)=>a+b),o=[];e.pool.forEach((g,j)=>g[1].forEach(pi=>o.push([pi,w[j]/s/g[1].length*100])));return o}
 function roll(){const o=odds(cE());let r=Math.random()*100,j=0;for(;j<o.length-1;j++){if(r<o[j][1])break;r-=o[j][1]}return o[j][0]}
 let H=null,parts=[];
@@ -502,32 +467,64 @@ function loop(now){
  hudT+=dt;if(hudT>.25){hudT=0;hud()}
  mT+=dt;if(mT>2){mT=0;if(open_&&Date.now()-lastP>800)render()}
  ren.render(scene,cam);requestAnimationFrame(loop)}
-setInterval(save,10000);
+setInterval(save,5000);
+resize();fix();applyWorld();requestAnimationFrame(loop);
+</script>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInAnonymously} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-// ---------- LOGIN & BOOT ----------
-window.fbOnAuth(window.firebaseAuth, async (user) => {
-  if (!user) {
-    window.location.href = "index.html";
+// >>> Dieselbe Config wie in deiner index.html (Hub) verwenden! <<<
+const firebaseConfig={
+  apiKey:"DEIN_API_KEY",
+  authDomain:"DEIN_PROJEKT.firebaseapp.com",
+  projectId:"DEIN_PROJEKT",
+  appId:"DEINE_APP_ID"
+};
+const REQUIRE_HUB_LOGIN=false; // true = ohne Login zurück zum Hub schicken statt anonym zu spielen
+
+window.cloudReady=false;
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const cs=document.getElementById('cs'),say=t=>{if(cs)cs.textContent=t};
+let ref=null,tm=null,lastJ='';
+const snap=()=>JSON.stringify(Object.assign({},S,{ts:0}));
+
+async function push(){
+  if(!ref||window.cloudReady!==true)return;
+  const j=snap();if(j===lastJ)return;
+  try{
+    await setDoc(ref,{json:JSON.stringify(S),ts:S.ts||Date.now(),updated:serverTimestamp()});
+    lastJ=j;say('☁️ Gespeichert');
+  }catch(e){console.error(e);say('⚠️ Cloud-Fehler')}
+}
+window.cloudSave=()=>{clearTimeout(tm);tm=setTimeout(push,3000)};
+window.cloudFlush=()=>{clearTimeout(tm);return push()};
+addEventListener('pagehide',()=>window.cloudFlush());
+document.addEventListener('visibilitychange',()=>{if(document.hidden)window.cloudFlush()});
+
+onAuthStateChanged(auth,async user=>{
+  if(!user){
+    if(REQUIRE_HUB_LOGIN){location.href='index.html';return}
+    try{await signInAnonymously(auth)}catch(e){console.error(e);say('⚠️ Offline-Modus');window.cloudReady=undefined}
     return;
   }
-  
-  const docRef = window.fbDoc(window.firebaseDb, "saves", user.uid);
-  const docSnap = await window.fbGetDoc(docRef);
-  
-  if (docSnap.exists() && docSnap.data().pocketPetsSave) {
-    S = Object.assign(fresh(), docSnap.data().pocketPetsSave);
-  } else {
-    S = fresh();
-  }
-  
-  // Start rendering immediately so the screen isn't black
-  resize();
-  requestAnimationFrame(loop);
-
-  // Then load the data and apply the world
-  fix();
-  applyWorld();
+  ref=doc(db,'users',user.uid,'games','pocketpets3d');
+  say('☁️ Lade…');
+  try{
+    const s=await getDoc(ref);
+    if(s.exists()){
+      const d=s.data();
+      if((d.ts||0)>(S.ts||0)){
+        S=Object.assign(fresh(),JSON.parse(d.json));
+        try{localStorage.setItem('pocketpets3d_v2',JSON.stringify(S))}catch(e){}
+        fix();applyWorld();
+      }
+    }
+    lastJ=s.exists()&&(s.data().ts||0)>=(S.ts||0)?snap():'';
+    window.cloudReady=true;
+    if(!lastJ)await push();
+    say('☁️ Verbunden');
+  }catch(e){console.error(e);say('⚠️ Offline-Modus');window.cloudReady=undefined}
 });
-</script>
-</body>
-</html>
+</script></body></html>
