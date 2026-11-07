@@ -471,18 +471,17 @@ setInterval(save,5000);
 resize();fix();applyWorld();requestAnimationFrame(loop);
 </script>
 <script type="module">
-import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {getAuth,onAuthStateChanged,signInAnonymously} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import {getFirestore,doc,getDoc,setDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-
-// >>> Dieselbe Config wie in deiner index.html (Hub) verwenden! <<<
-const firebaseConfig={
-  apiKey:"DEIN_API_KEY",
-  authDomain:"DEIN_PROJEKT.firebaseapp.com",
-  projectId:"DEIN_PROJEKT",
-  appId:"DEINE_APP_ID"
-};
-const REQUIRE_HUB_LOGIN=false; // true = ohne Login zurück zum Hub schicken statt anonym zu spielen
+import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
+    authDomain: "cute-sleepy-games.firebaseapp.com",
+    projectId: "cute-sleepy-games",
+    storageBucket: "cute-sleepy-games.firebasestorage.app",
+    messagingSenderId: "249264537283",
+    appId: "1:249264537283:web:811dce511556eda6a96c76"
+  };const REQUIRE_HUB_LOGIN=false; // true = ohne Login zurück zum Hub schicken statt anonym zu spielen
 
 window.cloudReady=false;
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
