@@ -471,59 +471,61 @@ setInterval(save,5000);
 resize();fix();applyWorld();requestAnimationFrame(loop);
 </script>
 <script type="module">
-import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  const firebaseConfig = {
-    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
-    authDomain: "cute-sleepy-games.firebaseapp.com",
-    projectId: "cute-sleepy-games",
-    storageBucket: "cute-sleepy-games.firebasestorage.app",
-    messagingSenderId: "249264537283",
-    appId: "1:249264537283:web:811dce511556eda6a96c76"
-  };const REQUIRE_HUB_LOGIN=false; // true = ohne Login zurück zum Hub schicken statt anonym zu spielen
+import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+const firebaseConfig={
+  apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
+  authDomain:"cute-sleepy-games.firebaseapp.com",
+  projectId:"cute-sleepy-games",
+  storageBucket:"cute-sleepy-games.firebasestorage.app",
+  messagingSenderId:"249264537283",
+  appId:"1:249264537283:web:811dce511556eda6a96c76"
+};
+const REQUIRE_LOGIN=true; // true: visitors without the hub login go back to index.html
 
 window.cloudReady=false;
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
-const cs=document.getElementById('cs'),say=t=>{if(cs)cs.textContent=t};
-let ref=null,tm=null,lastJ='';
+const app=getApps().length?getApp():initializeApp(firebaseConfig);
+const auth=getAuth(app),db=getFirestore(app);
+const cs=document.getElementById("cs"),say=t=>{if(cs)cs.textContent=t};
+let tm=null,lastJ="",busy=false,lastXP=0,failed=false;
 const snap=()=>JSON.stringify(Object.assign({},S,{ts:0}));
 
 async function push(){
-  if(!ref||window.cloudReady!==true)return;
+  const u=auth.currentUser;
+  if(!u||window.cloudReady!==true||busy)return;
   const j=snap();if(j===lastJ)return;
+  busy=true;
   try{
-    await setDoc(ref,{json:JSON.stringify(S),ts:S.ts||Date.now(),updated:serverTimestamp()});
-    lastJ=j;say('☁️ Gespeichert');
-  }catch(e){console.error(e);say('⚠️ Cloud-Fehler')}
+    const ref=doc(db,"saves",u.uid);
+    const cur=(await getDoc(ref)).data()||{};
+    let xp=cur.totalXP||0;const now=Date.now();
+    if(now-lastXP>=60000){xp+=5;lastXP=now}
+    await setDoc(ref,{pocketPetsSave:JSON.stringify(S),pocketPetsTs:S.ts||now,totalXP:xp,level:Math.floor(xp/500)+1},{merge:true});
+    lastJ=j;failed=false;say("☁️ Saved");
+  }catch(e){failed=true;console.error(e);say("⚠️ Cloud save failed: "+(e.code||e.message))}
+  busy=false;
 }
-window.cloudSave=()=>{clearTimeout(tm);tm=setTimeout(push,3000)};
+window.cloudSave=()=>{clearTimeout(tm);if(!failed||true)tm=setTimeout(push,3000)};
 window.cloudFlush=()=>{clearTimeout(tm);return push()};
-addEventListener('pagehide',()=>window.cloudFlush());
-document.addEventListener('visibilitychange',()=>{if(document.hidden)window.cloudFlush()});
+addEventListener("pagehide",()=>window.cloudFlush());
+document.addEventListener("visibilitychange",()=>{if(document.hidden)window.cloudFlush()});
 
 onAuthStateChanged(auth,async user=>{
-  if(!user){
-    if(REQUIRE_HUB_LOGIN){location.href='index.html';return}
-    try{await signInAnonymously(auth)}catch(e){console.error(e);say('⚠️ Offline-Modus');window.cloudReady=undefined}
-    return;
-  }
-  ref=doc(db,'users',user.uid,'games','pocketpets3d');
-  say('☁️ Lade…');
+  if(!user){if(REQUIRE_LOGIN){location.href="index.html"}else{say("Not signed in: playing offline");window.cloudReady=undefined}return}
+  say("☁️ Loading...");
   try{
-    const s=await getDoc(ref);
-    if(s.exists()){
-      const d=s.data();
-      if((d.ts||0)>(S.ts||0)){
-        S=Object.assign(fresh(),JSON.parse(d.json));
-        try{localStorage.setItem('pocketpets3d_v2',JSON.stringify(S))}catch(e){}
-        fix();applyWorld();
-      }
-    }
-    lastJ=s.exists()&&(s.data().ts||0)>=(S.ts||0)?snap():'';
+    const s=await getDoc(doc(db,"saves",user.uid));
+    const d=s.exists()?s.data():{};
+    let c=null;try{c=d.pocketPetsSave?JSON.parse(d.pocketPetsSave):null}catch(e){}
+    if(c&&(d.pocketPetsTs||0)>(S.ts||0)){
+      S=Object.assign(fresh(),c);
+      try{localStorage.setItem("pocketpets3d_v2",JSON.stringify(S))}catch(e){}
+      fix();applyWorld();lastJ=snap();
+    }else lastJ="";
     window.cloudReady=true;
     if(!lastJ)await push();
-    say('☁️ Verbunden');
-  }catch(e){console.error(e);say('⚠️ Offline-Modus');window.cloudReady=undefined}
+    say("☁️ Connected");
+  }catch(e){console.error(e);say("⚠️ Cloud load failed: "+(e.code||e.message));window.cloudReady=undefined}
 });
-</script></body></html>
+</script> </body> </html>

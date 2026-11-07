@@ -126,45 +126,53 @@ function prestige(g){if(!window.cf){window.cf=1;toast("Tap again to move house (
 setInterval(()=>{S.t++;if(S.t>=60){S.t=0;const a=S.dogs.reduce((s,d)=>s+pass(d),0);if(a>0){S.coins+=a;toast("Your pack earned "+f(a)+" 🪙")}save()}hud()},1000);
 render();
 </script><script type="module">
-/* ===== ARCADE CLOUD SAVE (saves/{uid}.doggySave + totalXP/level) =====
-   Reuses your already-initialised Firebase app if there is one;
-   otherwise fill in firebaseConfig. */
-import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  const firebaseConfig = {
-    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
-    authDomain: "cute-sleepy-games.firebaseapp.com",
-    projectId: "cute-sleepy-games",
-    storageBucket: "cute-sleepy-games.firebasestorage.app",
-    messagingSenderId: "249264537283",
-    appId: "1:249264537283:web:811dce511556eda6a96c76"
-  };const app=getApps().length?getApp():initializeApp(firebaseConfig);
+import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+const firebaseConfig={
+  apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
+  authDomain:"cute-sleepy-games.firebaseapp.com",
+  projectId:"cute-sleepy-games",
+  storageBucket:"cute-sleepy-games.firebasestorage.app",
+  messagingSenderId:"249264537283",
+  appId:"1:249264537283:web:811dce511556eda6a96c76"
+};
+const REQUIRE_LOGIN=true; // true: visitors without the hub login go back to index.html
+const app=getApps().length?getApp():initializeApp(firebaseConfig);
 const auth=getAuth(app),db=getFirestore(app);
-let isSaving=false,timer,lastXP=0;
+const badge=document.createElement("div");
+badge.style.cssText="position:fixed;left:8px;bottom:8px;font:12px system-ui;background:#000b;color:#fff;padding:4px 10px;border-radius:12px;z-index:50;max-width:80vw";
+document.body.appendChild(badge);
+const say=t=>{badge.textContent=t};
+let ready=false,busy=false,again=false,timer,lastXP=0;
+
 async function saveGame(){
-  if(!auth.currentUser||isSaving)return;
-  isSaving=true;
+  const u=auth.currentUser;if(!u||!ready)return;
+  if(busy){again=true;return}
+  busy=true;
   try{
-    const docRef=doc(db,"saves",auth.currentUser.uid);
-    const docSnap=await getDoc(docRef);
-    const cur=docSnap.exists()?docSnap.data():{};
-    let xp=cur.totalXP||0;
-    const now=Date.now();
-    if(now-lastXP>=60000){xp+=5;lastXP=now} // +5 XP, at most once a minute
-    await setDoc(docRef,{doggySave:JSON.parse(JSON.stringify(S)),totalXP:xp,level:Math.floor(xp/500)+1},{merge:true});
-  }catch(e){console.error("Save failed",e)}
-  finally{isSaving=false}
+    const ref=doc(db,"saves",u.uid);
+    const cur=(await getDoc(ref)).data()||{};
+    let xp=cur.totalXP||0;const now=Date.now();
+    if(now-lastXP>=60000){xp+=5;lastXP=now}
+    await setDoc(ref,{doggySave:JSON.parse(JSON.stringify(S)),totalXP:xp,level:Math.floor(xp/500)+1},{merge:true});
+    say("☁️ Saved");
+  }catch(e){console.error(e);say("⚠️ Cloud save failed: "+(e.code||e.message))}
+  finally{busy=false;if(again){again=false;window.cloudSave()}}
 }
 window.cloudSave=()=>{clearTimeout(timer);timer=setTimeout(saveGame,3000)};
+addEventListener("pagehide",()=>{clearTimeout(timer);saveGame()});
+
 onAuthStateChanged(auth,async user=>{
-  if(!user)return;
+  if(!user){if(REQUIRE_LOGIN)location.href="index.html";else say("Not signed in: playing offline");return}
+  say("☁️ Loading...");
   try{
     const snap=await getDoc(doc(db,"saves",user.uid));
     const d=snap.exists()&&snap.data().doggySave;
-    if(d){S=d;S.v=S.v||[];S.pr=S.pr||0;if(!S.sh||!S.sh.length)roll();if(!S.dogs.length)starter();render()}
-    else window.cloudSave();
-  }catch(e){console.error("Load failed",e)}
+    if(d){S=d;S.v=S.v||[];S.pr=S.pr||0;S.sh=S.sh||[];if(!S.sh.length)roll();if(!S.dogs.length)starter()}
+    ready=true;render();say("☁️ Connected");
+  }catch(e){console.error(e);say("⚠️ Cloud load failed: "+(e.code||e.message))}
 });
+</script>
 </script>
 </body></html>

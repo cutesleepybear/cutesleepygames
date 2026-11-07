@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paws &amp; Magic</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#3b2a55;--pink:#ff7eb6;--vio:#7c5cff;--mint:#5fd6a0;--sun:#ffd666;--card:#fff8ee;--ol:#2b1f3a;box-sizing:border-box;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:linear-gradient(160deg,#ffd9ec,#d9ccff 50%,#bfeaff);background-attachment:fixed;font-family:'Fredoka',system-ui,sans-serif;color:var(--ink);user-select:none;-webkit-tap-highlight-color:transparent}
+#app{max-width:620px;margin:0 auto;padding:8px;display:flex;flex-direction:column;gap:7px}
+header{display:flex;align-items:stretch;gap:8px}
+button,#hub{font:700 14px 'Fredoka',system-ui,sans-serif;color:#fff;background:var(--pink);border:3px solid var(--ol);border-radius:14px;padding:7px 10px;box-shadow:0 4px 0 #c24e86;cursor:pointer;text-decoration:none;text-shadow:0 2px 0 #0004}
+button:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #0004}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.g{background:var(--mint);box-shadow:0 4px 0 #2e9c70}
+button.v{background:var(--vio);box-shadow:0 4px 0 #4b33b8}
+button.x{background:#9a8fa8;box-shadow:0 4px 0 #6f6580}
+#hub{background:#9a8fa8;box-shadow:0 4px 0 #6f6580;display:flex;align-items:center}
+#hb{flex:1;display:flex;align-items:center;gap:8px;background:var(--card);border:3px solid var(--ol);border-radius:16px;padding:3px 10px;cursor:pointer}
+#hb img{width:44px;height:44px}
+#hb div{flex:1;font-size:14px;line-height:1.2}
+#hb .acc{flex:0 0 auto;text-align:right;font-size:12px;font-weight:600}
+.bar{display:block;height:11px;background:#e7d9f3;border:2px solid var(--ol);border-radius:8px;overflow:hidden;margin-top:2px}
+.bar u{display:block;height:100%;background:linear-gradient(90deg,#ffb020,#ffe066);text-decoration:none}
+#res{display:flex;flex-wrap:wrap;gap:3px 12px;align-items:center;background:var(--card);border:3px solid var(--ol);border-radius:16px;padding:4px 10px;font-weight:600;font-size:15px}
+#res span{display:flex;align-items:center;gap:3px}#res img{width:22px;height:22px}
+#sb{display:flex;align-items:center;gap:3px;font-size:13px;font-weight:600}
+#sb i{flex:1;height:14px;border:2px solid var(--ol);border-radius:7px;background:#fff}
+#sb i.on{background:linear-gradient(#9be564,#44b86a)}
+#sb i.use{background:repeating-linear-gradient(45deg,#ffb020,#ffb020 4px,#ffd666 4px,#ffd666 8px)}
+#map{display:grid;grid-template-columns:repeat(10,1fr);border:4px solid var(--ol);border-radius:18px;overflow:hidden;box-shadow:0 6px 0 #0003}
+.t{aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.t.a{background:radial-gradient(circle at 30% 25%,#c4f7a8,#8fdc72)}.t.b{background:radial-gradient(circle at 70% 70%,#b0ee92,#7fd264)}
+.t img{width:94%;pointer-events:none;filter:drop-shadow(0 3px 0 #0002)}
+.t.mo img{animation:bob 1s infinite alternate}.t.me img{width:104%;z-index:2;animation:bob .7s infinite alternate}
+@keyframes bob{to{transform:translateY(-4px) scale(1.05)}}
+.cr{position:absolute;top:-1px;right:1px;width:38%;z-index:3}
+.pp{position:absolute;width:34%;aspect-ratio:1;border-radius:50%;background:#fff;border:3px solid var(--vio);z-index:4;pointer-events:none;animation:pu .6s infinite alternate}
+.pp.bad{border-color:#ff4d6d;background:#ffd1d9}
+@keyframes pu{to{transform:scale(1.25)}}
+.pl{position:absolute;z-index:5;top:-2px;left:-2px;background:var(--vio);color:#fff;font:700 12px 'Fredoka';border:2px solid var(--ol);border-radius:9px;padding:0 5px;font-style:normal;pointer-events:none}
+.pl.bad{background:#ff4d6d}
+#hint{font-size:13px;font-weight:600;text-align:center;min-height:18px}
+#army{display:flex;flex-wrap:wrap;gap:6px;min-height:50px}
+.u{background:var(--card);border:3px solid var(--ol);border-radius:14px;padding:2px 10px 2px 4px;display:flex;align-items:center;gap:4px}
+.u img{width:40px;height:40px}.u b{font-size:18px}
+footer{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+#cs{font-size:12px;font-weight:600;text-align:center;opacity:.8}
+#ov{position:fixed;inset:0;background:#2b1f3acc;display:none;align-items:center;justify-content:center;padding:10px;backdrop-filter:blur(3px)}
+#ov.show{display:flex}
+.box{background:var(--card);border:4px solid var(--ol);border-radius:24px;width:min(540px,100%);max-height:94vh;overflow:auto;padding:14px;text-align:center;position:relative}
+.box h3{margin:0 0 8px;font-size:24px}
+.row{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px 0;min-height:96px}
+.st{width:80px;padding:4px;border:3px solid var(--ol);border-radius:14px;background:#fff;text-align:center;position:relative}
+.st img{width:100%;display:block}
+.st i{display:block;height:8px;border:2px solid var(--ol);border-radius:6px;overflow:hidden;background:#ddd}
+.st u{display:block;height:100%;background:var(--mint)}
+.st.dead{opacity:.25;filter:grayscale(1)}
+.st.act{border-color:var(--sun);box-shadow:0 0 0 4px var(--sun),0 0 18px var(--sun);animation:bob .5s infinite alternate}
+.st[data-a=tgt]{cursor:crosshair;background:#ffe3ea}
+.sh{animation:shk .3s}
+@keyframes shk{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.fl{position:absolute;left:0;right:0;top:10px;font-weight:700;font-size:22px;color:#ff3b5c;-webkit-text-stroke:1px #fff;animation:fu 1s forwards;pointer-events:none}
+@keyframes fu{to{transform:translateY(-40px);opacity:0}}
+.spk{position:absolute;inset:0;border-radius:20px;background:radial-gradient(circle,#fff,#ffd66600 70%);animation:sp .7s forwards;pointer-events:none}
+@keyframes sp{from{opacity:1}to{opacity:0}}
+.li{display:flex;align-items:center;gap:10px;background:#fff;border:3px solid var(--ol);border-radius:14px;padding:6px 10px;margin:6px 0;text-align:left}
+.li img{width:52px;height:52px}.li div{flex:1;font-size:13px}.li b{font-size:16px}
+.li.done{background:#e3fbe9}
+.sts{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0;font-size:14px}
+.sts div{background:#fff;border:3px solid var(--ol);border-radius:12px;padding:4px}.sts b{display:block;font-size:20px}
+#toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;background:var(--card);border:3px solid var(--ol);border-radius:16px;padding:8px 16px;font-weight:600;transition:.25s;max-width:90vw;text-align:center;z-index:9}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style></head><body>
+<div id="app">
+<header><a id="hub" href="index.html" data-a="hub">Hub</a><div id="hb" data-a="profile"></div></header>
+<div id="res"></div><div id="sb"></div>
+<main id="map"></main><div id="hint"></div>
+<div id="army"></div>
+<footer><button class="g" data-a="end">End day</button><button class="v" data-a="castle">Castle</button><button data-a="missions">Missions</button><button class="v" data-a="skins">Skins</button><button class="x" data-a="profile">Profile</button><button class="x" data-a="new">New</button></footer>
+<div id="cs"></div>
+</div>
+<div id="ov"></div><div id="toast"></div>
+<script type="module">
+const cfg={apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",authDomain:"cute-sleepy-games.firebaseapp.com",projectId:"cute-sleepy-games",storageBucket:"cute-sleepy-games.firebasestorage.app",messagingSenderId:"249264537283",appId:"1:249264537283:web:811dce511556eda6a96c76"};
+const REQUIRE_HUB_LOGIN=true; // true: visitors without the hub login are sent back to index.html
+const $=s=>document.querySelector(s),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- vector art ---------- */
+const F=(y,d=9)=>`<g stroke="none"><circle cx="${32-d}" cy="${y}" r="3.4" fill="#2b1f3a"/><circle cx="${32+d}" cy="${y}" r="3.4" fill="#2b1f3a"/><circle cx="${33-d}" cy="${y-1}" r="1.2" fill="#fff"/><circle cx="${33+d}" cy="${y-1}" r="1.2" fill="#fff"/><ellipse cx="${27-d}" cy="${y+5}" rx="3.5" ry="2.2" fill="#ff8fb3" opacity=".75"/><ellipse cx="${37+d}" cy="${y+5}" rx="3.5" ry="2.2" fill="#ff8fb3" opacity=".75"/></g><path d="M29 ${y+5}q3 3 6 0" fill="none"/>`;
+const A=(y,d,c)=>`<path d="M${27-d} ${y-6}l8 3M${37+d} ${y-6}l-8 3" fill="none"/><circle cx="${32-d}" cy="${y}" r="3.6" fill="${c}"/><circle cx="${32+d}" cy="${y}" r="3.6" fill="${c}"/><circle cx="${32-d}" cy="${y}" r="1.3" fill="#2b1f3a" stroke="none"/><circle cx="${32+d}" cy="${y}" r="1.3" fill="#2b1f3a" stroke="none"/>`;
+const SK=[
+ {id:'rose',n:'Rosy Dream',b:'#ffd9ec',m:'#ff7eb6',a:0,p:0},
+ {id:'mint',n:'Minty Breeze',b:'#d6fbe8',m:'#3fcf8e',a:0,p:60},
+ {id:'sun',n:'Sunny Star',b:'#fff1b8',m:'#ffa51f',a:'star',p:120},
+ {id:'night',n:'Midnight Moon',b:'#9c8cff',m:'#2b2a6b',a:'star',p:200},
+ {id:'gold',n:'Golden Royal',b:'#ffe58a',m:'#e08a00',a:'crown',p:350},
+ {id:'rain',n:'Rainbow Angel',b:'#ffffff',m:'url(#rg)',a:'wings',p:500}];
+const SP={
+ b:()=>`<ellipse cx="32" cy="52" rx="14" ry="10" fill="#fff"/><ellipse cx="23" cy="15" rx="6" ry="14" fill="#fff" transform="rotate(-8 23 15)"/><ellipse cx="41" cy="15" rx="6" ry="14" fill="#fff" transform="rotate(8 41 15)"/><ellipse cx="23" cy="17" rx="2.6" ry="9" fill="#ffb3cc" stroke="none" transform="rotate(-8 23 17)"/><ellipse cx="41" cy="17" rx="2.6" ry="9" fill="#ffb3cc" stroke="none" transform="rotate(8 41 17)"/><circle cx="32" cy="38" r="17" fill="#fff"/><path d="M19 52q13 7 26 0v5q-13 7-26 0z" fill="#7c5cff"/>`+F(38,8),
+ d:()=>`<ellipse cx="32" cy="52" rx="15" ry="10" fill="#e3b07a"/><ellipse cx="14" cy="36" rx="6" ry="12" fill="#a86b3c" transform="rotate(14 14 36)"/><ellipse cx="50" cy="36" rx="6" ry="12" fill="#a86b3c" transform="rotate(-14 50 36)"/><circle cx="32" cy="38" r="17" fill="#f0c48f"/><ellipse cx="32" cy="47" rx="8" ry="6" fill="#fff4e0" stroke="none"/><ellipse cx="32" cy="43" rx="3.2" ry="2.2" fill="#2b1f3a"/><path d="M15 33a17 17 0 0 1 34 0z" fill="#aab4c8"/><path d="M32 14q10-8 14 2q-7 0-12 6z" fill="#ff4d6d"/>`+F(39,8),
+ c:()=>`<ellipse cx="32" cy="53" rx="13" ry="9" fill="#ffa85c"/><path d="M15 36L17 16L30 26zM49 36L47 16L34 26z" fill="#ffa85c"/><circle cx="32" cy="40" r="16" fill="#ffb877"/><path d="M32 26v5M26 27l1 5M38 27l-1 5" fill="none" stroke="#c26a2a"/><path d="M19 30L32 4L45 30z" fill="#7c5cff"/><ellipse cx="32" cy="30" rx="20" ry="4.5" fill="#5a3fd0"/><circle cx="32" cy="16" r="2.6" fill="#ffd666" stroke="none"/>`+F(42,8),
+ r:()=>`<ellipse cx="32" cy="50" rx="19" ry="13" fill="#a0693c"/><circle cx="16" cy="22" r="8" fill="#b87c4c"/><circle cx="48" cy="22" r="8" fill="#b87c4c"/><circle cx="16" cy="22" r="3.5" fill="#f3b0a0" stroke="none"/><circle cx="48" cy="22" r="3.5" fill="#f3b0a0" stroke="none"/><circle cx="32" cy="36" r="19" fill="#b87c4c"/><ellipse cx="32" cy="44" rx="9" ry="7" fill="#f3d2a8" stroke="none"/><ellipse cx="32" cy="40" rx="3.5" ry="2.5" fill="#2b1f3a"/><path d="M44 44h15v11q-7.5 8-15 0z" fill="#7c5cff"/><circle cx="51.5" cy="50" r="2.6" fill="#ffd666" stroke="none"/>`+F(33,9),
+ bat:()=>`<path d="M2 24q14-6 24 8l-4 14q-8-8-20-6z" fill="#7a4fb5"/><path d="M62 24q-14-6-24 8l4 14q8-8 20-6z" fill="#7a4fb5"/><path d="M20 22L22 8l8 10zM44 22L42 8l-8 10z" fill="#55318a"/><circle cx="32" cy="38" r="15" fill="#6a4a9c"/><path d="M26 47l2 5 2-5zM34 47l2 5 2-5z" fill="#fff" stroke-width="1.5"/>`+A(36,7,'#ffe14a'),
+ gh:()=>`<path d="M14 58V30a18 18 0 0 1 36 0v28l-6-5-6 5-6-5-6 5-6-5z" fill="#eaf6ff"/><ellipse cx="32" cy="43" rx="4" ry="3" fill="#2b1f3a"/>`+A(32,7,'#fff'),
+ wf:()=>`<path d="M12 30L14 8l14 12zM52 30L50 8L36 20z" fill="#6b7585"/><ellipse cx="32" cy="52" rx="15" ry="10" fill="#7b8696"/><circle cx="32" cy="36" r="18" fill="#8b96a8"/><ellipse cx="32" cy="47" rx="10" ry="8" fill="#d9dee7"/><ellipse cx="32" cy="42" rx="4" ry="3" fill="#2b1f3a"/><path d="M27 51l2 4 2-4zM33 51l2 4 2-4z" fill="#fff" stroke-width="1.4"/>`+A(33,9,'#ff4d6d'),
+ og:()=>`<ellipse cx="32" cy="52" rx="20" ry="12" fill="#6fae5a"/><path d="M16 20l-5-14 11 8zM48 20l5-14-11 8z" fill="#fff0c0"/><circle cx="32" cy="34" r="21" fill="#82c46a"/><ellipse cx="32" cy="45" rx="9" ry="4.5" fill="#2b1f3a" stroke="none"/><path d="M24 44l2 7 3-7zM40 44l-2 7-3-7z" fill="#fff" stroke-width="1.4"/>`+A(30,10,'#ffe14a'),
+ dr:()=>`<path d="M2 24q16-8 22 12l-6 9q-6-14-16-10zM62 24q-16-8-22 12l6 9q6-14 16-10z" fill="#ff8a5c"/><ellipse cx="32" cy="53" rx="17" ry="10" fill="#ff5d6c"/><ellipse cx="32" cy="55" rx="9" ry="6" fill="#ffe3a8" stroke="none"/><path d="M16 22l-6-12 12 6zM48 22l6-12-12 6z" fill="#ffd666"/><circle cx="32" cy="34" r="19" fill="#ff6f7d"/><ellipse cx="32" cy="45" rx="10" ry="7" fill="#ff9aa5"/><circle cx="28" cy="44" r="1.8" fill="#2b1f3a" stroke="none"/><circle cx="36" cy="44" r="1.8" fill="#2b1f3a" stroke="none"/>`+A(30,9,'#ffe14a'),
+ hero:s=>(s.id=='rain'?'<defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5d8f"/><stop offset=".5" stop-color="#ffd666"/><stop offset="1" stop-color="#5fd6ff"/></linearGradient></defs>':'')+(s.a=='wings'?'<ellipse cx="12" cy="32" rx="8" ry="16" fill="#fff" transform="rotate(-25 12 32)"/><ellipse cx="20" cy="28" rx="7" ry="14" fill="#f3e9ff" transform="rotate(-15 20 28)"/>':'')+`<path d="M10 44q-9 2-8 14 9-2 11-10z" fill="${s.m}"/><rect x="16" y="52" width="7" height="10" rx="3" fill="${s.b}"/><rect x="34" y="52" width="7" height="10" rx="3" fill="${s.b}"/><ellipse cx="28" cy="48" rx="19" ry="11" fill="${s.b}"/><path d="M43 30l-4-26 10 24z" fill="#ffd666"/><circle cx="43" cy="35" r="14" fill="${s.b}"/><path d="M31 24q-9 8-7 24q7-6 11-15z" fill="${s.m}"/><circle cx="47" cy="36" r="3" fill="#2b1f3a" stroke="none"/><circle cx="48" cy="35" r="1" fill="#fff" stroke="none"/><ellipse cx="50" cy="42" rx="3.5" ry="2.2" fill="#ff8fb3" opacity=".75" stroke="none"/>`+(s.a=='crown'?'<path d="M33 24l2-9 4 5 4-8 4 8 4-5 2 9z" fill="#ffd54a"/>':'')+(s.a=='star'?'<path d="M26 44l2 4 5 .6-4 3 1 5-4-3-4 3 1-5-4-3 5-.6z" fill="#ffd54a"/>':''),
+ tree:()=>`<rect x="28" y="40" width="8" height="18" rx="2" fill="#8b5a2b"/><circle cx="32" cy="28" r="17" fill="#2fa84f"/><circle cx="21" cy="37" r="11" fill="#3cc05f"/><circle cx="43" cy="36" r="11" fill="#3cc05f"/><circle cx="29" cy="22" r="4" fill="#7be08f" stroke="none"/>`,
+ gold:()=>`<path d="M22 24q10-8 20 0l7 26q0 9-17 9t-17-9z" fill="#e8b34a"/><path d="M24 25q8 5 16 0" fill="none"/><circle cx="32" cy="44" r="9" fill="#ffd54a"/><circle cx="32" cy="44" r="4.5" fill="#fff0a0" stroke-width="1.4"/>`,
+ wood:()=>`<rect x="6" y="40" width="50" height="15" rx="7.5" fill="#b9793f"/><rect x="12" y="26" width="46" height="15" rx="7.5" fill="#c98a4f"/><circle cx="14" cy="47" r="6.5" fill="#f0c88c"/><circle cx="50" cy="33" r="6.5" fill="#f0c88c"/><circle cx="14" cy="47" r="2.5" fill="none" stroke-width="1.4"/><circle cx="50" cy="33" r="2.5" fill="none" stroke-width="1.4"/>`,
+ gem:()=>`<path d="M18 24h28l8 12-22 24L10 36z" fill="#5fd6ff"/><path d="M10 36h44M18 24l14 36 14-36" fill="none" stroke-width="1.5"/><path d="M44 8l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff" stroke="none"/>`,
+ mine:()=>`<path d="M4 58q2-32 28-32t28 32z" fill="#9a8fa8"/><path d="M21 58q0-19 11-19t11 19z" fill="#2b1f3a"/><path d="M42 18l16-6M46 10q11 2 13 14" fill="none" stroke="#8b5a2b" stroke-width="3.5"/>`,
+ cave:()=>`<path d="M4 58q2-28 28-28t28 28z" fill="#6b5a9c"/><path d="M18 54l5-22 7 22zM31 54l7-32 7 32zM44 54l4-16 6 16z" fill="#b06bff"/><path d="M24 32l3-3 2 3z" fill="#fff" stroke="none"/>`,
+ castle:()=>`<rect x="12" y="28" width="40" height="30" fill="#ffd9ec"/><rect x="6" y="16" width="14" height="42" fill="#ffc2de"/><rect x="44" y="16" width="14" height="42" fill="#ffc2de"/><path d="M3 17l10-14 10 14zM41 17l10-14 10 14z" fill="#7c5cff"/><path d="M26 58V44a6 6 0 0 1 12 0v14z" fill="#8b5a2b"/><path d="M32 28v-13l10 4z" fill="#ff4d8a"/>`,
+ coin:()=>`<circle cx="32" cy="32" r="22" fill="#ffd54a"/><path d="M32 18l4 9 10 1-8 7 3 10-9-6-9 6 3-10-8-7 10-1z" fill="#fff0a0" stroke-width="1.5"/>`,
+ mana:()=>`<path d="M32 6q20 22 20 36a20 20 0 0 1-40 0q0-14 20-36z" fill="#6ec3ff"/><path d="M22 42q0 8 8 10" fill="none" stroke="#fff" stroke-width="3"/>`,
+ crown:()=>`<path d="M8 50l4-30 14 14 6-20 6 20 14-14 4 30z" fill="#ffd54a"/>`};
+SP.mine1=()=>SP.mine()+'<path d="M10 28V10l14 6z" fill="#ff4d8a"/>';SP.cave1=()=>SP.cave()+'<path d="M10 30V12l14 6z" fill="#ff4d8a"/>';
+const IMG={};
+const IM=k=>IMG[k]||(IMG[k]='data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><g stroke="#2b1f3a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">${k.startsWith('h:')?SP.hero(SK.find(s=>s.id==k.slice(2))):SP[k]()}</g></svg>`));
+const U={
+ b:{n:'Bunny Scout',hp:5,a:2,g:20,w:0,x:0},d:{n:'Doggo Knight',hp:12,a:4,g:50,w:2,x:0},
+ c:{n:'Kitty Mage',hp:7,a:6,g:80,w:0,x:1,r:1},r:{n:'Bear Guardian',hp:30,a:8,g:150,w:2,x:3},
+ bat:{hp:4,a:2},gh:{hp:8,a:3},wf:{hp:14,a:5},og:{hp:35,a:9},dr:{hp:150,a:16}};
+
+/* ---------- state ---------- */
+const W=10,H=8,KEY='pawsmagic_v2';
+let G,B=null,busy=0,pv=null;
+const need=l=>50*l,pneed=l=>100*l;
+const maxMp=()=>8+((G.m.lvl-1)>>1),maxMana=()=>12+2*(G.m.lvl-1),mul=()=>1+.1*(G.m.lvl-1);
+const nn=s=>Math.ceil(s.tot/U[s.t].hp);
+const TQ=[];let tb=0;
+function toast(t){TQ.push(t);if(!tb)(async()=>{tb=1;const e=$('#toast');while(TQ.length){e.textContent=TQ.shift();e.classList.add('show');await sleep(1700);e.classList.remove('show');await sleep(250)}tb=0})()}
+const POOL=[{k:'wins',g:3,t:'Win 3 battles',r:80},{k:'wins',g:6,t:'Win 6 battles',r:180},{k:'mines',g:1,t:'Capture a mine',r:60},{k:'mines',g:3,t:'Capture 3 mines',r:200},{k:'gold',g:500,t:'Pick up 500 gold from the ground',r:100},{k:'recruit',g:6,t:'Recruit 6 new friends',r:90},{k:'wood',g:9,t:'Gather 9 wood',r:70},{k:'gems',g:4,t:'Gather 4 gems',r:110},{k:'day',g:12,t:'Reach day 12',r:120}];
+function pickMs(){const seen={};return POOL.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).filter(x=>!seen[x.k]&&(seen[x.k]=1)).slice(0,3).map(x=>({...x,done:0}))}
+function gain(x){const m=G.m,p=G.p;m.xp+=x;p.xp+=x;
+ while(m.xp>=need(m.lvl)){m.xp-=need(m.lvl);m.lvl++;m.mp=maxMp();m.mana=Math.min(maxMana(),m.mana+4);p.coins+=5;toast(`Hero level ${m.lvl}! More stamina, mana and power. +5 Starcoins`)}
+ while(p.xp>=pneed(p.lvl)){p.xp-=pneed(p.lvl);p.lvl++;const c=20+5*p.lvl;p.coins+=c;toast(`Account level ${p.lvl}! +${c} Starcoins`)}}
+function stat(k,n){const m=G.m;m.stats[k]=(m.stats[k]||0)+n;chk()}
+function chk(){const m=G.m;m.ms.forEach(q=>{if(!q.done&&(m.stats[q.k]||0)>=q.g){q.done=1;m.gold+=q.r;G.p.coins+=8;G.p.missions++;toast(`Mission done: ${q.t}! +${q.r} gold, +8 Starcoins`);gain(q.r>>1)}})}
+
+/* ---------- map ---------- */
+function path(to){const m=G.m,q=[m.h],pr={[m.h]:-1};
+ for(let j=0;j<q.length;j++){const c=q[j];if(c==to)break;const x=c%W,y=c/W|0;
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)return;const n=ny*W+nx,k=m.map[n].k;
+   if(pr[n]!==undefined||k=='t'||(k=='e'&&n!=to))return;pr[n]=c;q.push(n)})}
+ if(pr[to]===undefined)return null;const p=[];for(let c=to;c!=m.h;c=pr[c])p.unshift(c);return p}
+function newGame(){let map;const r=n=>Math.random()*n|0;
+ const free=()=>{let i;do i=r(W*H);while(map[i].k!='.'||(i%W<2&&(i/W|0)<2));return i};
+ const old=G.m;
+ do{map=Array.from({length:W*H},()=>({k:'.'}));map[0]={k:'C'};map[W*H-1]={k:'e',boss:1,q:[{t:'dr',tot:150},{t:'og',tot:70}]};
+  for(let j=0;j<14;j++)map[free()]={k:'t'};G.m={map,h:0}}while(!path(W*H-1));
+ for(let j=0;j<8;j++)map[free()]={k:'g',n:100+50*r(4)};
+ for(let j=0;j<5;j++)map[free()]={k:'w',n:3};
+ for(let j=0;j<4;j++)map[free()]={k:'c',n:1+r(2)};
+ for(let j=0;j<3;j++)map[free()]={k:'gm'};
+ for(let j=0;j<2;j++)map[free()]={k:'cm'};
+ for(let j=0;j<10;j++){const i=free(),d=i%W+(i/W|0),l=d<6?['bat','gh']:d<11?['gh','wf']:['wf','og'],t=l[r(2)];map[i]={k:'e',q:[{t,tot:(3+r(3))*U[t].hp}]}}
+ Object.assign(G.m,{day:1,gold:300,wood:5,gems:2,mana:12,mp:8,army:[{t:'b',n:6},{t:'d',n:2}],won:0,xp:0,lvl:1,stats:{},ms:pickMs()});
+ G.p.matches++;pv=null;B=null;$('#ov').className='';save();draw()}
+function draw(){const m=G.m,p=G.p,mx=maxMp(),cost=pv?Math.min(pv.p.length,m.mp):0;
+ $('#hb').innerHTML=`<img src="${IM('h:'+p.skin)}"><div><b>Hero level ${m.lvl}</b><i class="bar"><u style="width:${m.xp/need(m.lvl)*100}%"></u></i></div><div class="acc">Account ${p.lvl}<br><img src="${IM('coin')}" style="width:16px;height:16px;vertical-align:-3px"> ${p.coins}</div>`;
+ $('#res').innerHTML=`<span><b>Day ${m.day}</b></span><span><img src="${IM('gold')}">${m.gold}</span><span><img src="${IM('wood')}">${m.wood}</span><span><img src="${IM('gem')}">${m.gems}</span><span><img src="${IM('mana')}">${m.mana}/${maxMana()}</span>`;
+ $('#sb').innerHTML='<span>Stamina</span>'+Array.from({length:mx},(_,j)=>`<i class="${j<m.mp?(j>=m.mp-cost?'use':'on'):''}"></i>`).join('')+`<span>${m.mp}/${mx}</span>`;
+ const pi={};if(pv)pv.p.forEach((n,j)=>pi[n]=j);
+ $('#map').innerHTML=m.map.map((t,i)=>{const x=i%W,y=i/W|0;let im='',c='';
+  if(i==m.h)im='h:'+p.skin,c=' me';
+  else if(t.k=='e')im=t.q[0].t,c=' mo';
+  else if(t.k!='.')im=({t:'tree',g:'gold',w:'wood',c:'gem',gm:t.o?'mine1':'mine',cm:t.o?'cave1':'cave',C:'castle'})[t.k];
+  const j=pi[i],bad=j>=m.mp;
+  return `<div class="t ${(x+y)%2?'a':'b'}${c}" data-a="tile" data-i="${i}">${im?`<img src="${IM(im)}">`:''}${t.boss?`<img class="cr" src="${IM('crown')}">`:''}${j!==undefined?(j==pv.p.length-1?`<em class="pl${bad?' bad':''}">${pv.p.length}</em>`:`<span class="pp${bad?' bad':''}"></span>`):''}</div>`}).join('');
+ $('#hint').textContent=pv?(pv.p.length>m.mp?`Too far: you can walk ${m.mp} of ${pv.p.length} steps. Tap again to go as far as you can.`:`${pv.p.length} step${pv.p.length>1?'s':''}. Tap again to walk there.`):'Tap a tile to preview your path.';
+ $('#army').innerHTML=m.army.map(a=>`<div class="u"><img src="${IM(a.t)}"><b>${a.n}</b></div>`).join('')}
+function enter(t,n){const m=G.m;
+ if(t.k=='g'){m.gold+=t.n;toast(`+${t.n} gold`);m.map[n]={k:'.'};stat('gold',t.n);gain(5)}
+ else if(t.k=='w'){m.wood+=t.n;toast(`+${t.n} wood`);m.map[n]={k:'.'};stat('wood',t.n);gain(5)}
+ else if(t.k=='c'){m.gems+=t.n;toast(`+${t.n} gems`);m.map[n]={k:'.'};stat('gems',t.n);gain(5)}
+ else if(t.k=='gm'&&!t.o){t.o=1;toast('Mine captured: +40 gold a day');stat('mines',1);gain(20)}
+ else if(t.k=='cm'&&!t.o){t.o=1;toast('Crystal cave captured: +1 gem a day');stat('mines',1);gain(20)}}
+async function go(i){const m=G.m;if(busy||B||m.won)return;const p=path(i);if(!p||!p.length)return;pv=null;busy=1;
+ for(const n of p){if(m.mp<1){toast('Out of stamina. End the day to rest.');break}
+  const t=m.map[n];m.mp--;
+  if(t.k=='e'){draw();busy=0;return startBattle(n)}
+  m.h=n;enter(t,n);draw();await sleep(130)}
+ busy=0;draw();save()}
+function endDay(){if(busy||B)return;const m=G.m;pv=null;m.day++;m.mp=maxMp();m.mana=Math.min(maxMana(),m.mana+3);
+ const gm=m.map.filter(t=>t.k=='gm'&&t.o).length,cm=m.map.filter(t=>t.k=='cm'&&t.o).length;
+ m.gold+=40*gm;m.gems+=cm;toast(`Day ${m.day} begins${gm+cm?`. Mines paid ${40*gm} gold, ${cm} gems`:''}`);m.stats.day=m.day;chk();draw();save()}
+
+/* ---------- panels ---------- */
+const ov=h=>{$('#ov').innerHTML=`<div class="box">${h}</div>`;$('#ov').className='show'};
+function castle(){const m=G.m;if(m.h!=0)return toast('Walk back to the castle first');
+ ov('<h3>Castle Fluffington</h3>'+['b','d','c','r'].map(k=>{const u=U[k];
+  return `<div class="li"><img src="${IM(k)}"><div><b>${u.n}</b><br>Attack ${u.a} · Health ${u.hp}${u.r?' · ranged':''}<br>${u.g} gold${u.w?', '+u.w+' wood':''}${u.x?', '+u.x+' gems':''}</div><button class="g" data-a="buy" data-t="${k}" ${m.gold>=u.g&&m.wood>=u.w&&m.gems>=u.x?'':'disabled'}>Recruit</button></div>`}).join('')+
+  `<p><b>${m.gold}</b> gold · <b>${m.wood}</b> wood · <b>${m.gems}</b> gems</p><button data-a="close">Back to map</button>`)}
+function buy(k){const m=G.m,u=U[k];if(m.gold<u.g||m.wood<u.w||m.gems<u.x)return;
+ const s=m.army.find(a=>a.t==k);if(!s&&m.army.length>=6)return toast('Army is full (6 groups)');
+ m.gold-=u.g;m.wood-=u.w;m.gems-=u.x;s?s.n++:m.army.push({t:k,n:1});stat('recruit',1);draw();castle();save()}
+function missions(){const m=G.m;
+ ov('<h3>Missions</h3>'+`<div class="li"><img src="${IM('dr')}"><div><b>Defeat the Gloom Dragon</b><br>Main mission. It waits in the far corner of the map.</div></div>`+
+  m.ms.map(q=>{const v=Math.min(q.g,m.stats[q.k]||0);return `<div class="li${q.done?' done':''}"><div><b>${q.t}</b><br>${q.done?'Completed':`${v} / ${q.g} · reward ${q.r} gold, 8 Starcoins`}<i class="bar"><u style="width:${v/q.g*100}%"></u></i></div></div>`}).join('')+'<button data-a="close">Close</button>')}
+function skins(){const p=G.p;
+ ov(`<h3>Skins</h3><p>Your Starcoins: <b>${p.coins}</b>. Earn them by leveling up and finishing missions.</p>`+SK.map(s=>{const own=p.skins.includes(s.id),eq=p.skin==s.id;
+  return `<div class="li"><img src="${IM('h:'+s.id)}"><div><b>${s.n}</b><br>${own?'Owned':s.p+' Starcoins'}</div><button class="${eq?'x':own?'g':''}" data-a="skin" data-s="${s.id}" ${eq||(!own&&p.coins<s.p)?'disabled':''}>${eq?'Equipped':own?'Equip':'Buy'}</button></div>`}).join('')+'<button data-a="close">Close</button>')}
+function skin(id){const p=G.p,s=SK.find(x=>x.id==id);if(!p.skins.includes(id)){if(p.coins<s.p)return;p.coins-=s.p;p.skins.push(id);toast(`${s.n} unlocked!`)}p.skin=id;draw();skins();save()}
+function profile(){const p=G.p;
+ ov(`<h3>Your profile</h3><img src="${IM('h:'+p.skin)}" style="width:96px"><p><b>Account level ${p.lvl}</b></p><i class="bar"><u style="width:${p.xp/pneed(p.lvl)*100}%"></u></i><small>${p.xp} / ${pneed(p.lvl)} XP</small>
+ <div class="sts"><div><b>${p.wins}</b>Adventures won</div><div><b>${p.matches}</b>Adventures started</div><div><b>${p.battles}</b>Battles won</div><div><b>${p.missions}</b>Missions done</div><div><b>${p.best?'Day '+p.best:'-'}</b>Fastest win</div><div><b>${p.coins}</b>Starcoins</div></div><button data-a="close">Close</button>`)}
+
+/* ---------- battle ---------- */
+function startBattle(n){const t=G.m.map[n];
+ B={n,mana:G.m.mana,i:0,msg:'Your turn! Tap a foe to attack with the glowing friend.',
+  p:G.m.army.map(a=>({t:a.t,tot:a.n*U[a.t].hp,mx:a.n*U[a.t].hp})),q:t.q.map(s=>({t:s.t,tot:s.tot,mx:s.tot}))};drawB()}
+function hit(a,d,k=1){const v=Math.max(1,Math.round(U[a.t].a*nn(a)*(.85+Math.random()*.3)*k*(B.p.includes(a)?mul():1)));d.tot=Math.max(0,d.tot-v);return v}
+function drawB(hl,sp){
+ const row=(a,own,sd)=>a.map((s,j)=>`<div class="st${s.tot<=0?' dead':''}${own&&j==B.i?' act':''}${hl==sd+j?' sh':''}" ${own||s.tot<=0?'':`data-a="tgt" data-i="${j}"`}><img src="${IM(s.t)}"><b>${nn(s)}</b><i><u style="width:${s.tot/s.mx*100}%"></u></i>${B.fx&&B.fx.id==sd+j?`<span class="fl">-${B.fx.v}</span>`:''}</div>`).join('');
+ ov(`<h3>Battle!</h3><div class="row">${row(B.q,0,'q')}</div><div class="row">${row(B.p,1,'p')}</div><p>${B.msg}</p>
+ <button data-a="sp" data-s="s" ${B.mana<5?'disabled':''}>Starfall (5)</button> <button class="g" data-a="sp" data-s="h" ${B.mana<4?'disabled':''}>Heal (4)</button><p><img src="${IM('mana')}" style="width:20px;vertical-align:-4px"> ${B.mana} mana · hero power +${Math.round((mul()-1)*100)}%</p>${sp?'<div class="spk"></div>':''}`)}
+function attack(qi){const a=B.p[B.i],d=B.q[qi];if(!d||d.tot<=0)return;
+ const v=hit(a,d);B.fx={id:'q'+qi,v};B.msg=`${U[a.t].n} hit for ${v}!`;
+ if(d.tot>0&&!U[a.t].r)hit(d,a,.5);next('q'+qi)}
+function next(hl){B.i++;while(B.i<B.p.length&&B.p[B.i].tot<=0)B.i++;
+ if(!B.q.some(s=>s.tot>0))return endB(1);
+ if(B.i>=B.p.length){
+  B.q.filter(s=>s.tot>0).forEach(s=>{const al=B.p.filter(x=>x.tot>0);if(al.length){const d=al[Math.random()*al.length|0];B.fx={id:'p'+B.p.indexOf(d),v:hit(s,d)}}});
+  if(!B.p.some(s=>s.tot>0))return endB(0);
+  B.i=0;while(B.p[B.i].tot<=0)B.i++;B.msg+=' The gloom strikes back!'}
+ drawB(hl)}
+function spell(s){B.fx=null;
+ if(s=='s'&&B.mana>=5){B.mana-=5;const v=Math.round(14*mul());B.q.forEach(e=>e.tot=Math.max(0,e.tot-v));B.msg=`Starfall hits every foe for ${v}!`;if(!B.q.some(e=>e.tot>0))return endB(1)}
+ else if(s=='h'&&B.mana>=4){B.mana-=4;B.p.forEach(a=>{if(a.tot>0)a.tot=Math.min(a.mx,a.tot+15)});B.msg='A warm healing glow!'}
+ drawB(0,1)}
+function endB(win){const m=G.m,p=G.p,t=m.map[B.n];m.mana=B.mana;let msg;
+ if(win){m.army=B.p.filter(s=>s.tot>0).map(s=>({t:s.t,n:nn(s)}));const g=B.q.reduce((a,s)=>a+Math.round(s.mx*2),0),xp=Math.max(10,Math.round(B.q.reduce((a,s)=>a+s.mx,0)/3));
+  m.gold+=g;p.battles++;m.map[B.n]={k:'.'};
+  if(t.boss){m.won=1;const c=Math.max(15,80-m.day*3);p.coins+=c;p.wins++;p.best=p.best?Math.min(p.best,m.day):m.day;
+   msg=`<h3>Victory!</h3><img src="${IM('h:'+p.skin)}" style="width:96px"><p>The Gloom Dragon is defeated on day ${m.day}! +${g} gold, +${c} Starcoins.</p><button class="g" data-a="new">Start a new adventure</button>`;xp>0&&gain(xp+150)}
+  else{msg=`<h3>You won!</h3><p>+${g} gold and +${xp} XP. Your army keeps ${m.army.reduce((a,s)=>a+s.n,0)} friends.</p><button class="g" data-a="close">Continue</button>`;gain(xp)}
+  stat('wins',1)}
+ else{t.q=B.q.filter(s=>s.tot>0).map(s=>({t:s.t,tot:s.tot}));m.army=[{t:'b',n:3}];m.gold=Math.floor(m.gold/2);m.h=0;m.mp=0;
+  msg='<h3>Retreat!</h3><p>Your hero flees to the castle with 3 brave bunnies and half the gold. Recruit more and try again!</p><button data-a="close">Okay</button>'}
+ B=null;ov(msg);draw();save()}
+const close=()=>{if(!B)$('#ov').className=''};
+
+/* ---------- save: localStorage + Firebase (saves/{uid}.pawsMagicSave) ---------- */
+let cloud=null,tm=null,lastJ='',ready=false,failed=0,cbusy=0,lastXP=0;
+const say=t=>{$('#cs').textContent=t};
+const snap=()=>JSON.stringify({...G,ts:0});
+function save(){G.ts=Date.now();failed=0;try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){}clearTimeout(tm);if(cloud)tm=setTimeout(push,2500)}
+async function push(){if(!cloud||!ready||cbusy)return;const j=snap();if(j===lastJ)return;cbusy=1;
+ try{await cloud.set(JSON.stringify(G),G.ts);lastJ=j;say('Saved to the cloud')}
+ catch(e){failed=1;console.error(e);say('Cloud save failed: '+(e.code||e.message))}
+ cbusy=0;if(!failed&&snap()!==lastJ){clearTimeout(tm);tm=setTimeout(push,2500)}}
+const flush=()=>{clearTimeout(tm);return push()};
+addEventListener('pagehide',flush);document.addEventListener('visibilitychange',()=>{if(document.hidden)flush()});
+(async()=>{try{
+ const base='https://www.gstatic.com/firebasejs/10.8.0/';
+ const [{initializeApp,getApps,getApp},A_,F_]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
+ const app=getApps().length?getApp():initializeApp(cfg),auth=A_.getAuth(app),db=F_.getFirestore(app);
+ A_.onAuthStateChanged(auth,async user=>{
+  if(!user){if(REQUIRE_HUB_LOGIN)location.href='index.html';else say('Not signed in: playing offline');return}
+  const ref=F_.doc(db,'saves',user.uid);
+  cloud={set:async(json,ts)=>{const cur=(await F_.getDoc(ref)).data()||{};let xp=cur.totalXP||0;const n=Date.now();if(n-lastXP>=60000){xp+=5;lastXP=n}
+   await F_.setDoc(ref,{pawsMagicSave:json,pawsMagicTs:ts,totalXP:xp,level:Math.floor(xp/500)+1},{merge:true})}};
+  say('Loading cloud save...');
+  try{const s=await F_.getDoc(ref),d=s.exists()?s.data():{};
+   let c=null;try{c=d.pawsMagicSave?JSON.parse(d.pawsMagicSave):null}catch(e){}
+   if(c&&c.v==2&&(d.pawsMagicTs||0)>(G.ts||0)){G=c;try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){}pv=null;B=null;draw();lastJ=snap()}else lastJ='';
+   ready=true;if(!lastJ)await push();say('Cloud save connected')}
+  catch(e){console.error(e);say('Cloud load failed: '+(e.code||e.message))}})
+}catch(e){console.error(e);say('Offline mode: '+(e.code||e.message))}})();
+
+/* ---------- input ---------- */
+document.addEventListener('click',async e=>{const el=e.target.closest('[data-a]');if(!el)return;const a=el.dataset.a;
+ if(a=='hub'){e.preventDefault();try{await Promise.race([flush(),sleep(2500)])}catch(x){}location.href='index.html'}
+ else if(a=='tile'){const i=+el.dataset.i;if(busy||B||G.m.won)return;
+  if(G.m.map[i].k=='t'||i==G.m.h){pv=null;draw();return}
+  if(pv&&pv.to==i)go(i);else{const p=path(i);pv=p?{to:i,p}:null;if(!p)toast('No way to get there');draw()}}
+ else if(a=='end')endDay();
+ else if(a=='castle')castle();
+ else if(a=='missions')missions();
+ else if(a=='skins')skins();
+ else if(a=='skin')skin(el.dataset.s);
+ else if(a=='profile')profile();
+ else if(a=='buy')buy(el.dataset.t);
+ else if(a=='close')close();
+ else if(a=='tgt'&&B)attack(+el.dataset.i);
+ else if(a=='sp'&&B)spell(el.dataset.s);
+ else if(a=='new'){if(!G.m.won&&!confirm('Start a new adventure? The current one will be replaced. Your account level, Starcoins and skins stay.'))return;newGame()}});
+
+try{const l=localStorage.getItem(KEY);if(l){const c=JSON.parse(l);if(c.v==2)G=c}}catch(e){}
+if(!G)G={v:2,p:{xp:0,lvl:1,coins:0,wins:0,matches:0,battles:0,missions:0,best:0,skins:['rose'],skin:'rose'},m:null};
+if(G.m)draw();else newGame();
+</script></body></html>
