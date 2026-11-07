@@ -52,6 +52,7 @@ button:disabled{opacity:.45;cursor:default}
 <div class=top><h1>🐶 My Dogs</h1><a id=hub href="index.html">← Back to Hub</a></div><div id="hud"></div>
 <nav id="nv"></nav><div id="app"></div><div id="ts"></div>
 <script>
+window.cloudReady=false;
 const B={
 lab:{n:"Labrador",c:"#e9c777",e:"#c89f4d",s:"#f7e6b8",t:"f",$:150,d:"Balanced starter"},
 poo:{n:"Poodle",c:"#f3ece2",e:"#e6d8c3",s:"#fffaf2",t:"o",$:400,d:"+50% pet coins",x:'<i class=x style="left:33px;top:-3px;width:30px;height:26px;border-radius:50%;background:#f3ece2;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08)"></i>'},
@@ -76,7 +77,7 @@ try{S=JSON.parse(localStorage.getItem("doggy1"))}catch(e){}
 S=Object.assign(fresh(),S&&typeof S==="object"?S:{});
 ["dogs","skins","sh","v"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
 if(!Array.isArray(S.rooms)||!S.rooms.length)S.rooms=[0];
-S.pr=S.pr||0;const save=()=>{try{localStorage.setItem("doggy1",JSON.stringify(S))}catch(e){}window.cloudSave&&window.cloudSave()};
+S.pr=S.pr||0;const save=()=>{if(window.cloudReady!==false)S.ts=Date.now();try{localStorage.setItem("doggy1",JSON.stringify(S))}catch(e){}window.cloudSave&&window.cloudSave()};
 const ks=Object.keys(B),G=()=>1+S.paws*.1,f=n=>Math.floor(n).toLocaleString();
 const roll=()=>{S.sh=ks.filter(k=>(B[k].u||0)<=(S.pr||0)).sort(()=>Math.random()-.5).slice(0,3)};
 if(!S.sh.length)roll();
@@ -146,10 +147,10 @@ const badge=document.createElement("div");
 badge.style.cssText="position:fixed;left:8px;bottom:8px;font:12px system-ui;background:#000b;color:#fff;padding:4px 10px;border-radius:12px;z-index:50;max-width:80vw";
 document.body.appendChild(badge);
 const say=t=>{badge.textContent=t};
-let ready=false,busy=false,again=false,timer,lastXP=0;
+let busy=false,again=false,timer,lastXP=0;
 
 async function saveGame(){
-  const u=auth.currentUser;if(!u||!ready)return;
+  const u=auth.currentUser;if(!u||window.cloudReady!==true)return;
   if(busy){again=true;return}
   busy=true;
   try{
@@ -157,7 +158,7 @@ async function saveGame(){
     const cur=(await getDoc(ref)).data()||{};
     let xp=cur.totalXP||0;const now=Date.now();
     if(now-lastXP>=60000){xp+=5;lastXP=now}
-    await setDoc(ref,{doggySave:JSON.parse(JSON.stringify(S)),totalXP:xp,level:Math.floor(xp/500)+1},{merge:true});
+    await setDoc(ref,{doggySave:JSON.parse(JSON.stringify(S)),doggyTs:S.ts||now,totalXP:xp,level:Math.floor(xp/500)+1},{merge:true});
     say("☁️ Saved");
   }catch(e){console.error(e);say("⚠️ Cloud save failed: "+(e.code||e.message))}
   finally{busy=false;if(again){again=false;window.cloudSave()}}
@@ -170,17 +171,20 @@ onAuthStateChanged(auth,async user=>{
   say("☁️ Loading...");
   try{
     const snap=await getDoc(doc(db,"saves",user.uid));
-    const d=snap.exists()&&snap.data().doggySave;
-  if(d&&typeof d==="object"){
-    S=Object.assign(fresh(),d);               // fill in anything the cloud save is missing
-    if(!Array.isArray(S.rooms)||!S.rooms.length)S.rooms=[0];
-    ["dogs","skins","sh","v"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
-    S.pr=S.pr||0;
-    if(!S.sh.length)roll();
-    if(!S.dogs.length)starter();
-  }    ready=true;render();say("☁️ Connected");
+    const data=snap.exists()?snap.data():{};
+    const d=data.doggySave;
+    // the cloud copy only wins if this device has no timestamped save, or the cloud one is newer
+    if(d&&typeof d==="object"&&(!S.ts||(data.doggyTs||0)>S.ts)){
+      S=Object.assign(fresh(),d);
+      ["dogs","skins","sh","v"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
+      if(!Array.isArray(S.rooms)||!S.rooms.length)S.rooms=[0];
+      S.pr=S.pr||0;
+      if(!S.sh.length)roll();
+      if(!S.dogs.length)starter();
+    }
+    window.cloudReady=true;
+    render();               // render() calls save(), which uploads this state
+    say("☁️ Connected");
   }catch(e){console.error(e);say("⚠️ Cloud load failed: "+(e.code||e.message))}
 });
-</script>
-</script>
-</body></html>
+</script> </body></html>
