@@ -520,11 +520,13 @@ window.fbOnAuth(window.firebaseAuth, async (user) => {
     S = fresh();
   }
   
-  // Start the game AFTER data is loaded
+  // Start rendering immediately so the screen isn't black
   resize();
+  requestAnimationFrame(loop);
+
+  // Then load the data and apply the world
   fix();
   applyWorld();
-  requestAnimationFrame(loop);
 });
 </script>
 </body>
