@@ -45,6 +45,14 @@
   .game-card h2 { font-size: 1.5rem; margin-bottom: 10px; }
   .game-card p { color: #9ab89a; font-size: 0.9rem; }
 
+  /* Logout Button */
+  .logout-btn {
+    background: #ff8a65; color: #fff; border: none; padding: 8px 16px;
+    border-radius: 8px; font-weight: bold; font-family: inherit;
+    cursor: pointer; transition: 0.2s;
+  }
+  .logout-btn:hover { background: #ff7043; }
+
   /* ============ PINK/PURPLE LOGIN MODAL ============ */
   #login-screen {
     position: fixed; inset: 0; 
@@ -114,7 +122,10 @@
           <div id="xp-text" style="font-size: 0.8rem; color: #9ab89a;">0 / 500 XP</div>
         </div>
       </div>
-      <div style="font-size: 1.5rem;">🏆</div>
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <div style="font-size: 1.5rem;">🏆</div>
+        <button class="logout-btn" onclick="logout()">Log Out</button>
+      </div>
     </div>
 
     <div class="hub-header">
@@ -138,9 +149,9 @@
       </div>
 
       <!-- Doggy Simulator Game -->
-      <div class="game-card" onclick="window.location.href='doggyempire.html'">
+      <div class="game-card" onclick="window.location.href='doggy.html'">
         <div style="font-size: 3rem; margin-bottom: 10px;">🐶🦴</div>
-        <h2>Doggy Empire</h2>
+        <h2>Doggy Simulator</h2>
         <p>Adopt dogs, feed them, and unlock skins. (+XP per action)</p>
       </div>
       
@@ -153,10 +164,10 @@
     </div>
   </div>
 
-<!-- ============ MAIN SCRIPT (LOGIN LOGIC) ============ -->
+<!-- ============ MAIN SCRIPT (LOGIN & LOGOUT LOGIC) ============ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
   import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -188,7 +199,6 @@
       document.getElementById('xp-fill').style.width = `${(xpProgress / 500) * 100}%`;
       document.getElementById('profile-bar').style.display = 'flex';
     } else {
-      // First time user
       document.getElementById('level-num').innerText = `Lv. 1`;
       document.getElementById('xp-text').innerText = `0 / 500 XP`;
       document.getElementById('profile-bar').style.display = 'flex';
@@ -217,6 +227,12 @@
       document.getElementById('login-msg').innerText = e.message;
     }
   });
+
+  // Logout Logic
+  window.logout = async function() {
+    await signOut(auth);
+    // onAuthStateChanged will automatically hide the hub and show the login screen
+  };
 
   onAuthStateChanged(auth, (user) => {
     if (user) {
