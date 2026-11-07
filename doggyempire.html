@@ -128,10 +128,11 @@ function buyskin(k){const c=K.find(x=>x[0]==k)[3];if(S.paws<c)return toast("Not 
 function prestige(g){if(!window.cf){window.cf=1;toast("Tap again to move house (you lose dogs, rooms and coins)");setTimeout(()=>window.cf=0,4000);return}window.cf=0;const o=S;S=fresh();S.paws=o.paws+g;S.skins=o.skins;S.v=(o.v||[]).map(d=>({...d,l:1,x:0,t:{}}));S.pr=(o.pr||0)+1;starter();roll();tab=0;toast("Welcome to your new house! +"+g+" 🐾");render()}
 setInterval(()=>{S.t++;if(S.t>=60){S.t=0;const a=S.dogs.reduce((s,d)=>s+pass(d),0);if(a>0){S.coins+=a;toast("Your pack earned "+f(a)+" 🪙")}save()}hud()},1000);
 render();
-</script><script type="module">
+</script>
+<script type="module">
 import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getFirestore,doc,getDoc,runTransaction}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 const firebaseConfig={
   apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
   authDomain:"cute-sleepy-games.firebaseapp.com",
@@ -140,32 +141,47 @@ const firebaseConfig={
   messagingSenderId:"249264537283",
   appId:"1:249264537283:web:811dce511556eda6a96c76"
 };
-const REQUIRE_LOGIN=true; // true: visitors without the hub login go back to index.html
+const REQUIRE_LOGIN=true;
 const app=getApps().length?getApp():initializeApp(firebaseConfig);
 const auth=getAuth(app),db=getFirestore(app);
 const badge=document.createElement("div");
 badge.style.cssText="position:fixed;left:8px;bottom:8px;font:12px system-ui;background:#000b;color:#fff;padding:4px 10px;border-radius:12px;z-index:50;max-width:80vw";
 document.body.appendChild(badge);
 const say=t=>{badge.textContent=t};
-let busy=false,again=false,timer,lastXP=0;
-
-async function saveGame(){
+ 
+/* ===== CARE XP =====
+   S.care is a running "how well did you look after your dogs" score.
+   The cloud awards account XP only for care points above the highest total it has already paid for,
+   so nothing is double counted across devices, reloads or moving house. */
+const care=n=>{S.care=(S.care||0)+n};
+if(S.care===undefined)S.care=[...S.dogs,...S.v].reduce((a,d)=>a+5*d.l*(d.l+1)-10,0); // credit for dogs you already raised
+const wrap=(n,fn)=>{const o=window[n];window[n]=(...a)=>{const r=fn(o,...a);save();return r}};
+wrap("pet",(o,id)=>{const d=S.dogs.find(x=>x.id==id),b=d&&d.pa;const r=o(id);if(d&&d.pa!==b)care(1);return r});                       // petting: +1
+wrap("feed",(o,id)=>{const d=S.dogs.find(x=>x.id==id);if(!d)return o(id);const x=d.x,l=d.l;const r=o(id);
+  if(d.x!==x||d.l!==l){care(3);for(let n=l+1;n<=d.l;n++)care(10*n)}return r});                                                    // feeding: +3, level up: +10 x new level
+wrap("train",(o,id,k)=>{const d=S.dogs.find(x=>x.id==id),lv=d&&((d.t||{})[k]||0);const r=o(id,k);if(d&&((d.t||{})[k]||0)>lv)care(5*(lv+1));return r}); // training
+wrap("adopt",(o,i)=>{const n=S.dogs.length;const r=o(i);if(S.dogs.length>n){care(5);if(S.dogs[S.dogs.length-1].sh)care(30)}return r});          // new dog (+30 if shiny)
+wrap("prestige",(o,g)=>{const c=S.care||0,p=S.pr;const r=o(g);S.care=c;if(S.pr>p)care(100+25*g);return r});                              // moving house keeps your care score
+ 
+let busy=false,again=false,timer,failed=false;
+async function push(){
   const u=auth.currentUser;if(!u||window.cloudReady!==true)return;
   if(busy){again=true;return}
   busy=true;
   try{
-    const ref=doc(db,"saves",u.uid);
-    const cur=(await getDoc(ref)).data()||{};
-    let xp=cur.totalXP||0;const now=Date.now();
-    if(now-lastXP>=60000){xp+=5;lastXP=now}
-    await setDoc(ref,{doggySave:JSON.parse(JSON.stringify(S)),doggyTs:S.ts||now,totalXP:xp,level:Math.floor(xp/500)+1},{merge:true});
-    say("☁️ Saved");
-  }catch(e){console.error(e);say("⚠️ Cloud save failed: "+(e.code||e.message))}
+    const ref=doc(db,"saves",u.uid),copy=JSON.parse(JSON.stringify(S)),now=S.care||0;
+    const xp=await runTransaction(db,async tx=>{
+      const cur=(await tx.get(ref)).data()||{},hw=cur.doggyCareHW||0,total=(cur.totalXP||0)+Math.max(0,now-hw);
+      tx.set(ref,{doggySave:copy,doggyTs:S.ts||Date.now(),doggyCareHW:Math.max(hw,now),totalXP:total,level:Math.floor(total/500)+1},{merge:true});
+      return total;
+    });
+    failed=false;say("☁️ Saved · Account Lv "+(Math.floor(xp/500)+1)+" ("+(xp%500)+"/500 XP)");
+  }catch(e){failed=true;console.error(e);say("⚠️ Cloud save failed: "+(e.code||e.message))}
   finally{busy=false;if(again){again=false;window.cloudSave()}}
 }
-window.cloudSave=()=>{clearTimeout(timer);timer=setTimeout(saveGame,3000)};
-addEventListener("pagehide",()=>{clearTimeout(timer);saveGame()});
-
+window.cloudSave=()=>{clearTimeout(timer);timer=setTimeout(push,3000)};
+addEventListener("pagehide",()=>{clearTimeout(timer);push()});
+ 
 onAuthStateChanged(auth,async user=>{
   if(!user){if(REQUIRE_LOGIN)location.href="index.html";else say("Not signed in: playing offline");return}
   say("☁️ Loading...");
@@ -173,18 +189,18 @@ onAuthStateChanged(auth,async user=>{
     const snap=await getDoc(doc(db,"saves",user.uid));
     const data=snap.exists()?snap.data():{};
     const d=data.doggySave;
-    // the cloud copy only wins if this device has no timestamped save, or the cloud one is newer
     if(d&&typeof d==="object"&&(!S.ts||(data.doggyTs||0)>S.ts)){
       S=Object.assign(fresh(),d);
       ["dogs","skins","sh","v"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
       if(!Array.isArray(S.rooms)||!S.rooms.length)S.rooms=[0];
       S.pr=S.pr||0;
+      if(S.care===undefined)S.care=[...S.dogs,...S.v].reduce((a,x)=>a+5*x.l*(x.l+1)-10,0);
       if(!S.sh.length)roll();
       if(!S.dogs.length)starter();
     }
     window.cloudReady=true;
-    render();               // render() calls save(), which uploads this state
+    render();
     say("☁️ Connected");
   }catch(e){console.error(e);say("⚠️ Cloud load failed: "+(e.code||e.message))}
 });
-</script> </body></html>
+</script>

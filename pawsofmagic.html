@@ -263,9 +263,9 @@ addEventListener('pagehide',flush);document.addEventListener('visibilitychange',
  A_.onAuthStateChanged(auth,async user=>{
   if(!user){if(REQUIRE_HUB_LOGIN)location.href='index.html';else say('Not signed in: playing offline');return}
   const ref=F_.doc(db,'saves',user.uid);
-  cloud={set:async(json,ts)=>{const cur=(await F_.getDoc(ref)).data()||{};let xp=cur.totalXP||0;const n=Date.now();if(n-lastXP>=60000){xp+=5;lastXP=n}
-   await F_.setDoc(ref,{pawsMagicSave:json,pawsMagicTs:ts,totalXP:xp,level:Math.floor(xp/500)+1},{merge:true})}};
-  say('Loading cloud save...');
+  cloud={set:async(json,ts)=>{await F_.runTransaction(db,async tx=>{
+   const cur=(await tx.get(ref)).data()||{},hw=cur.pawsMagicLvlXP||0,L=G.p.lvl,now=15*L*(L-1),xp=(cur.totalXP||0)+Math.max(0,now-hw);
+   tx.set(ref,{pawsMagicSave:json,pawsMagicTs:ts,pawsMagicLvlXP:Math.max(hw,now),totalXP:xp,level:Math.floor(xp/500)+1},{merge:true})})}};say('Loading cloud save...');
   try{const s=await F_.getDoc(ref),d=s.exists()?s.data():{};
    let c=null;try{c=d.pawsMagicSave?JSON.parse(d.pawsMagicSave):null}catch(e){}
    if(c&&c.v==2&&(d.pawsMagicTs||0)>(G.ts||0)){G=c;try{localStorage.setItem(KEY,JSON.stringify(G))}catch(e){}pv=null;B=null;draw();lastJ=snap()}else lastJ='';

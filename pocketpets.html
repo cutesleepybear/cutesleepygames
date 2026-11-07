@@ -473,7 +473,7 @@ resize();fix();applyWorld();requestAnimationFrame(loop);
 <script type="module">
 import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getFirestore,doc,getDoc,runTransaction}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 const firebaseConfig={
   apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
   authDomain:"cute-sleepy-games.firebaseapp.com",
@@ -482,35 +482,43 @@ const firebaseConfig={
   messagingSenderId:"249264537283",
   appId:"1:249264537283:web:811dce511556eda6a96c76"
 };
-const REQUIRE_LOGIN=true; // true: visitors without the hub login go back to index.html
-
+const REQUIRE_LOGIN=true;
+ 
 window.cloudReady=false;
 const app=getApps().length?getApp():initializeApp(firebaseConfig);
 const auth=getAuth(app),db=getFirestore(app);
 const cs=document.getElementById("cs"),say=t=>{if(cs)cs.textContent=t};
-let tm=null,lastJ="",busy=false,lastXP=0,failed=false;
+let tm=null,lastJ="",busy=false,failed=false;
 const snap=()=>JSON.stringify(Object.assign({},S,{ts:0}));
-
+ 
+/* ===== PET POWER XP =====
+   Every pet you own is worth points: rarity x tier (shiny/insane/supreme) x world.
+   The cloud pays account XP only for power above the highest total it has already paid for,
+   so deleting pets or resetting never lets you farm the same XP twice. */
+const RX=[2,4,8,16,40,100,250,1000],TX=[1,12,150,1800],WX=[1,2,4,8,16,32];
+const power=()=>{let p=0;for(const k in S.inv){const[w,i,t]=pk(k),d=PL[w]&&PL[w][i];if(d&&S.inv[k]>0)p+=S.inv[k]*RX[d.r]*TX[t]*WX[w]}return Math.floor(p)};
+ 
 async function push(){
   const u=auth.currentUser;
   if(!u||window.cloudReady!==true||busy)return;
   const j=snap();if(j===lastJ)return;
   busy=true;
   try{
-    const ref=doc(db,"saves",u.uid);
-    const cur=(await getDoc(ref)).data()||{};
-    let xp=cur.totalXP||0;const now=Date.now();
-    if(now-lastXP>=60000){xp+=5;lastXP=now}
-    await setDoc(ref,{pocketPetsSave:JSON.stringify(S),pocketPetsTs:S.ts||now,totalXP:xp,level:Math.floor(xp/500)+1},{merge:true});
-    lastJ=j;failed=false;say("☁️ Saved");
+    const ref=doc(db,"saves",u.uid),json=JSON.stringify(S),pw=power();
+    const xp=await runTransaction(db,async tx=>{
+      const cur=(await tx.get(ref)).data()||{},hw=cur.pocketPetsPow||0,total=(cur.totalXP||0)+Math.max(0,pw-hw);
+      tx.set(ref,{pocketPetsSave:json,pocketPetsTs:S.ts||Date.now(),pocketPetsPow:Math.max(hw,pw),totalXP:total,level:Math.floor(total/500)+1},{merge:true});
+      return total;
+    });
+    lastJ=j;failed=false;say("☁️ Saved · Account Lv "+(Math.floor(xp/500)+1)+" ("+(xp%500)+"/500 XP)");
   }catch(e){failed=true;console.error(e);say("⚠️ Cloud save failed: "+(e.code||e.message))}
   busy=false;
 }
-window.cloudSave=()=>{clearTimeout(tm);if(!failed||true)tm=setTimeout(push,3000)};
+window.cloudSave=()=>{clearTimeout(tm);tm=setTimeout(push,3000)};
 window.cloudFlush=()=>{clearTimeout(tm);return push()};
 addEventListener("pagehide",()=>window.cloudFlush());
 document.addEventListener("visibilitychange",()=>{if(document.hidden)window.cloudFlush()});
-
+ 
 onAuthStateChanged(auth,async user=>{
   if(!user){if(REQUIRE_LOGIN){location.href="index.html"}else{say("Not signed in: playing offline");window.cloudReady=undefined}return}
   say("☁️ Loading...");
@@ -528,4 +536,5 @@ onAuthStateChanged(auth,async user=>{
     say("☁️ Connected");
   }catch(e){console.error(e);say("⚠️ Cloud load failed: "+(e.code||e.message));window.cloudReady=undefined}
 });
-</script> </body> </html>
+</script>
+ 
