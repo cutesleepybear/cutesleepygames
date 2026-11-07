@@ -36,10 +36,25 @@
   .team { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   
   /* CARDS */
-  .card {
-    width: 140px; background: linear-gradient(160deg, #3a2f1f, #2a2115);
-    border: 2px solid #5a4a2f; border-radius: 12px; padding: 10px;
+   .card {
+    /* Made cards much wider and taller */
+    width: 180px; 
+    background: linear-gradient(160deg, #3a2f1f, #2a2115);
+    border: 2px solid #5a4a2f; border-radius: 12px; padding: 8px;
     text-align: center; position: relative; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    display: flex; flex-direction: column;
+  }
+  
+  /* Make the image fill the top space */
+  .card-img-container {
+    width: 100%; 
+    height: 220px; /* Huge image height */
+    border-radius: 8px; 
+    overflow: hidden; 
+    margin-bottom: 5px; 
+    border: 1px solid #5a4a2f; 
+    background: #111; 
+    position: relative;
   }
   .card.active { border-color: #f0c060; box-shadow: 0 0 18px rgba(240,192,96,0.5); transform: translateY(-4px); }
   .card.ko { opacity: 0.35; filter: grayscale(1); }
@@ -312,31 +327,27 @@
         card.classList.add('clickable');
         card.onclick = () => swapToPlayer(idx);
       }
-            const hpPct = Math.max(0, bear.hp / bear.maxHp * 100);
+      const hpPct = Math.max(0, bear.hp / bear.maxHp * 100);
       
       card.innerHTML = `
-        <!-- CUSTOM IMAGE WITH HP BAR OVERLAY -->
-        <div style="width: 200%; height: 320px; border-radius: 8px; overflow: hidden; margin-bottom: 8px; border: 1px solid #5a4a2f; background: #111; position: relative; display: flex; flex-direction: column; justify-content: flex-end;">
+        <!-- HUGE CARD IMAGE -->
+        <div class="card-img-container">
+          <img src="art/${bear.id}.png" alt="${bear.name}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 4rem;">${bear.emoji}</div>
           
-          <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
-            <img src="art/${bear.id}.png" alt="${bear.name}" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 3rem;">${bear.emoji}</div>
+          <!-- ATTACK BADGE (Optional, since it's on your image, but we keep it for buffs) -->
+          <div style="position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: #e0a050; font-weight: bold; border: 1px solid #5a4a2f;">
+            ⚔ ${bear.atk}${bear.bonusAtk ? ` (+${bear.bonusAtk})` : ''}
           </div>
 
-          <!-- HP BAR INSIDE THE IMAGE BOTTOM -->
-          <div style="position: relative; z-index: 2; width: 100%; height: 12px; background: rgba(0,0,0,0.8); border-top: 1px solid #5a4a2f;">
+          <!-- LIVE HP BAR OVERLAY -->
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 10px; background: rgba(0,0,0,0.8); border-top: 1px solid #5a4a2f;">
             <div style="height: 100%; width: ${hpPct}%; background: ${hpPct < 30 ? '#ff3333' : '#4caf50'}; transition: width 0.3s;"></div>
-          </div>
-
-          <!-- ATTACK BADGE -->
-          <div style="position: absolute; bottom: 15px; right: 5px; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; color: #e0a050; font-weight: bold; border: 1px solid #5a4a2f; z-index: 2;">
-            ⚔ ${bear.atk}
           </div>
         </div>
 
-        <!-- TEXT INFO BELOW IMAGE -->
-        <div class="hptext" style="margin-bottom: 2px;">${Math.max(0,Math.round(bear.hp))} / ${bear.maxHp} HP</div>
-        <div class="status">${statusText(bear)}</div>
+        <!-- STATUS EFFECTS (Only shows if active) -->
+        <div class="status" style="min-height: 15px; font-size: 0.8rem;">${statusText(bear)}</div>
       `;
       el.appendChild(card);
     });
