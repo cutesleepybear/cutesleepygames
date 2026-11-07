@@ -263,8 +263,13 @@
         card.onclick = () => swapToPlayer(idx);
       }
       const hpPct = Math.max(0, bear.hp / bear.maxHp * 100);
+      
+      // We use the bear's ID to find the image. If it fails to load, it shows the emoji.
       card.innerHTML = `
-        <div class="emoji">${bear.emoji}</div>
+        <div class="emoji" style="height: 50px; display: flex; align-items: center; justify-content: center;">
+          <img src="bearcardsimages/${bear.id}.png" alt="${bear.emoji}" style="max-height: 100%; max-width: 100%; border-radius: 8px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <span style="display:none;">${bear.emoji}</span>
+        </div>
         <div class="name">${bear.name}</div>
         <div class="type-tag">${bear.type}</div>
         <div class="hpbar"><div class="hpfill ${hpPct < 30 ? 'low' : ''}" style="width:${hpPct}%"></div></div>
