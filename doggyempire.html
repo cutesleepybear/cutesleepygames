@@ -131,7 +131,11 @@
 
     <div class="main-layout">
       <div class="mansion" id="mansion-container"></div>
-
+        <div id="empty-state" style="display: none; text-align: center; padding: 40px; background: #fff; border-radius: 16px; border: 2px dashed #aed581; margin-bottom: 20px;">
+        <h2>Your mansion is empty!</h2>
+        <p style="margin-bottom: 20px; color: #666;">It looks like you don't have any dogs yet.</p>
+        <button class="buy-btn" style="font-size: 1.2rem; padding: 12px 24px;" onclick="getStarterPack()">Claim Free Starter Dog 🐶</button>
+      </div>
       <div class="shop">
         <h2>🛒 Supply Shop</h2>
         <div class="shop-item">
@@ -393,9 +397,17 @@
     }
   }
 
-  function renderRooms() {
+function renderRooms() {
+    // NEW: Check if empty
+    if (state.dogs.length === 0) {
+      document.getElementById('empty-state').style.display = 'block';
+    } else {
+      document.getElementById('empty-state').style.display = 'none';
+    }
+
     const container = document.getElementById('mansion-container');
     container.innerHTML = '';
+    // ... rest of the renderRooms code
 
     ROOMS.forEach(room => {
       const isUnlocked = state.unlockedRooms.includes(room.id);
@@ -649,7 +661,23 @@
     renderAll();
     saveGame();
   }
-
+    window.getStarterPack = function() {
+    state.dogs.push({
+      id: Date.now().toString(),
+      breedId: 'lab',
+      name: 'Teddy',
+      personality: 'Playful',
+      level: 1,
+      xp: 0,
+      maxXp: 100,
+      room: 'living',
+      skinId: 'none',
+      petCooldown: 0
+    });
+    state.coins += 15;
+    renderAll();
+    saveGame();
+  }
   onAuthStateChanged(auth, (user) => {
     if (user) {
       loadGame();
