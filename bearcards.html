@@ -61,7 +61,7 @@
   
   /* CARDS */
   .card {
-    width: 150px; background: linear-gradient(160deg, #3a2f1f, #2a2115);
+    width: 140px; background: linear-gradient(160deg, #3a2f1f, #2a2115);
     border: 2px solid #5a4a2f; border-radius: 12px; padding: 10px;
     text-align: center; position: relative; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
   }
@@ -69,14 +69,14 @@
   .card.ko { opacity: 0.35; filter: grayscale(1); }
   .card.clickable { cursor: pointer; }
   .card.clickable:hover { border-color: #f0c060; transform: translateY(-3px); }
-  .emoji { font-size: 2.6rem; line-height: 1; }
-  .name { font-size: 0.82rem; font-weight: 600; margin: 4px 0 2px; }
-  .type-tag { display: inline-block; font-size: 0.62rem; padding: 1px 6px; border-radius: 8px; background: #5a4a2f; color: #f0e6d2; margin-bottom: 6px; }
+  .emoji { font-size: 2.4rem; line-height: 1; }
+  .name { font-size: 0.8rem; font-weight: 600; margin: 4px 0 2px; }
+  .type-tag { display: inline-block; font-size: 0.6rem; padding: 1px 6px; border-radius: 8px; background: #5a4a2f; color: #f0e6d2; margin-bottom: 6px; }
   .hpbar { height: 8px; background: #1a1408; border-radius: 4px; overflow: hidden; margin: 4px 0 2px; }
   .hpfill { height: 100%; background: linear-gradient(90deg, #4caf50, #8bc34a); transition: width 0.4s; }
   .hpfill.low { background: linear-gradient(90deg, #d32f2f, #ff7043); }
-  .hptext { font-size: 0.68rem; color: #c9b98f; }
-  .atk { font-size: 0.68rem; color: #e0a050; margin-top: 2px; }
+  .hptext { font-size: 0.65rem; color: #c9b98f; }
+  .atk { font-size: 0.65rem; color: #e0a050; margin-top: 2px; }
   .ability { font-size: 0.6rem; color: #8aa88a; margin-top: 3px; font-style: italic; }
   .status { font-size: 0.58rem; color: #ff8a65; margin-top: 2px; min-height: 10px; }
   .divider { text-align: center; font-size: 0.7rem; letter-spacing: 3px; color: #5a7a5a; text-transform: uppercase; padding: 2px 0; }
@@ -127,7 +127,7 @@
     .item { padding: 5px; font-size: 0.6rem; max-width: 100px;}
     .game-btn.attack { padding: 12px; font-size: 1rem; flex: 2;}
     .game-btn { flex: 1; padding: 10px; font-size: 0.9rem;}
-    #game-container { padding-bottom: 220px; } /* Make sure cards aren't hidden */
+    #game-container { padding-bottom: 200px; } /* Space for bottom bar */
     .card { width: 110px; padding: 8px; }
     .emoji { font-size: 2rem; }
     .name { font-size: 0.75rem; }
