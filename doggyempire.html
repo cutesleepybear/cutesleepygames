@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐶 Doggy Simulator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #e8f5e9; color: #2e7d32; min-height: 100vh; padding: 20px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .back-btn { position: absolute; top: 20px; left: 20px; text-decoration: none; color: #4caf50; font-size: 0.9rem; border: 1px solid #4caf50; padding: 5px 10px; border-radius: 6px; z-index: 100; background: #fff;}
+  .back-btn:hover { background: #e8f5e9; }
+
+  #game-container { display: none; width: 100%; max-width: 1200px; margin-top: 20px; }
+  
+  /* HEADER */
+  .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 25px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+  .header h1 { font-size: 1.8rem; color: #1b5e20; }
+  .stats { display: flex; gap: 20px; font-weight: bold; font-size: 1.2rem; }
+  .coins { color: #f57f17; }
+  .paw-prints { color: #ab47bc; display: flex; align-items: center; gap: 5px;}
+
+  /* LAYOUT */
+  .main-layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+  .mansion { flex: 1; min-width: 600px; display: flex; flex-direction: column; gap: 15px; }
+  
+  /* ROOMS */
+  .room { background: #fff; border-radius: 16px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #c8e6c9; position: relative; }
+  .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+  .room-header h2 { font-size: 1.2rem; color: #2e7d32; display: flex; gap: 10px; align-items: center; }
+  .room-limit { font-size: 0.9rem; color: #777; }
+  .dog-grid { display: flex; gap: 15px; flex-wrap: wrap; min-height: 120px; }
+  
+  /* ============ CSS SPRITE ENGINE ============ */
+  .dog-card {
+    background: #f1f8e9; border: 2px solid #aed581; border-radius: 12px;
+    padding: 10px; width: 170px; text-align: center; position: relative; transition: transform 0.2s;
+  }
+  .dog-card:hover { transform: translateY(-3px); }
+  
+  .sprite-container {
+    width: 100px; height: 100px; margin: 0 auto 10px auto; position: relative;
+    background: #fff; border-radius: 12px; border: 2px solid #ccc;
+    display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  }
+  
+  /* The Dog Sprite (drawn with CSS) */
+  .sprite-dog {
+    width: 60px; height: 60px; background-color: #a1887f; 
+    border-radius: 40% 40% 20% 20%; position: relative; margin-bottom: 5px;
+  }
+  /* Ears */
+  .sprite-dog::before, .sprite-dog::after {
+    content: ''; position: absolute; width: 20px; height: 30px; background-color: #795548;
+    border-radius: 50% 50% 0 0; top: -10px;
+  }
+  .sprite-dog::before { left: -5px; transform: rotate(-20deg); }
+  .sprite-dog::after { right: -5px; transform: rotate(20deg); }
+  /* Eyes */
+  .dog-eye { position: absolute; width: 8px; height: 8px; background: #000; border-radius: 50%; top: 20px; }
+  .eye-left { left: 15px; }
+  .eye-right { right: 15px; }
+  /* Nose */
+  .dog-nose { position: absolute; width: 14px; height: 10px; background: #000; border-radius: 50%; top: 35px; left: 23px; }
+
+  /* The Skin Layer */
+  .sprite-skin {
+    position: absolute; inset: 0; z-index: 10; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 4rem;
+  }
+
+  .dog-name { font-size: 1rem; font-weight: bold; color: #1b5e20; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+  .dog-breed { font-size: 0.7rem; color: #689f38; font-weight: bold; text-transform: uppercase; }
+  .dog-personality { font-size: 0.7rem; color: #8d6e63; font-style: italic; margin-bottom: 5px; }
+  
+  .xp-bar { height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin: 5px 0; }
+  .xp-fill { height: 100%; background: #66bb6a; transition: width 0.3s; }
+  .dog-level { font-size: 0.7rem; color: #666; margin-bottom: 10px; font-weight: bold; }
+  
+  .dog-actions { display: flex; gap: 5px; flex-wrap: wrap;}
+  .dog-actions button {
+    flex: 1; padding: 6px; font-size: 0.7rem; border: none; border-radius: 6px;
+    cursor: pointer; font-weight: bold; transition: 0.2s; min-width: 45%;
+  }
+  .btn-pet { background: #ff8a65; color: white; }
+  .btn-feed { background: #66bb6a; color: white; }
+  .btn-move { background: #42a5f5; color: white; }
+  .btn-skin { background: #ab47bc; color: white; }
+
+  /* SHOP */
+  .shop { width: 350px; background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: sticky; top: 20px; }
+  .shop h2 { margin-bottom: 15px; font-size: 1.3rem; border-bottom: 2px solid #c8e6c9; padding-bottom: 10px; color: #1b5e20;}
+  
+  .shop-item { display: flex; justify-content: space-between; align-items: center; background: #fafafa; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;}
+  .shop-item-info h3 { font-size: 1rem; margin-bottom: 2px; }
+  .shop-item-info p { font-size: 0.8rem; color: #777; }
+  .buy-btn { background: #66bb6a; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+  .buy-btn:hover { background: #4caf50; }
+  .buy-btn:disabled { background: #ccc; cursor: not-allowed; }
+  .buy-btn.paw { background: #ab47bc; }
+  .buy-btn.paw:hover { background: #8e24aa; }
+
+  /* MODALS */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;}
+  .modal-content { background: #fff; padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; }
+  .modal-content h2 { color: #2e7d32; margin-bottom: 5px; }
+  .modal-content h3 { color: #689f38; margin-bottom: 15px; font-size: 1rem; text-transform: uppercase;}
+  .modal-content input { width: 100%; padding: 10px; border: 2px solid #c8e6c9; border-radius: 8px; font-size: 1rem; margin-bottom: 15px; text-align: center; }
+  .personality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .pers-btn { padding: 10px; border: 2px solid #c8e6c9; background: #fff; border-radius: 8px; cursor: pointer; font-weight: bold; color: #2e7d32; font-size: 0.8rem;}
+  .pers-btn.selected { background: #e8f5e9; border-color: #2e7d32; }
+
+  .skin-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 300px; overflow-y: auto;}
+  .skin-opt { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; }
+  .skin-opt:hover { background: #f5f5f5; }
+  .skin-opt.equipped { border-color: #ab47bc; background: #f3e5f5; }
+</style>
+</head>
+<body>
+
+  <a href="index.html" class="back-btn">← Back to Hub</a>
+
+  <div id="game-container">
+    <div class="header">
+      <h1>🐶 Doggy Simulator</h1>
+      <div class="stats">
+        <div class="coins">🪙 <span id="coin-display">0</span></div>
+        <div class="paw-prints" id="paw-display" style="display: none;">🐾 <span id="paw-count">0</span></div>
+      </div>
+    </div>
+
+    <div class="main-layout">
+      <div class="mansion" id="mansion-container"></div>
+
+      <div class="shop">
+        <h2>🛒 Supply Shop</h2>
+        <div class="shop-item">
+          <div class="shop-item-info"><h3>🦴 Bone</h3><p>Feeds a dog for +50 XP</p></div>
+          <button class="buy-btn" onclick="buyItem('bone')">10 🪙</button>
+        </div>
+        
+        <h2 style="margin-top: 20px;">🏠 Rotating Shelter</h2>
+        <div id="dog-shop-container"></div>
+        <button class="buy-btn" style="width: 100%; margin-top: 10px; background: #78909c;" onclick="refreshShelter()">Refresh (50 🪙)</button>
+
+        <!-- ENDGAME: PRESTIGE & SKINS -->
+        <h2 style="margin-top: 20px;">✨ Prestige & Skins</h2>
+        <div class="shop-item" id="prestige-container">
+          <div class="shop-item-info">
+            <h3>Move to New House</h3>
+            <p>Earn Paw Prints based on your dogs' levels.</p>
+          </div>
+          <button class="buy-btn paw" onclick="prestige()">Reset</button>
+        </div>
+        
+        <div id="skin-shop-container" style="display: none;">
+          <h3 style="font-size: 0.9rem; margin: 15px 0 10px 0; color: #1b5e20;">🎨 Skin Shop</h3>
+          <div class="skin-list" id="skin-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <div class="modal" id="adopt-modal">
+    <div class="modal-content">
+      <h2>Adopt new dog!</h2>
+      <h3 id="modal-breed-name">Breed</h3>
+      <input type="text" id="dog-name-input" placeholder="Enter name..." maxlength="15">
+      <p style="margin-bottom: 10px; font-weight: bold;">Choose Personality:</p>
+      <div class="personality-grid" id="personality-options"></div>
+      <button class="buy-btn" style="width: 100%; padding: 12px; font-size: 1rem;" onclick="confirmAdoption()">Adopt!</button>
+      <button style="width: 100%; padding: 10px; margin-top: 10px; background: none; border: none; color: #999; cursor: pointer;" onclick="document.getElementById('adopt-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <div class="modal" id="move-modal">
+    <div class="modal-content">
+      <h2>Move Dog to Room</h2>
+      <p style="margin-bottom: 15px; color: #666;">Where should <span id="move-dog-name" style="font-weight: bold; color: #d84315;"></span> go?</p>
+      <div id="room-options" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;"></div>
+      <button style="width: 100%; padding: 10px; background: none; border: none; color: #999; cursor: pointer;" onclick="document.getElementById('move-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <div class="modal" id="skin-modal">
+    <div class="modal-content">
+      <h2>Equip Skin</h2>
+      <p style="margin-bottom: 15px; color: #666;">Choose a look for <span id="skin-dog-name" style="font-weight: bold; color: #d84315;"></span></p>
+      <div class="skin-list" id="equip-skin-list"></div>
+      <button style="width: 100%; padding: 10px; background: none; border: none; color: #999; cursor: pointer;" onclick="document.getElementById('skin-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
+    authDomain: "cute-sleepy-games.firebaseapp.com",
+    projectId: "cute-sleepy-games",
+    storageBucket: "cute-sleepy-games.firebasestorage.app",
+    messagingSenderId: "249264537283",
+    appId: "1:249264537283:web:811dce511556eda6a96c76"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const BREEDS = [
+    { id: 'lab', name: 'Labrador', emoji: '🦮', cost: 100, color: '#ffb74d' },
+    { id: 'poodle', name: 'Poodle', emoji: '🐩', cost: 250, color: '#f48fb1' },
+    { id: 'husky', name: 'Husky', emoji: '🐺', cost: 500, color: '#90caf9' },
+    { id: 'corgi', name: 'Corgi', emoji: '🐕', cost: 1000, color: '#ffd54f' }
+  ];
+
+  const PERSONALITIES = ['Playful', 'Lazy', 'Hungry', 'Loyal'];
+
+  const SKINS = [
+    { id: 'none', name: 'None', emoji: '❌', cost: 0 },
+    { id: 'wings', name: 'Angel Wings', emoji: '🕊️', cost: 5 },
+    { id: 'watermelon', name: 'Watermelon Suit', emoji: '🍉', cost: 10 },
+    { id: 'tophat', name: 'Fancy Top Hat', emoji: '🎩', cost: 15 },
+    { id: 'crown', name: 'Golden Crown', emoji: '👑', cost: 25 }
+  ];
+
+  const ROOMS = [
+    { id: 'living', name: 'Living Room', max: 3, cost: 0, icon: '🛋️' },
+    { id: 'backyard', name: 'Backyard', max: 3, cost: 500, icon: '🌳' },
+    { id: 'kitchen', name: 'Kitchen', max: 3, cost: 1500, icon: '🍳' },
+    { id: 'bedroom', name: 'Master Bedroom', max: 3, cost: 5000, icon: '🛏️' }
+  ];
+
+  let state = {
+    coins: 0,
+    pawPrints: 0,
+    bones: 0,
+    dogs: [],
+    shelter: [],
+    unlockedRooms: ['living'],
+    unlockedSkins: ['none'],
+    pendingAdoptBreed: null,
+    selectedPersonality: null,
+    movingDogId: null,
+    skinDogId: null
+  };
+
+  let saveTimeout;
+
+  async function loadGame() {
+    if (!auth.currentUser) return;
+    const docRef = doc(db, "saves", auth.currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data().doggySave;
+      if (data) state = { ...state, ...data };
+    }
+    
+    if (state.shelter.length === 0) generateShelter();
+    
+    document.getElementById('game-container').style.display = 'block';
+    renderAll();
+    startPassiveIncome();
+  }
+
+  function saveGame() {
+    if (!auth.currentUser) return;
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+      const docRef = doc(db, "saves", auth.currentUser.uid);
+      const docSnap = await getDoc(docRef);
+      let currentData = docSnap.exists() ? docSnap.data() : {};
+      currentData.doggySave = state;
+      currentData.totalXP = (currentData.totalXP || 0) + 5; 
+      currentData.level = Math.floor(currentData.totalXP / 500) + 1;
+      await setDoc(docRef, currentData);
+    }, 1000);
+  }
+
+  function generateShelter() {
+    const shuffled = [...BREEDS].sort(() => 0.5 - Math.random());
+    state.shelter = shuffled.slice(0, 3);
+  }
+
+  function refreshShelter() {
+    if (state.coins < 50) return alert("Not enough coins!");
+    state.coins -= 50;
+    generateShelter();
+    renderAll();
+    saveGame();
+  }
+
+  function calculateIncome(dog) {
+    let base = dog.level * 2;
+    if (dog.personality === 'Loyal') base *= 1.2;
+    if (dog.personality === 'Lazy') base *= 1.3;
+    const multiplier = 1 + (state.pawPrints * 0.1);
+    return Math.floor(base * multiplier);
+  }
+
+  function startPassiveIncome() {
+    setInterval(() => {
+      if (state.dogs.length === 0) return;
+      let totalEarned = 0;
+      state.dogs.forEach(dog => { totalEarned += calculateIncome(dog); });
+      if (totalEarned > 0) {
+        state.coins += totalEarned;
+        updateUI();
+        saveGame();
+      }
+    }, 10000);
+  }
+
+  function petDog(id) {
+    const dog = state.dogs.find(d => d.id === id);
+    if (!dog || dog.petCooldown > Date.now()) return;
+    const reward = dog.personality === 'Playful' ? 3 : 1;
+    state.coins += reward;
+    dog.petCooldown = Date.now() + 3000;
+    updateUI();
+    renderDogs();
+    saveGame();
+  }
+
+  function feedDog(id) {
+    if (state.bones <= 0) return alert("You need a bone! Buy one in the shop.");
+    const dog = state.dogs.find(d => d.id === id);
+    if (!dog) return;
+    
+    state.bones--;
+    let xpGain = 50;
+    if (dog.personality === 'Hungry') xpGain *= 2;
+    
+    dog.xp += xpGain;
+    if (dog.xp >= dog.maxXp) {
+      dog.xp -= dog.maxXp;
+      dog.level++;
+      dog.maxXp = Math.floor(dog.maxXp * 1.5);
+    }
+    updateUI();
+    renderDogs();
+    saveGame();
+  }
+
+  function buyItem(item) {
+    if (item === 'bone') {
+      if (state.coins < 10) return;
+      state.coins -= 10;
+      state.bones++;
+    }
+    updateUI();
+    saveGame();
+  }
+
+  // ============ UI RENDERING ============
+  function renderAll() {
+    updateUI();
+    renderRooms();
+    renderShelter();
+    renderSkinShop();
+  }
+
+  function updateUI() {
+    document.getElementById('coin-display').innerText = state.coins;
+    document.getElementById('paw-count').innerText = state.pawPrints;
+    if (state.pawPrints > 0 || state.unlockedSkins.length > 1) {
+      document.getElementById('paw-display').style.display = 'flex';
+      document.getElementById('skin-shop-container').style.display = 'block';
+    }
+  }
+
+  function renderRooms() {
+    const container = document.getElementById('mansion-container');
+    container.innerHTML = '';
+
+    ROOMS.forEach(room => {
+      const isUnlocked = state.unlockedRooms.includes(room.id);
+      const roomDogs = state.dogs.filter(d => d.room === room.id);
+
+      const roomDiv = document.createElement('div');
+      roomDiv.className = 'room';
+      
+      let roomHeader = `
+        <div class="room-header">
+          <h2>${room.icon} ${room.name}</h2>
+          <div class="room-limit">${roomDogs.length} / ${room.max} Dogs</div>
+        </div>
+      `;
+
+      if (!isUnlocked) {
+        roomDiv.innerHTML = roomHeader + `
+          <div style="text-align: center; padding: 20px;">
+            <p style="margin-bottom: 10px; color: #777;">This room is locked.</p>
+            <button class="buy-btn" onclick="unlockRoom('${room.id}', ${room.cost})">Unlock for ${room.cost} 🪙</button>
+          </div>
+        `;
+      } else {
+        let dogHTML = '<div class="dog-grid">';
+        roomDogs.forEach(dog => {
+          const breed = BREEDS.find(b => b.id === dog.breedId);
+          const skin = SKINS.find(s => s.id === dog.skinId) || SKINS[0];
+          const canPet = dog.petCooldown < Date.now();
+          const xpPct = (dog.xp / dog.maxXp) * 100;
+
+          dogHTML += `
+            <div class="dog-card">
+              <div class="sprite-container">
+                <div class="sprite-dog" style="background-color: ${breed.color};">
+                  <div class="dog-eye eye-left"></div>
+                  <div class="dog-eye eye-right"></div>
+                  <div class="dog-nose"></div>
+                </div>
+                ${skin.emoji ? `<div class="sprite-skin">${skin.emoji}</div>` : ''}
+              </div>
+              <div class="dog-name">${dog.name}</div>
+              <div class="dog-breed">${breed.name}</div>
+              <div class="dog-personality">${dog.personality}</div>
+              
+              <div class="xp-bar"><div class="xp-fill" style="width: ${xpPct}%"></div></div>
+              <div class="dog-level">Lv. ${dog.level} (${dog.xp}/${dog.maxXp} XP)</div>
+              
+              <div class="dog-actions">
+                <button class="btn-pet" onclick="petDog('${dog.id}')" ${!canPet ? 'disabled' : ''}>Pet (+${dog.personality === 'Playful' ? 3 : 1} 🪙)</button>
+                <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed</button>
+                <button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>
+                <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
+              </div>
+            </div>
+          `;
+        });
+        dogHTML += '</div>';
+        roomDiv.innerHTML = roomHeader + dogHTML;
+      }
+      container.appendChild(roomDiv);
+    });
+  }
+
+  function renderShelter() {
+    const container = document.getElementById('dog-shop-container');
+    container.innerHTML = '';
+    
+    state.shelter.forEach(breed => {
+      const div = document.createElement('div');
+      div.className = 'shop-item';
+      div.innerHTML = `
+        <div class="shop-item-info">
+          <h3>${breed.emoji} ${breed.name}</h3>
+          <p>Unlock a new friend</p>
+        </div>
+        <button class="buy-btn" onclick="openAdoptModal('${breed.id}')">${breed.cost} 🪙</button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function renderSkinShop() {
+    const container = document.getElementById('skin-list');
+    container.innerHTML = '';
+    
+    SKINS.forEach(skin => {
+      if (skin.id === 'none') return;
+      const isUnlocked = state.unlockedSkins.includes(skin.id);
+      
+      const div = document.createElement('div');
+      div.className = 'skin-opt';
+      div.innerHTML = `
+        <div>
+          <span style="font-size: 1.5rem; margin-right: 10px;">${skin.emoji}</span>
+          <strong>${skin.name}</strong>
+        </div>
+        ${isUnlocked 
+          ? '<span style="color: #4caf50; font-weight: bold;">Owned</span>' 
+          : `<button class="buy-btn paw" onclick="buySkin('${skin.id}', ${skin.cost})">${skin.cost} 🐾</button>`}
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ============ MODALS ============
+  window.openAdoptModal = function(breedId) {
+    const breed = BREEDS.find(b => b.id === breedId);
+    if (state.coins < breed.cost) return alert("Not enough coins!");
+    
+    state.pendingAdoptBreed = breed;
+    document.getElementById('modal-breed-name').innerText = breed.name;
+    document.getElementById('dog-name-input').value = '';
+    
+    const pContainer = document.getElementById('personality-options');
+    pContainer.innerHTML = '';
+    state.selectedPersonality = PERSONALITIES[0];
+    
+    PERSONALITIES.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = `pers-btn ${p === state.selectedPersonality ? 'selected' : ''}`;
+      btn.innerText = p;
+      btn.onclick = () => {
+        state.selectedPersonality = p;
+        document.querySelectorAll('.pers-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+      };
+      pContainer.appendChild(btn);
+    });
+    
+    document.getElementById('adopt-modal').style.display = 'flex';
+  }
+
+  window.confirmAdoption = function() {
+    const name = document.getElementById('dog-name-input').value.trim() || state.pendingAdoptBreed.name;
+    const room = state.unlockedRooms[0]; // Put in first room
+    
+    state.coins -= state.pendingAdoptBreed.cost;
+    state.dogs.push({
+      id: Date.now().toString(),
+      breedId: state.pendingAdoptBreed.id,
+      name: name,
+      personality: state.selectedPersonality,
+      level: 1,
+      xp: 0,
+      maxXp: 100,
+      room: room,
+      skinId: 'none',
+      petCooldown: 0
+    });
+    
+    state.shelter = [];
+    generateShelter();
+    document.getElementById('adopt-modal').style.display = 'none';
+    renderAll();
+    saveGame();
+  }
+
+  window.openMoveModal = function(dogId) {
+    state.movingDogId = dogId;
+    const dog = state.dogs.find(d => d.id === dogId);
+    document.getElementById('move-dog-name').innerText = dog.name;
+    
+    const container = document.getElementById('room-options');
+    container.innerHTML = '';
+    
+    state.unlockedRooms.forEach(roomId => {
+      const room = ROOMS.find(r => r.id === roomId);
+      const currentDogs = state.dogs.filter(d => d.room === roomId);
+      const isFull = currentDogs.length >= room.max && dog.room !== roomId;
+      
+      const btn = document.createElement('button');
+      btn.className = 'buy-btn';
+      btn.style.background = isFull ? '#ccc' : '#42a5f5';
+      btn.innerText = `${room.icon} ${room.name} (${currentDogs.length}/${room.max})`;
+      btn.disabled = isFull;
+      
+      btn.onclick = () => {
+        dog.room = roomId;
+        document.getElementById('move-modal').style.display = 'none';
+        renderAll();
+        saveGame();
+      };
+      container.appendChild(btn);
+    });
+    
+    document.getElementById('move-modal').style.display = 'flex';
+  }
+
+  window.openSkinModal = function(dogId) {
+    state.skinDogId = dogId;
+    const dog = state.dogs.find(d => d.id === dogId);
+    document.getElementById('skin-dog-name').innerText = dog.name;
+    
+    const container = document.getElementById('equip-skin-list');
+    container.innerHTML = '';
+    
+    SKINS.forEach(skin => {
+      if (!state.unlockedSkins.includes(skin.id)) return;
+      
+      const btn = document.createElement('div');
+      btn.className = `skin-opt ${dog.skinId === skin.id ? 'equipped' : ''}`;
+      btn.innerHTML = `
+        <div>
+          <span style="font-size: 1.5rem; margin-right: 10px;">${skin.emoji || '🚫'}</span>
+          <strong>${skin.name}</strong>
+        </div>
+        ${dog.skinId === skin.id ? '<span style="color: #ab47bc; font-weight: bold;">Equipped</span>' : ''}
+      `;
+      btn.onclick = () => {
+        dog.skinId = skin.id;
+        document.getElementById('skin-modal').style.display = 'none';
+        renderAll();
+        saveGame();
+      };
+      container.appendChild(btn);
+    });
+    
+    document.getElementById('skin-modal').style.display = 'flex';
+  }
+
+  // ============ PRESTIGE & SKINS ============
+  window.unlockRoom = function(roomId, cost) {
+    if (state.coins < cost) return;
+    state.coins -= cost;
+    state.unlockedRooms.push(roomId);
+    renderAll();
+    saveGame();
+  }
+
+  window.prestige = function() {
+    const totalLevels = state.dogs.reduce((sum, dog) => sum + dog.level, 0);
+    if (totalLevels < 5) return alert("You need at least 5 total dog levels to prestige!");
+    
+    const earnedPawPrints = Math.floor(totalLevels / 2);
+    if (!confirm(`Are you sure? You will lose all your dogs and coins, but you will earn ${earnedPawPrints} 🐾 Paw Prints (permanent bonus).`)) return;
+    
+    state.pawPrints += earnedPawPrints;
+    state.dogs = [];
+    state.coins = 0;
+    state.unlockedRooms = ['living'];
+    state.shelter = [];
+    generateShelter();
+    
+    renderAll();
+    saveGame();
+    alert(`Prestige complete! You now have ${state.pawPrints} 🐾. Every Paw Print gives +10% permanent coin bonus.`);
+  }
+
+  window.buySkin = function(skinId, cost) {
+    if (state.pawPrints < cost) return;
+    state.pawPrints -= cost;
+    state.unlockedSkins.push(skinId);
+    renderAll();
+    saveGame();
+  }
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      loadGame();
+    } else {
+      window.location.href = "index.html";
+    }
+  });
+</script>
+</body>
+</html>

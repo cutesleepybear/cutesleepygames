@@ -34,11 +34,11 @@
   .hub-header h1 { font-size: 2.5rem; color: #f0c060; text-shadow: 0 0 10px rgba(240,192,96,0.5); }
   .hub-header p { color: #9ab89a; font-size: 1.1rem; margin-top: 10px; }
   
-  .game-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 900px; }
+  .game-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; max-width: 1000px; }
   .game-card {
     background: linear-gradient(160deg, #3a2f1f, #2a2115);
     border: 2px solid #5a4a2f; border-radius: 16px; padding: 30px 20px;
-    width: 250px; text-align: center; text-decoration: none; color: inherit;
+    width: 280px; text-align: center; text-decoration: none; color: inherit;
     transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; display: block;
   }
   .game-card:hover { transform: translateY(-5px); border-color: #f0c060; box-shadow: 0 0 20px rgba(240,192,96,0.3); }
@@ -86,7 +86,74 @@
   /* Hide the hub until logged in */
   #hub-content { display: none; flex-direction: column; align-items: center; width: 100%; }
 </style>
+</head>
+<body>
 
+  <!-- ============ LOGIN MODAL ============ -->
+  <div id="login-screen">
+    <div class="login-box">
+      <h2>🐻 Arcade Login</h2>
+      <input type="email" id="login-email" placeholder="Email">
+      <input type="password" id="login-pass" placeholder="Password">
+      <button id="btn-login">Log In</button>
+      <button id="btn-signup" class="signup-btn">Sign Up</button>
+      <p id="login-msg"></p>
+    </div>
+  </div>
+
+  <!-- ============ MAIN ARCADE HUB ============ -->
+  <div id="hub-content">
+    
+    <!-- PLAYER PROFILE BAR -->
+    <div id="profile-bar">
+      <div class="level-box">
+        <div class="level-badge" id="level-num">Lv. 1</div>
+        <div class="xp-info">
+          <div style="font-weight: bold; color: #f0c060;">Arcade Rank</div>
+          <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+          <div id="xp-text" style="font-size: 0.8rem; color: #9ab89a;">0 / 500 XP</div>
+        </div>
+      </div>
+      <div style="font-size: 1.5rem;">🏆</div>
+    </div>
+
+    <div class="hub-header">
+      <h1>🐻 My Arcade</h1>
+      <p>Select a game to earn XP and level up!</p>
+    </div>
+    
+    <div class="game-grid">
+      <!-- Bear Cards Game -->
+      <div class="game-card" onclick="window.location.href='bearcards.html'">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🐻🐼🐻‍❄️</div>
+        <h2>Bear Cards</h2>
+        <p>Battle the rival ranger. (+100 XP Win)</p>
+      </div>
+      
+      <!-- Escape Room Game -->
+      <div class="game-card" onclick="window.location.href='escaperoom.html'">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🚪🔑</div>
+        <h2>Escape Room</h2>
+        <p>Solve puzzles to break out. (+150 XP Win)</p>
+      </div>
+
+      <!-- Doggy Simulator Game -->
+      <div class="game-card" onclick="window.location.href='doggyempire.html'">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🐶🦴</div>
+        <h2>Doggy Empire</h2>
+        <p>Adopt dogs, feed them, and unlock skins. (+XP per action)</p>
+      </div>
+      
+      <!-- Future games go here -->
+      <div class="game-card" style="opacity: 0.5; cursor: not-allowed;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">🚧</div>
+        <h2>Coming Soon</h2>
+        <p>More games will be added here.</p>
+      </div>
+    </div>
+  </div>
+
+<!-- ============ MAIN SCRIPT (LOGIN LOGIC) ============ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -162,65 +229,5 @@
     }
   });
 </script>
-</head>
-<body>
-
-  <!-- ============ LOGIN MODAL ============ -->
-  <div id="login-screen">
-    <div class="login-box">
-      <h2>🐻 Arcade Login</h2>
-      <input type="email" id="login-email" placeholder="Email">
-      <input type="password" id="login-pass" placeholder="Password">
-      <button id="btn-login">Log In</button>
-      <button id="btn-signup" class="signup-btn">Sign Up</button>
-      <p id="login-msg"></p>
-    </div>
-  </div>
-
-  <!-- ============ MAIN ARCADE HUB ============ -->
-  <div id="hub-content">
-    
-    <!-- PLAYER PROFILE BAR -->
-    <div id="profile-bar">
-      <div class="level-box">
-        <div class="level-badge" id="level-num">Lv. 1</div>
-        <div class="xp-info">
-          <div style="font-weight: bold; color: #f0c060;">Arcade Rank</div>
-          <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
-          <div id="xp-text" style="font-size: 0.8rem; color: #9ab89a;">0 / 500 XP</div>
-        </div>
-      </div>
-      <div style="font-size: 1.5rem;">🏆</div>
-    </div>
-
-    <div class="hub-header">
-      <h1>🐻 My Arcade</h1>
-      <p>Select a game to earn XP and level up!</p>
-    </div>
-    
-    <div class="game-grid">
-      <!-- Bear Cards Game -->
-      <div class="game-card" onclick="window.location.href='bearcards.html'">
-        <div style="font-size: 3rem; margin-bottom: 10px;">🐻🐼🐻‍❄️</div>
-        <h2>Bear Cards</h2>
-        <p>Battle the rival ranger. (+100 XP Win)</p>
-      </div>
-      
-      <!-- Escape Room Game -->
-      <div class="game-card" onclick="window.location.href='escaperoom.html'">
-        <div style="font-size: 3rem; margin-bottom: 10px;">🚪🔑</div>
-        <h2>Escape Room</h2>
-        <p>Solve puzzles to break out. (+150 XP Win)</p>
-      </div>
-      
-      <!-- Future games go here -->
-      <div class="game-card" style="opacity: 0.5; cursor: not-allowed;">
-        <div style="font-size: 3rem; margin-bottom: 10px;">🚧</div>
-        <h2>Coming Soon</h2>
-        <p>More games will be added here.</p>
-      </div>
-    </div>
-  </div>
-
 </body>
 </html>
