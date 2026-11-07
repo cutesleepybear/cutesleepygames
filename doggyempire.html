@@ -433,8 +433,7 @@
               <div class="dog-level">Lv. ${dog.level} (${dog.xp}/${dog.maxXp} XP)</div>
               
               <div class="dog-actions">
-                <button class="btn-pet" onclick="petDog('${dog.id}')" ${!canPet ? 'disabled' : ''}>Pet (+${dog.personality === 'Playful' ? 2 : 1} 🪙)</button>
-                <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed</button>
+                <button class="btn-pet" id="pet-btn-${dog.id}" onclick="petDog('${dog.id}')" ${!canPet ? 'disabled' : ''}>Pet (+${dog.personality === 'Playful' ? 2 : 1} 🪙)</button>                <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed</button>
                 <button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>
                 <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
               </div>
