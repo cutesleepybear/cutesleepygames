@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Pocket Pets</title>
+<title>Pocket Pets 3D</title>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--pn:#fffaf2;--pn2:#fff0d9;--tx:#3b2f4a;--ac:#ff7eb6;--ac2:#7c5cff;--bd:#ecd5bb;--ol:#2b1f3a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -77,10 +77,7 @@ small{opacity:.8}
 .pop{position:fixed;pointer-events:none;font-weight:700;font-size:22px;color:#ffb300;-webkit-text-stroke:1px #2b1f3a;animation:up 1s forwards}
 @keyframes up{to{transform:translateY(-60px);opacity:0}}
 @media (max-width:520px){.sb{width:52px;font-size:10px}.sb span{font-size:21px}#h1{min-width:120px;padding:9px 14px}#ca{font-size:13px;padding:8px}}
-</style>
-</head>
-<body>
-
+</style></head><body>
 <div id="top"><div class="chip" id="wn"></div><div class="chip money"><div id="cu"></div><small id="inc"></small></div></div>
 <div id="side">
 <button class="sb" onclick="openP('bp')"><span>🎒</span>Pets<i class="bd" id="bBp"></i></button>
@@ -100,7 +97,6 @@ small{opacity:.8}
 </div></div>
 <div id="modal" onclick="if(event.target==this)closeP()"><div id="box"></div></div>
 
-<!-- FIREBASE SETUP -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
