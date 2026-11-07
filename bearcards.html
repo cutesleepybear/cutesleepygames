@@ -36,14 +36,24 @@
   .team { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   
   /* CARDS */
-   .card {
-    /* Made cards much wider and taller */
-    width: 180px; 
-    background: linear-gradient(160deg, #3a2f1f, #2a2115);
-    border: 2px solid #5a4a2f; border-radius: 12px; padding: 8px;
+     .card {
+    /* Removed the background, border, and padding so your image IS the card */
+    width: 160px; 
+    background: transparent;
+    border: none; 
+    padding: 0;
     text-align: center; position: relative; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
     display: flex; flex-direction: column;
   }
+  
+  /* Keep the glow for the active bear, but make it wrap your image */
+  .card.active { 
+    filter: drop-shadow(0 0 12px rgba(240,192,96,0.8)); 
+    transform: translateY(-4px); 
+  }
+  .card.ko { opacity: 0.35; filter: grayscale(1); }
+  .card.clickable { cursor: pointer; }
+  .card.clickable:hover { transform: translateY(-3px); filter: drop-shadow(0 0 10px rgba(240,192,96,0.5)); }
   
   /* Make the image fill the top space */
   .card-img-container {
@@ -330,21 +340,22 @@
       const hpPct = Math.max(0, bear.hp / bear.maxHp * 100);
       
       card.innerHTML = `
-        <!-- THE ENTIRE CARD IS NOW THE IMAGE -->
-        <div style="width: 100%; aspect-ratio: 1 / 1.35; border-radius: 10px; overflow: hidden; background: #2a2115; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+        <!-- THE IMAGE FILLS THE CARD PERFECTLY -->
+        <div style="width: 100%; aspect-ratio: 1 / 1.3; border-radius: 12px; overflow: hidden; position: relative;">
           
-          <img src="art/${bear.id}.png" alt="${bear.name}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <!-- Use object-fit: contain so NO corners are cut off -->
+          <img src="art/${bear.id}.png" alt="${bear.name}" style="width: 100%; height: 100%; object-fit: contain; display: block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
           
           <!-- Fallback Emoji -->
-          <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 4rem; position: absolute; inset: 0; background: #2a2115;">${bear.emoji}</div>
+          <div style="display: none; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 4rem; position: absolute; inset: 0; background: #2a2115; border-radius: 12px;">${bear.emoji}</div>
           
-          <!-- Attack Badge -->
+          <!-- Attack Badge (Moved slightly up so it doesn't cover your text) -->
           <div style="position: absolute; bottom: 15px; right: 5px; background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; color: #e0a050; font-weight: bold; border: 1px solid #5a4a2f; z-index: 2;">
             ⚔ ${bear.atk}${bear.bonusAtk ? ` (+${bear.bonusAtk})` : ''}
           </div>
 
-          <!-- LIVE HP BAR OVERLAY (Pinned to bottom) -->
-          <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 10px; background: rgba(0,0,0,0.9); border-top: 1px solid #5a4a2f; z-index: 2;">
+          <!-- LIVE HP BAR (Overlaid on the bottom edge of your image) -->
+          <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 8px; background: rgba(0,0,0,0.9); z-index: 2;">
             <div style="height: 100%; width: ${hpPct}%; background: ${hpPct < 30 ? '#ff3333' : '#4caf50'}; transition: width 0.3s;"></div>
           </div>
         </div>
