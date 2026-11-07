@@ -73,8 +73,10 @@ const NM=["Biscuit","Mochi","Waffles","Pickles","Bean","Peanut","Nugget","Cookie
 let S,tab=0;
 const fresh=()=>({coins:200,bones:0,paws:0,dogs:[],rooms:[0],skins:[],sh:[],t:0});
 try{S=JSON.parse(localStorage.getItem("doggy1"))}catch(e){}
-S=S||fresh();S.v=S.v||[];S.pr=S.pr||0;
-const save=()=>{try{localStorage.setItem("doggy1",JSON.stringify(S))}catch(e){}window.cloudSave&&window.cloudSave()};
+S=Object.assign(fresh(),S&&typeof S==="object"?S:{});
+["dogs","skins","sh","v"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
+if(!Array.isArray(S.rooms)||!S.rooms.length)S.rooms=[0];
+S.pr=S.pr||0;const save=()=>{try{localStorage.setItem("doggy1",JSON.stringify(S))}catch(e){}window.cloudSave&&window.cloudSave()};
 const ks=Object.keys(B),G=()=>1+S.paws*.1,f=n=>Math.floor(n).toLocaleString();
 const roll=()=>{S.sh=ks.filter(k=>(B[k].u||0)<=(S.pr||0)).sort(()=>Math.random()-.5).slice(0,3)};
 if(!S.sh.length)roll();
@@ -169,8 +171,14 @@ onAuthStateChanged(auth,async user=>{
   try{
     const snap=await getDoc(doc(db,"saves",user.uid));
     const d=snap.exists()&&snap.data().doggySave;
-    if(d){S=d;S.v=S.v||[];S.pr=S.pr||0;S.sh=S.sh||[];if(!S.sh.length)roll();if(!S.dogs.length)starter()}
-    ready=true;render();say("☁️ Connected");
+  if(d&&typeof d==="object"){
+    S=Object.assign(fresh(),d);               // fill in anything the cloud save is missing
+    if(!Array.isArray(S.rooms)||!S.rooms.length)S.rooms=[0];
+    ["dogs","skins","sh","v"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
+    S.pr=S.pr||0;
+    if(!S.sh.length)roll();
+    if(!S.dogs.length)starter();
+  }    ready=true;render();say("☁️ Connected");
   }catch(e){console.error(e);say("⚠️ Cloud load failed: "+(e.code||e.message))}
 });
 </script>
