@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Doggy Simulator</title>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>My Dogs</title>
 <style>
 :root{--bg:#fff4e6;--cd:#fff;--tx:#3b2a20;--ac:#ff8a4c;--mu:#8a7566;--bd:#f1dcc6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1e1712;--cd:#2b211a;--tx:#f5e8dc;--mu:#b8a290;--bd:#43342a;color-scheme:dark}}
@@ -20,20 +20,6 @@ nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 .xp{height:6px;border-radius:3px;background:var(--bd);overflow:hidden}.xp u{display:block;height:100%;background:#5bc47a}
 .bt{display:flex;gap:4px}
 button,select{font:inherit;font-size:13px}
-  .back-btn { 
-    position: absolute; 
-    top: 15px; 
-    left: 15px; 
-    text-decoration: none; 
-    color: #4caf50; 
-    font-size: 0.8rem; 
-    border: 1px solid #4caf50; 
-    padding: 5px 10px; 
-    border-radius: 6px; 
-    z-index: 100; 
-    background: #fff;
-  }
-  .back-btn:hover { background: #e8f5e9; }
 .bt button,.bt select,.b{flex:1;padding:6px;border-radius:8px;border:1px solid var(--bd);background:var(--ac);color:#fff;cursor:pointer;min-width:0}
 .bt .g{background:var(--cd);color:var(--tx)}.bt select{background:var(--cd);color:var(--tx)}
 button:disabled{opacity:.45;cursor:default}
@@ -61,10 +47,9 @@ button:disabled{opacity:.45;cursor:default}
 .x{z-index:3}.sk{position:absolute;z-index:6;line-height:1}
 .shy i{filter:hue-rotate(150deg) saturate(1.5)}.shy{filter:drop-shadow(0 0 6px gold)}@keyframes tw{50%{opacity:.2;transform:scale(.6)}}
 .nm{font:inherit;font-weight:700;text-align:center;background:transparent;color:var(--tx);border:1px dashed var(--bd);border-radius:6px;padding:3px;width:100%;box-sizing:border-box}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}.top h1{margin:4px 0}#hub{font-size:13px;font-weight:600;text-decoration:none;color:var(--tx);background:var(--cd);border:1px solid var(--bd);border-radius:20px;padding:6px 12px;white-space:nowrap}
 </style></head><body>
-<a href="index.html" class="back-btn">← Back to Hub</a>
-
-<h1>🐶 Doggy Simulator</h1><div id="hud"></div>
+<div class=top><h1>🐶 My Dogs</h1><a id=hub href="index.html">← Back to Hub</a></div><div id="hud"></div>
 <nav id="nv"></nav><div id="app"></div><div id="ts"></div>
 <script>
 const B={
@@ -144,18 +129,12 @@ render();
 /* ===== ARCADE CLOUD SAVE (saves/{uid}.doggySave + totalXP/level) =====
    Reuses your already-initialised Firebase app if there is one;
    otherwise fill in firebaseConfig. */
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
-    authDomain: "cute-sleepy-games.firebaseapp.com",
-    projectId: "cute-sleepy-games",
-    storageBucket: "cute-sleepy-games.firebasestorage.app",
-    messagingSenderId: "249264537283",
-    appId: "1:249264537283:web:811dce511556eda6a96c76"
-  };
+import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig={apiKey:"YOUR_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT"};
+const app=getApps().length?getApp():initializeApp(firebaseConfig);
+const auth=getAuth(app),db=getFirestore(app);
 let isSaving=false,timer,lastXP=0;
 async function saveGame(){
   if(!auth.currentUser||isSaving)return;
