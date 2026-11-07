@@ -1,859 +1,163 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐶 My Dogs 🐶</title>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Doggy Simulator</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #e8f5e9; color: #2e7d32; min-height: 100vh; padding: 15px;
-    display: flex; flex-direction: column; align-items: center;
-  }
-  .back-btn { position: absolute; top: 15px; left: 15px; text-decoration: none; color: #4caf50; font-size: 0.8rem; border: 1px solid #4caf50; padding: 5px 10px; border-radius: 6px; z-index: 100; background: #fff;}
-  .back-btn:hover { background: #e8f5e9; }
-
-  #game-container { display: none; width: 100%; max-width: 1200px; margin-top: 30px; }
-  
-  /* HEADER */
-  .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
-  .header h1 { font-size: 1.4rem; color: #1b5e20; }
-  .stats { display: flex; gap: 15px; font-weight: bold; font-size: 1.1rem; flex-wrap: wrap; align-items: center;}
-  .coins { color: #f57f17; }
-  .bones { color: #8d6e63; }
-  .paw-prints { color: #ab47bc; display: flex; align-items: center; gap: 5px;}
-
-  /* LAYOUT */
-  .main-layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
-  .mansion { flex: 1; min-width: 100%; display: flex; flex-direction: column; gap: 15px; }
-  
-  /* ROOMS */
-  .room { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #c8e6c9; position: relative; }
-  .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-  .room-header h2 { font-size: 1.1rem; color: #2e7d32; display: flex; gap: 5px; align-items: center; }
-  .room-limit { font-size: 0.8rem; color: #777; }
-  .dog-grid { display: flex; gap: 10px; flex-wrap: wrap; }
-  
-  /* ============ THE NEW DOG SPRITES ============ */
-  .dog-card {
-    background: #f1f8e9; border: 2px solid #aed581; border-radius: 10px;
-    padding: 8px; width: calc(50% - 5px); min-width: 140px; max-width: 180px; 
-    text-align: center; position: relative; transition: transform 0.2s;
-    display: flex; flex-direction: column; align-items: center;
-  }
-  .dog-card:hover { transform: translateY(-2px); }
-  
-  .sprite-container {
-    width: 70px; height: 70px; margin: 0 auto 8px auto; position: relative;
-    background: #fff; border-radius: 10px; border: 2px solid #ccc;
-    display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
-  }
-
-  /* The Base Dog */
-  .sprite-dog {
-    width: 45px; height: 45px; 
-    border-radius: 40% 40% 20% 20%; position: relative; margin-bottom: 5px;
-  }
-  /* The Ears */
-  .sprite-dog::before, .sprite-dog::after {
-    content: ''; position: absolute; width: 15px; height: 22px; background-color: inherit; filter: brightness(0.7);
-    border-radius: 50% 50% 0 0; top: -8px;
-  }
-  .sprite-dog::before { left: -4px; transform: rotate(-20deg); }
-  .sprite-dog::after { right: -4px; transform: rotate(20deg); }
-  
-  /* Pointy Ears (For Husky/Shepherd) */
-  .sprite-dog.pointy-ears::before, .sprite-dog.pointy-ears::after {
-    border-radius: 0; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-    height: 18px; top: -12px;
-  }
-
-  /* The Snout */
-  .dog-snout {
-    position: absolute; width: 22px; height: 16px; background: #f5f5f5; 
-    border-radius: 50%; bottom: 2px; left: 11px; z-index: 2;
-    border: 1px solid #ccc;
-  }
-  .dog-eye { position: absolute; width: 6px; height: 6px; background: #000; border-radius: 50%; top: 15px; z-index: 3;}
-  .eye-left { left: 10px; }
-  .eye-right { right: 10px; }
-  .dog-nose { position: absolute; width: 8px; height: 6px; background: #000; border-radius: 50%; top: 28px; left: 18px; z-index: 4; }
-  
-  /* The Tail */
-  .dog-tail {
-    position: absolute; width: 18px; height: 6px; background: inherit; filter: brightness(0.8);
-    border-radius: 6px; bottom: 8px; right: -12px; z-index: -1;
-    transform-origin: left center; transform: rotate(30deg);
-  }
-
-  /* Dalmatian Spots */
-  .dalmatian-spots {
-    position: absolute; inset: 0; border-radius: 40% 40% 20% 20%; z-index: 1;
-    background-image: radial-gradient(circle, #000 20%, transparent 25%);
-    background-size: 12px 12px;
-    opacity: 0.6;
-  }
-
-  .sprite-skin { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
-
-  /* SHINY CSS */
-  .shiny-dog { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 5px gold); }
-  .shiny-sparkle { position: absolute; top: 2px; right: 2px; font-size: 1.2rem; z-index: 20; animation: sparkle 1.5s infinite; }
-  @keyframes sparkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
-
-  .dog-name { font-size: 0.9rem; font-weight: bold; color: #1b5e20; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
-  .dog-breed { font-size: 0.65rem; color: #689f38; font-weight: bold; text-transform: uppercase; }
-  .dog-personality { font-size: 0.65rem; color: #8d6e63; font-style: italic; margin-bottom: 5px; }
-  
-  .xp-bar { height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin: 5px 0; width: 100%;}
-  .xp-fill { height: 100%; background: #66bb6a; transition: width 0.3s; }
-  .dog-level { font-size: 0.65rem; color: #666; margin-bottom: 8px; font-weight: bold; }
-  
-  .dog-actions { display: flex; gap: 4px; flex-wrap: wrap; width: 100%; justify-content: center;}
-  .dog-actions button {
-    flex: 1; min-width: 45%; padding: 6px 2px; font-size: 0.65rem; border: none; border-radius: 4px;
-    cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap;
-  }
-  .btn-pet { background: #ff8a65; color: white; }
-  .btn-feed { background: #66bb6a; color: white; }
-  .btn-move { background: #42a5f5; color: white; }
-  .btn-skin { background: #ab47bc; color: white; }
-  .btn-name { background: #78909c; color: white; flex: 100% !important; margin-top: 4px;}
-  .btn-pet:disabled { background: #ccc; cursor: not-allowed; }
-
-  .btn-merge {
-    background: #ffb300; color: white; border: none; padding: 12px; border-radius: 8px;
-    cursor: pointer; font-weight: bold; width: 100%; font-size: 1rem;
-    box-shadow: 0 0 15px rgba(255, 179, 0, 0.6);
-    margin-bottom: 15px;
-  }
-  .btn-merge:hover { background: #ffa000; transform: scale(1.02); }
-
-  /* SHOP */
-  .shop { width: 100%; background: #fff; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-  .shop h2 { margin-bottom: 15px; font-size: 1.2rem; border-bottom: 2px solid #c8e6c9; padding-bottom: 10px; color: #1b5e20;}
-  
-  .shop-item { display: flex; justify-content: space-between; align-items: center; background: #fafafa; padding: 8px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #eee;}
-  .shop-item-info h3 { font-size: 0.9rem; margin-bottom: 2px; }
-  .shop-item-info p { font-size: 0.7rem; color: #777; }
-  .buy-btn { background: #66bb6a; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; font-size: 0.8rem;}
-  .buy-btn:hover { background: #4caf50; }
-  .buy-btn.paw { background: #ab47bc; }
-  .buy-btn.paw:hover { background: #8e24aa; }
-
-  /* MODALS */
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px;}
-  .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; text-align: center; }
-  .modal-content h2 { color: #2e7d32; margin-bottom: 5px; font-size: 1.2rem;}
-  .modal-content h3 { color: #689f38; margin-bottom: 15px; font-size: 0.9rem; text-transform: uppercase;}
-  .modal-content input { width: 100%; padding: 8px; border: 2px solid #c8e6c9; border-radius: 6px; font-size: 0.9rem; margin-bottom: 15px; text-align: center; }
-  .personality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
-  .pers-btn { padding: 8px; border: 2px solid #c8e6c9; background: #fff; border-radius: 6px; cursor: pointer; font-weight: bold; color: #2e7d32; font-size: 0.8rem;}
-  .pers-btn.selected { background: #e8f5e9; border-color: #2e7d32; }
-
-  .skin-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; max-height: 250px; overflow-y: auto;}
-  .skin-opt { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; background: #fff; font-size: 0.8rem;}
-  .skin-opt.equipped { border-color: #ab47bc; background: #f3e5f5; }
-
-  /* DESKTOP RESPONSIVE RULES */
-  @media (min-width: 800px) {
-    .header h1 { font-size: 1.8rem; }
-    .mansion { min-width: 600px; }
-    .shop { width: 350px; position: sticky; top: 20px; padding: 20px; }
-    .dog-card { width: 160px; padding: 10px; }
-    .sprite-container { width: 90px; height: 90px; }
-    .sprite-dog { width: 55px; height: 55px; }
-    .sprite-dog::before { width: 18px; height: 26px; top: -10px; left: -5px;}
-    .sprite-dog::after { width: 18px; height: 26px; top: -10px; right: -5px;}
-    .dog-eye { width: 7px; height: 7px; top: 18px;}
-    .eye-left { left: 13px; }
-    .eye-right { right: 13px; }
-    .dog-snout { width: 28px; height: 20px; left: 13px; bottom: 2px;}
-    .dog-nose { width: 10px; height: 8px; top: 32px; left: 22px; }
-    .dog-tail { width: 22px; height: 8px; right: -15px; }
-    .sprite-skin { font-size: 4rem; }
-    
-    .dog-actions button { font-size: 0.75rem; padding: 8px 4px;}
-    .btn-name { flex: 1 !important; margin-top: 0;}
-    .shop-item { padding: 10px; }
-    .shop-item-info h3 { font-size: 1rem; }
-    .shop-item-info p { font-size: 0.8rem; }
-    .buy-btn { padding: 8px 12px; font-size: 0.9rem;}
-  }
-</style>
-</head>
-<body>
-
-  <a href="index.html" class="back-btn">← Back to Hub</a>
-
-  <div id="game-container">
-    <div class="header">
-      <h1>🐶 My Dogs 🐶</h1>
-      <div class="stats">
-        <div class="coins">🪙 <span id="coin-display">0</span></div>
-        <div class="bones">🦴 <span id="bone-display">0</span></div>
-        <div class="paw-prints" id="paw-display" style="display: none;">🐾 <span id="paw-count">0</span></div>
-      </div>
-    </div>
-
-    <div class="main-layout">
-      <div class="mansion" id="mansion-container"></div>
-
-      <div class="shop">
-        <h2>🛒 Supply Shop</h2>
-        <div class="shop-item">
-          <div class="shop-item-info"><h3>🦴 Bone</h3><p>Feeds a dog for +20 XP</p></div>
-          <button class="buy-btn" onclick="buyItem('bone')">15 🪙</button>
-        </div>
-        
-        <h2 style="margin-top: 20px;">🏠 Rotating Shelter</h2>
-        <div id="dog-shop-container"></div>
-        <button class="buy-btn" style="width: 100%; margin-top: 10px; background: #78909c;" onclick="refreshShelter()">Refresh (50 🪙)</button>
-
-        <h2 style="margin-top: 20px;">✨ Prestige & Skins</h2>
-        <div class="shop-item" id="prestige-container">
-          <div class="shop-item-info">
-            <h3>Move to New House</h3>
-            <p>Earn Paw Prints based on your dogs' levels.</p>
-          </div>
-          <button class="buy-btn paw" onclick="prestige()">Reset</button>
-        </div>
-        
-        <div id="skin-shop-container" style="display: none;">
-          <h3 style="font-size: 0.9rem; margin: 15px 0 10px 0; color: #1b5e20;">🎨 Skin Shop</h3>
-          <div class="skin-list" id="skin-list"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODALS -->
-  <div class="modal" id="adopt-modal">
-    <div class="modal-content">
-      <h2>Adopt new dog!</h2>
-      <h3 id="modal-breed-name">Breed</h3>
-      <input type="text" id="dog-name-input" placeholder="Enter name..." maxlength="15">
-      <p style="margin-bottom: 10px; font-weight: bold;">Choose Personality:</p>
-      <div class="personality-grid" id="personality-options"></div>
-      <button class="buy-btn" style="width: 100%; padding: 12px; font-size: 1rem;" onclick="confirmAdoption()">Adopt!</button>
-      <button style="width: 100%; padding: 10px; margin-top: 10px; background: none; border: none; color: #999; cursor: pointer;" onclick="document.getElementById('adopt-modal').style.display='none'">Cancel</button>
-    </div>
-  </div>
-
-  <div class="modal" id="move-modal">
-    <div class="modal-content">
-      <h2>Move Dog to Room</h2>
-      <p style="margin-bottom: 15px; color: #666;">Where should <span id="move-dog-name" style="font-weight: bold; color: #d84315;"></span> go?</p>
-      <div id="room-options" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;"></div>
-      <button style="width: 100%; padding: 10px; background: none; border: none; color: #999; cursor: pointer;" onclick="document.getElementById('move-modal').style.display='none'">Cancel</button>
-    </div>
-  </div>
-
-  <div class="modal" id="skin-modal">
-    <div class="modal-content">
-      <h2>Equip Skin</h2>
-      <p style="margin-bottom: 15px; color: #666;">Choose a look for <span id="skin-dog-name" style="font-weight: bold; color: #d84315;"></span></p>
-      <div class="skin-list" id="equip-skin-list"></div>
-      <button style="width: 100%; padding: 10px; background: none; border: none; color: #999; cursor: pointer;" onclick="document.getElementById('skin-modal').style.display='none'">Cancel</button>
-    </div>
-  </div>
-
-  <div class="modal" id="rename-modal">
-    <div class="modal-content">
-      <h2>Rename Dog</h2>
-      <p style="margin-bottom: 15px; color: #666;">Give <span id="rename-dog-old" style="font-weight: bold; color: #d84315;"></span> a new name!</p>
-      <input type="text" id="rename-dog-input" placeholder="Enter new name..." maxlength="15">
-      <button class="buy-btn" style="width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 10px;" onclick="confirmRename()">Save Name</button>
-      <button style="width: 100%; padding: 10px; background: none; border: none; color: #999; cursor: pointer;" onclick="document.getElementById('rename-modal').style.display='none'">Cancel</button>
-    </div>
-  </div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I", 
-    authDomain: "cute-sleepy-games.firebaseapp.com",
-    projectId: "cute-sleepy-games",
-    storageBucket: "cute-sleepy-games.firebasestorage.app",
-    messagingSenderId: "249264537283",
-    appId: "1:249264537283:web:811dce511556eda6a96c76"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  // THE NEW BREEDS
-  const BREEDS = [
-    { id: 'lab', name: 'Labrador', emoji: '🦮', cost: 150, color: '#e6c280', ears: 'floppy' },
-    { id: 'poodle', name: 'Poodle', emoji: '🐩', cost: 400, color: '#f5f5f5', ears: 'floppy' },
-    { id: 'husky', name: 'Husky', emoji: '🐺', cost: 1000, color: '#9cb4c4', ears: 'pointy' },
-    { id: 'corgi', name: 'Corgi', emoji: '🐕', cost: 2500, color: '#e6b85c', ears: 'pointy' },
-    { id: 'golden', name: 'Golden Retriever', emoji: '🦮', cost: 3000, color: '#f4d03f', ears: 'floppy' },
-    { id: 'dalmatian', name: 'Dalmatian', emoji: '🐕‍🦺', cost: 5000, color: '#ffffff', ears: 'floppy', spots: true },
-    { id: 'shepherd', name: 'German Shepherd', emoji: '🐺', cost: 8000, color: '#8d6e63', ears: 'pointy' }
-  ];
-
-  const PERSONALITIES = ['Playful', 'Lazy', 'Hungry', 'Loyal'];
-
-  const SKINS = [
-    { id: 'none', name: 'None', emoji: '❌', cost: 0 },
-    { id: 'wings', name: 'Angel Wings', emoji: '🕊️', cost: 5 },
-    { id: 'watermelon', name: 'Watermelon Suit', emoji: '🍉', cost: 10 },
-    { id: 'tophat', name: 'Fancy Top Hat', emoji: '🎩', cost: 15 },
-    { id: 'crown', name: 'Golden Crown', emoji: '👑', cost: 25 }
-  ];
-
-  const ROOMS = [
-    { id: 'living', name: 'Living Room', max: 3, cost: 0, icon: '🛋️' },
-    { id: 'backyard', name: 'Backyard', max: 3, cost: 1000, icon: '🌳' },
-    { id: 'kitchen', name: 'Kitchen', max: 3, cost: 5000, icon: '🍳' },
-    { id: 'bedroom', name: 'Master Bedroom', max: 3, cost: 20000, icon: '🛏️' }
-  ];
-
-  let state = {
-    coins: 0,
-    pawPrints: 0,
-    bones: 0,
-    dogs: [],
-    shelter: [],
-    unlockedRooms: ['living'],
-    unlockedSkins: ['none'],
-    pendingAdoptBreed: null,
-    selectedPersonality: null,
-    movingDogId: null,
-    skinDogId: null,
-    renameDogId: null
-  };
-
-  let isSaving = false;
-
-  async function loadGame() {
-    if (!auth.currentUser) return;
-    const docRef = doc(db, "saves", auth.currentUser.uid);
-    const docSnap = await getDoc(docRef);
-    
-    if (docSnap.exists()) {
-      const data = docSnap.data().doggySave;
-      if (data) state = { ...state, ...data };
-    }
-    
-    if (state.shelter.length === 0) generateShelter();
-    
-    document.getElementById('game-container').style.display = 'block';
-    renderAll();
-    startPassiveIncome();
-    startCooldownTicker();
-  }
-
-  async function saveGame() {
-    if (!auth.currentUser || isSaving) return;
-    isSaving = true;
-    const docRef = doc(db, "saves", auth.currentUser.uid);
-    const docSnap = await getDoc(docRef);
-    let currentData = docSnap.exists() ? docSnap.data() : {};
-    currentData.doggySave = state;
-    currentData.totalXP = (currentData.totalXP || 0) + 5; 
-    currentData.level = Math.floor(currentData.totalXP / 500) + 1;
-    await setDoc(docRef, currentData);
-    isSaving = false;
-  }
-
-  function generateShelter() {
-    const shuffled = [...BREEDS].sort(() => 0.5 - Math.random());
-    state.shelter = shuffled.slice(0, 3);
-  }
-
-  window.refreshShelter = async function() {
-    if (state.coins < 50) return alert("Not enough coins!");
-    state.coins -= 50;
-    generateShelter();
-    renderAll();
-    await saveGame();
-  }
-
-  function calculateIncome(dog) {
-    let base = dog.level; 
-    if (dog.personality === 'Loyal') base *= 1.2;
-    if (dog.personality === 'Lazy') base *= 1.3;
-    if (dog.isShiny) base *= 2; 
-    const multiplier = 1 + (state.pawPrints * 0.1);
-    return Math.max(1, Math.floor(base * multiplier)); 
-  }
-
-  function startPassiveIncome() {
-    setInterval(() => {
-      if (state.dogs.length === 0) return;
-      let totalEarned = 0;
-      state.dogs.forEach(dog => { totalEarned += calculateIncome(dog); });
-      if (totalEarned > 0) {
-        state.coins += totalEarned;
-        updateUI();
-        saveGame();
-      }
-    }, 60000); 
-  }
-
-  function startCooldownTicker() {
-    setInterval(() => {
-      state.dogs.forEach(dog => {
-        const btn = document.getElementById(`pet-btn-${dog.id}`);
-        if (btn) {
-          const remaining = Math.ceil((dog.petCooldown - Date.now()) / 1000);
-          if (remaining > 0) {
-            btn.innerText = `Wait ${remaining}s...`;
-            btn.disabled = true;
-          } else {
-            let reward = dog.level;
-            if (dog.personality === 'Playful') reward *= 2;
-            if (dog.isShiny) reward *= 2; 
-            btn.innerText = `Pet (+${reward})`;
-            btn.disabled = false;
-          }
-        }
-      });
-    }, 1000);
-  }
-
-  window.petDog = async function(id) {
-    const dog = state.dogs.find(d => d.id === id);
-    if (!dog || dog.petCooldown > Date.now()) return;
-    let reward = dog.level; 
-    if (dog.personality === 'Playful') reward *= 2;
-    if (dog.isShiny) reward *= 2; 
-    state.coins += reward;
-    dog.petCooldown = Date.now() + 10000; 
-    updateUI();
-    await saveGame();
-    const btn = document.getElementById(`pet-btn-${dog.id}`);
-    if (btn) {
-      btn.innerText = `Wait 10s...`;
-      btn.disabled = true;
-    }
-  }
-
-  window.feedDog = async function(id) {
-    if (state.bones <= 0) return alert("You need a bone! Buy one in the shop.");
-    const dog = state.dogs.find(d => d.id === id);
-    if (!dog) return;
-    state.bones--;
-    let xpGain = 20; 
-    if (dog.personality === 'Hungry') xpGain *= 2;
-    dog.xp += xpGain;
-    if (dog.xp >= dog.maxXp) {
-      dog.xp -= dog.maxXp;
-      dog.level++;
-      dog.maxXp = Math.floor(dog.maxXp * 1.5);
-      const levelUpBonus = dog.level * 50; 
-      state.coins += levelUpBonus;
-      alert(`${dog.name} leveled up to Level ${dog.level}! You earned ${levelUpBonus} coins! 🪙`);
-    }
-    updateUI();
-    renderRooms();
-    await saveGame();
-  }
-
-  window.buyItem = async function(item) {
-    if (item === 'bone') {
-      if (state.coins < 15) return;
-      state.coins -= 15;
-      state.bones++;
-    }
-    updateUI();
-    await saveGame();
-  }
-
-  function renderAll() {
-    updateUI();
-    renderRooms();
-    renderShelter();
-    renderSkinShop();
-  }
-
-  function updateUI() {
-    document.getElementById('coin-display').innerText = state.coins;
-    document.getElementById('bone-display').innerText = state.bones;
-    document.getElementById('paw-count').innerText = state.pawPrints;
-    if (state.pawPrints > 0 || state.unlockedSkins.length > 1) {
-      document.getElementById('paw-display').style.display = 'flex';
-      document.getElementById('skin-shop-container').style.display = 'block';
-    }
-  }
-
-  function renderRooms() {
-    const container = document.getElementById('mansion-container');
-    container.innerHTML = '';
-
-    const globalBreedCounts = {};
-    state.dogs.forEach(d => {
-      if (!d.isShiny) globalBreedCounts[d.breedId] = (globalBreedCounts[d.breedId] || 0) + 1;
-    });
-    let globalMergeBreed = null;
-    for (const [bId, count] of Object.entries(globalBreedCounts)) {
-      if (count >= 3) { globalMergeBreed = bId; break; }
-    }
-    if (globalMergeBreed) {
-      const breedName = BREEDS.find(b => b.id === globalMergeBreed).name;
-      const mergeBtn = document.createElement('button');
-      mergeBtn.className = 'btn-merge';
-      mergeBtn.innerText = `✨ MERGE ANY 3 ${breedName.toUpperCase()}S INTO A SHINY! ✨`;
-      mergeBtn.onclick = () => mergeDogs(globalMergeBreed);
-      container.appendChild(mergeBtn);
-    }
-
-    if (state.dogs.length === 0) {
-      const emptyDiv = document.createElement('div');
-      emptyDiv.style = "text-align: center; padding: 40px; background: #fff; border-radius: 16px; border: 2px dashed #aed581;";
-      emptyDiv.innerHTML = `
-        <h2>Your mansion is empty!</h2>
-        <p style="margin-bottom: 20px; color: #666;">Adopt your first dog to start playing.</p>
-        <button class="buy-btn" style="font-size: 1.2rem; padding: 12px 24px;" onclick="getStarterPack()">Claim Free Starter Dog 🐶</button>
-      `;
-      container.appendChild(emptyDiv);
-      return;
-    }
-
-    ROOMS.forEach(room => {
-      const isUnlocked = state.unlockedRooms.includes(room.id);
-      const roomDogs = state.dogs.filter(d => d.room === room.id);
-      const roomDiv = document.createElement('div');
-      roomDiv.className = 'room';
-      let roomHeader = `
-        <div class="room-header">
-          <h2>${room.icon} ${room.name}</h2>
-          <div class="room-limit">${roomDogs.length} / ${room.max} Dogs</div>
-        </div>
-      `;
-
-      if (!isUnlocked) {
-        roomDiv.innerHTML = roomHeader + `
-          <div style="text-align: center; padding: 20px;">
-            <p style="margin-bottom: 10px; color: #777;">This room is locked.</p>
-            <button class="buy-btn" onclick="unlockRoom('${room.id}', ${room.cost})">Unlock for ${room.cost} 🪙</button>
-          </div>
-        `;
-      } else {
-        let dogHTML = '<div class="dog-grid">';
-        roomDogs.forEach(dog => {
-          const breed = BREEDS.find(b => b.id === dog.breedId);
-          const skin = SKINS.find(s => s.id === dog.skinId) || SKINS[0];
-          const xpPct = (dog.xp / dog.maxXp) * 100;
-          const remaining = Math.ceil((dog.petCooldown - Date.now()) / 1000);
-          const isWaiting = remaining > 0;
-          let reward = dog.level; 
-          if (dog.personality === 'Playful') reward *= 2;
-          if (dog.isShiny) reward *= 2;
-          const btnText = isWaiting ? `Wait ${remaining}s...` : `Pet (+${reward})`;
-          const shinyClass = dog.isShiny ? 'shiny-dog' : '';
-          const shinyIcon = dog.isShiny ? `<div class="shiny-sparkle">✨</div>` : '';
-          
-          // Build the dog specific features
-          const earsClass = breed.ears === 'pointy' ? 'pointy-ears' : '';
-          const spotsHTML = breed.spots ? `<div class="dalmatian-spots"></div>` : '';
-          
-          dogHTML += `
-            <div class="dog-card" style="${dog.isShiny ? 'border-color: gold; background: #fffde7;' : ''}">
-              <div class="sprite-container">
-                ${shinyIcon}
-                <div class="sprite-dog ${shinyClass} ${earsClass}" style="background-color: ${breed.color};">
-                  ${spotsHTML}
-                  <div class="dog-tail"></div>
-                  <div class="dog-snout"></div>
-                  <div class="dog-eye eye-left"></div>
-                  <div class="dog-eye eye-right"></div>
-                  <div class="dog-nose"></div>
-                </div>
-                ${skin.emoji && skin.id !== 'none' ? `<div class="sprite-skin">${skin.emoji}</div>` : ''}
-              </div>
-              <div class="dog-name">${dog.isShiny ? 'Shiny ' : ''}${dog.name}</div>
-              <div class="dog-breed">${breed.name}</div>
-              <div class="dog-personality">${dog.personality}</div>
-              <div class="xp-bar"><div class="xp-fill" style="width: ${xpPct}%"></div></div>
-              <div class="dog-level">Lv. ${dog.level} (${dog.xp}/${dog.maxXp} XP)</div>
-              <div class="dog-actions">
-                <button class="btn-pet" id="pet-btn-${dog.id}" onclick="petDog('${dog.id}')" ${isWaiting ? 'disabled' : ''}>${btnText}</button>
-                <button class="btn-feed" id="feed-btn-${dog.id}" onclick="feedDog('${dog.id}')" title="You have ${state.bones} bones">Feed</button>
-                ${state.unlockedRooms.length > 1 ? `<button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>` : ''}
-                <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
-                <button class="btn-name" onclick="openRenameModal('${dog.id}')">Name</button>
-              </div>
-            </div>
-          `;
-        });
-        dogHTML += '</div>';
-        roomDiv.innerHTML = roomHeader + dogHTML;
-      }
-      container.appendChild(roomDiv);
-    });
-  }
-
-  function renderShelter() {
-    const container = document.getElementById('dog-shop-container');
-    container.innerHTML = '';
-    state.shelter.forEach(breed => {
-      const div = document.createElement('div');
-      div.className = 'shop-item';
-      div.innerHTML = `
-        <div class="shop-item-info">
-          <h3>${breed.emoji} ${breed.name}</h3>
-          <p>Unlock a new friend</p>
-        </div>
-        <button class="buy-btn" onclick="openAdoptModal('${breed.id}')">${breed.cost} 🪙</button>
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  function renderSkinShop() {
-    const container = document.getElementById('skin-list');
-    container.innerHTML = '';
-    SKINS.forEach(skin => {
-      if (skin.id === 'none') return;
-      const isUnlocked = state.unlockedSkins.includes(skin.id);
-      const div = document.createElement('div');
-      div.className = 'skin-opt';
-      div.innerHTML = `
-        <div>
-          <span style="font-size: 1.5rem; margin-right: 10px;">${skin.emoji}</span>
-          <strong>${skin.name}</strong>
-        </div>
-        ${isUnlocked 
-          ? '<span style="color: #4caf50; font-weight: bold;">Owned</span>' 
-          : `<button class="buy-btn paw" onclick="buySkin('${skin.id}', ${skin.cost})">${skin.cost} 🐾</button>`}
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  window.openAdoptModal = function(breedId) {
-    const breed = BREEDS.find(b => b.id === breedId);
-    if (state.coins < breed.cost) return alert("Not enough coins!");
-    
-    state.pendingAdoptBreed = breed;
-    document.getElementById('modal-breed-name').innerText = breed.name;
-    document.getElementById('dog-name-input').value = '';
-    
-    const pContainer = document.getElementById('personality-options');
-    pContainer.innerHTML = '';
-    state.selectedPersonality = PERSONALITIES[0];
-    
-    PERSONALITIES.forEach(p => {
-      const btn = document.createElement('button');
-      btn.className = `pers-btn ${p === state.selectedPersonality ? 'selected' : ''}`;
-      btn.innerText = p;
-      btn.onclick = () => {
-        state.selectedPersonality = p;
-        document.querySelectorAll('.pers-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-      };
-      pContainer.appendChild(btn);
-    });
-    
-    document.getElementById('adopt-modal').style.display = 'flex';
-  }
-
-  window.confirmAdoption = async function() {
-    const name = document.getElementById('dog-name-input').value.trim() || state.pendingAdoptBreed.name;
-    let targetRoom = null;
-    for (const roomId of state.unlockedRooms) {
-      const room = ROOMS.find(r => r.id === roomId);
-      const currentDogs = state.dogs.filter(d => d.room === roomId);
-      if (currentDogs.length < room.max) {
-        targetRoom = roomId;
-        break;
-      }
-    }
-    if (!targetRoom) {
-      alert("All your rooms are full! You need to unlock a new room before adopting more dogs.");
-      return; 
-    }
-    state.coins -= state.pendingAdoptBreed.cost;
-    state.dogs.push({
-      id: Date.now().toString(),
-      breedId: state.pendingAdoptBreed.id,
-      name: name,
-      personality: state.selectedPersonality,
-      level: 1,
-      xp: 0,
-      maxXp: 100,
-      room: targetRoom,
-      skinId: 'none',
-      petCooldown: 0,
-      isShiny: false
-    });
-    state.shelter = [];
-    generateShelter();
-    document.getElementById('adopt-modal').style.display = 'none';
-    renderAll();
-    await saveGame();
-  }
-
-  window.mergeDogs = async function(breedId) {
-    const breedName = BREEDS.find(b => b.id === breedId).name;
-    if (!confirm(`Are you sure you want to merge 3 ${breedName}s? You will lose the 3 dogs but get a Shiny one!`)) return;
-    
-    const dogsToMerge = state.dogs.filter(d => d.breedId === breedId && !d.isShiny).slice(0, 3);
-    if (dogsToMerge.length < 3) return;
-    
-    const idsToRemove = dogsToMerge.map(d => d.id);
-    state.dogs = state.dogs.filter(d => !idsToRemove.includes(d.id));
-    let targetRoom = state.unlockedRooms[0];
-    
-    const newShiny = {
-      id: Date.now().toString(),
-      breedId: breedId,
-      name: "Shiny " + breedName,
-      personality: 'Loyal', 
-      level: Math.max(...dogsToMerge.map(d => d.level)), 
-      xp: 0,
-      maxXp: 100,
-      room: targetRoom,
-      skinId: 'none',
-      petCooldown: 0,
-      isShiny: true 
-    };
-    state.dogs.push(newShiny);
-    renderAll();
-    await saveGame();
-    alert(`Success! You created a Shiny ${breedName}!`);
-  }
-
-  window.openMoveModal = function(dogId) {
-    state.movingDogId = dogId;
-    const dog = state.dogs.find(d => d.id === dogId);
-    document.getElementById('move-dog-name').innerText = dog.name;
-    const container = document.getElementById('room-options');
-    container.innerHTML = '';
-    state.unlockedRooms.forEach(roomId => {
-      const room = ROOMS.find(r => r.id === roomId);
-      const currentDogs = state.dogs.filter(d => d.room === roomId);
-      const isFull = currentDogs.length >= room.max && dog.room !== roomId;
-      const btn = document.createElement('button');
-      btn.className = 'buy-btn';
-      btn.style.background = isFull ? '#ccc' : '#42a5f5';
-      btn.innerText = `${room.icon} ${room.name} (${currentDogs.length}/${room.max})`;
-      btn.disabled = isFull;
-      btn.onclick = () => {
-        dog.room = roomId;
-        document.getElementById('move-modal').style.display = 'none';
-        renderAll();
-        saveGame();
-      };
-      container.appendChild(btn);
-    });
-    document.getElementById('move-modal').style.display = 'flex';
-  }
-
-  window.openSkinModal = function(dogId) {
-    state.skinDogId = dogId;
-    const dog = state.dogs.find(d => d.id === dogId);
-    document.getElementById('skin-dog-name').innerText = dog.name;
-    const container = document.getElementById('equip-skin-list');
-    container.innerHTML = '';
-    SKINS.forEach(skin => {
-      if (!state.unlockedSkins.includes(skin.id)) return;
-      const btn = document.createElement('div');
-      btn.className = `skin-opt ${dog.skinId === skin.id ? 'equipped' : ''}`;
-      btn.innerHTML = `
-        <div>
-          <span style="font-size: 1.5rem; margin-right: 10px;">${skin.emoji || '🚫'}</span>
-          <strong>${skin.name}</strong>
-        </div>
-        ${dog.skinId === skin.id ? '<span style="color: #ab47bc; font-weight: bold;">Equipped</span>' : ''}
-      `;
-      btn.onclick = () => {
-        dog.skinId = skin.id;
-        document.getElementById('skin-modal').style.display = 'none';
-        renderAll();
-        saveGame();
-      };
-      container.appendChild(btn);
-    });
-    document.getElementById('skin-modal').style.display = 'flex';
-  }
-
-  window.openRenameModal = function(dogId) {
-    const dog = state.dogs.find(d => d.id === dogId);
-    state.renameDogId = dogId;
-    document.getElementById('rename-dog-old').innerText = dog.name;
-    document.getElementById('rename-dog-input').value = dog.name;
-    document.getElementById('rename-modal').style.display = 'flex';
-  }
-
-  window.confirmRename = async function() {
-    const newName = document.getElementById('rename-dog-input').value.trim();
-    if (!newName) return alert("Name can't be empty!");
-    const dog = state.dogs.find(d => d.id === state.renameDogId);
-    if (dog) {
-      dog.name = newName;
-      document.getElementById('rename-modal').style.display = 'none';
-      renderAll();
-      await saveGame();
-    }
-  }
-
-  window.unlockRoom = async function(roomId, cost) {
-    if (state.coins < cost) return;
-    state.coins -= cost;
-    state.unlockedRooms.push(roomId);
-    renderAll();
-    await saveGame();
-  }
-
-  window.prestige = async function() {
-    const totalLevels = state.dogs.reduce((sum, dog) => sum + dog.level, 0);
-    if (totalLevels < 10) return alert("You need at least 10 total dog levels to prestige!");
-    const earnedPawPrints = Math.floor(totalLevels / 5);
-    if (!confirm(`Are you sure? You will lose all your dogs and coins, but you will earn ${earnedPawPrints} 🐾 Paw Prints (permanent bonus).`)) return;
-    state.pawPrints += earnedPawPrints;
-    state.dogs = [];
-    state.coins = 0;
-    state.unlockedRooms = ['living'];
-    state.shelter = [];
-    generateShelter();
-    renderAll();
-    await saveGame();
-    alert(`Prestige complete! You now have ${state.pawPrints} 🐾. Every Paw Print gives +10% permanent coin bonus.`);
-  }
-
-  window.buySkin = async function(skinId, cost) {
-    if (state.pawPrints < cost) return;
-    state.pawPrints -= cost;
-    state.unlockedSkins.push(skinId);
-    renderAll();
-    await saveGame();
-  }
-
-  window.getStarterPack = async function() {
-    state.dogs.push({
-      id: Date.now().toString(),
-      breedId: 'lab',
-      name: 'Buster',
-      personality: 'Playful',
-      level: 1,
-      xp: 0,
-      maxXp: 100,
-      room: 'living',
-      skinId: 'none',
-      petCooldown: 0,
-      isShiny: false
-    });
-    state.coins += 20;
-    renderAll();
-    await saveGame();
-  }
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      loadGame();
-    } else {
-      window.location.href = "index.html";
-    }
-  });
+:root{--bg:#fff4e6;--cd:#fff;--tx:#3b2a20;--ac:#ff8a4c;--mu:#8a7566;--bd:#f1dcc6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1e1712;--cd:#2b211a;--tx:#f5e8dc;--mu:#b8a290;--bd:#43342a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1e1712;--cd:#2b211a;--tx:#f5e8dc;--mu:#b8a290;--bd:#43342a;color-scheme:dark}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{max-width:760px;margin:0 auto;padding:12px 12px 40px}
+h1{font-size:22px;margin:4px 0 8px}h2{font-size:16px;margin:18px 0 8px}
+#hud{display:flex;gap:8px;flex-wrap:wrap;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:6px 0;z-index:20;font-weight:600}
+#hud span{background:var(--cd);border:1px solid var(--bd);border-radius:20px;padding:4px 10px;font-size:14px}
+nav{display:flex;gap:6px;margin:6px 0}
+nav button{flex:1;font-size:12px;padding:9px 2px;border:1px solid var(--bd);background:var(--cd);color:var(--tx);border-radius:10px;font-weight:600;cursor:pointer}
+nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.dc{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:4px;text-align:center}
+.dc small{color:var(--mu)}.em{opacity:.5;justify-content:center;min-height:120px;border-style:dashed}
+.sp{position:relative;height:96px}.hr{position:absolute;inset:0;pointer-events:none}
+.fl{position:absolute;left:50%;top:10px;font-weight:700;color:var(--ac);animation:fl 1s forwards}
+@keyframes fl{to{transform:translateY(-40px);opacity:0}}
+.xp{height:6px;border-radius:3px;background:var(--bd);overflow:hidden}.xp u{display:block;height:100%;background:#5bc47a}
+.bt{display:flex;gap:4px}
+button,select{font:inherit;font-size:13px}
+.bt button,.bt select,.b{flex:1;padding:6px;border-radius:8px;border:1px solid var(--bd);background:var(--ac);color:#fff;cursor:pointer;min-width:0}
+.bt .g{background:var(--cd);color:var(--tx)}.bt select{background:var(--cd);color:var(--tx)}
+button:disabled{opacity:.45;cursor:default}
+.b{display:inline-block;flex:none;padding:8px 12px}
+#ts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#3b2a20;color:#fff;padding:8px 14px;border-radius:20px;font-size:14px;opacity:0;transition:.3s;pointer-events:none;z-index:30;text-align:center}
+/* sprites */
+.dg{position:relative;width:96px;height:90px;margin:0 auto;animation:bob 2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}@keyframes wag{to{transform:rotate(-5deg)}}
+.dg i{position:absolute;display:block}
+.bd{left:18px;top:46px;width:60px;height:40px;border-radius:24px 24px 18px 18px;background:var(--c);box-shadow:inset 0 -4px 0 rgba(0,0,0,.08)}
+.pw{top:78px;width:16px;height:10px;border-radius:8px;background:var(--s);z-index:1}
+.tl{left:8px;top:48px;width:22px;height:12px;border-radius:10px;background:var(--c);transform:rotate(-30deg);animation:wag .4s infinite alternate}
+.hd{left:20px;top:8px;width:56px;height:50px;border-radius:50%;background:var(--c);z-index:2;box-shadow:inset 0 -4px 0 rgba(0,0,0,.08)}
+.pom .hd{left:16px;width:64px;height:56px;top:6px;box-shadow:0 0 0 4px var(--c)}
+.ea{background:var(--e);z-index:1}
+.ea.f{top:16px;width:20px;height:32px;border-radius:50% 50% 60% 60%}.ea.f.l{left:12px;transform:rotate(14deg)}.ea.f.r{left:64px;transform:rotate(-14deg)}
+.ea.p{top:0;width:22px;height:28px;clip-path:polygon(50% 0,0 100%,100% 100%)}.ea.p.l{left:20px;transform:rotate(-10deg)}.ea.p.r{left:54px;transform:rotate(10deg)}
+.ea.o{top:8px;width:22px;height:22px;border-radius:50%}.ea.o.l{left:12px}.ea.o.r{left:62px}
+.sn{left:34px;top:34px;width:28px;height:20px;border-radius:50%;background:var(--s);z-index:3}
+.ey{top:27px;width:9px;height:10px;border-radius:50%;background:#2b1b14;z-index:4}
+.ey:after{content:"";position:absolute;left:2px;top:1px;width:3px;height:3px;border-radius:50%;background:#fff}
+.nz{left:43px;top:35px;width:10px;height:7px;border-radius:50% 50% 60% 60%;background:#1d120d;z-index:4}
+.tg{left:45px;top:47px;width:7px;height:8px;border-radius:0 0 6px 6px;background:#ff7f9a;z-index:4}
+.ch{top:40px;width:9px;height:6px;border-radius:50%;background:#ff9fb0;opacity:.65;z-index:4}
+.x{z-index:3}.sk{position:absolute;z-index:6;line-height:1}
+.shy i{filter:hue-rotate(150deg) saturate(1.5)}.shy{filter:drop-shadow(0 0 6px gold)}@keyframes tw{50%{opacity:.2;transform:scale(.6)}}
+.nm{font:inherit;font-weight:700;text-align:center;background:transparent;color:var(--tx);border:1px dashed var(--bd);border-radius:6px;padding:3px;width:100%;box-sizing:border-box}
+</style></head><body>
+<h1>🐶 Doggy Simulator</h1><div id="hud"></div>
+<nav id="nv"></nav><div id="app"></div><div id="ts"></div>
+<script>
+const B={
+lab:{n:"Labrador",c:"#e9c777",e:"#c89f4d",s:"#f7e6b8",t:"f",$:150,d:"Balanced starter"},
+poo:{n:"Poodle",c:"#f3ece2",e:"#e6d8c3",s:"#fffaf2",t:"o",$:400,d:"+50% pet coins",x:'<i class=x style="left:33px;top:-3px;width:30px;height:26px;border-radius:50%;background:#f3ece2;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08)"></i>'},
+pug:{n:"Pug",c:"#d9b98a",e:"#3a2e28",s:"#4a3a31",t:"o",$:700,d:"Pet cooldown only 4s"},
+hus:{n:"Husky",c:"#8b97a3",e:"#5f6a75",s:"#fff",t:"p",$:1000,d:"+50% passive, pets give 0",x:'<i class=x style="left:30px;top:14px;width:36px;height:34px;border-radius:50%;background:#fff;z-index:2"></i>'},
+bea:{n:"Beagle",c:"#d99a5b",e:"#7a4a2b",s:"#fff",t:"f",$:1800,d:"20% chance pets pay 5x",x:'<i class=x style="left:43px;top:12px;width:10px;height:24px;border-radius:5px;background:#fff;z-index:2"></i>'},
+cor:{n:"Corgi",c:"#e8933e",e:"#e8933e",s:"#fff3e0",t:"p",$:2500,d:"+20% coins to roommates",x:'<i class=x style="left:42px;top:12px;width:12px;height:26px;border-radius:6px;background:#fff;z-index:2"></i>'},
+shi:{n:"Shiba Inu",c:"#e59a48",e:"#e59a48",s:"#fff4e0",t:"p",$:4000,d:"+25% all coins",x:'<i class=x style="left:33px;top:20px;width:6px;height:6px;border-radius:50%;background:#fff4e0"></i><i class=x style="left:57px;top:20px;width:6px;height:6px;border-radius:50%;background:#fff4e0"></i>'},
+gol:{n:"Golden Retriever",c:"#e3a64a",e:"#c0822c",s:"#f5d594",t:"f",$:6000,d:"50% chance to keep the bone"},
+dal:{n:"Dalmatian",c:"#fafafa",e:"#2b2b2b",s:"#fff",t:"f",$:10000,d:"2x XP from bones",x:'<i class=x style="left:28px;top:12px;width:10px;height:10px;border-radius:50%;background:#2b2b2b;z-index:2"></i><i class=x style="left:60px;top:48px;width:9px;height:9px;border-radius:50%;background:#2b2b2b;z-index:3"></i><i class=x style="left:28px;top:62px;width:11px;height:11px;border-radius:50%;background:#2b2b2b;z-index:1"></i>'},
+pom:{n:"Pomeranian",c:"#f0a35a",e:"#f0a35a",s:"#ffe2c0",t:"p",$:15000,d:"3x level-up bonus"},
+sam:{n:"Samoyed",c:"#fdfdfd",e:"#f0e6dc",s:"#fff",t:"p",$:20000,u:1,d:"+30% coins to roommates"},
+dac:{n:"Dachshund",c:"#a4552d",e:"#6f3519",s:"#d9955f",t:"f",$:35000,u:2,d:"Pets pay 3x"},
+aki:{n:"Akita",c:"#b8643a",e:"#b8643a",s:"#fff",t:"p",$:60000,u:3,d:"+100% passive income",x:'<i class=x style="left:30px;top:14px;width:36px;height:34px;border-radius:50%;background:#fff;z-index:2"></i>'}};
+const P={playful:["🎾","Playful"],lazy:["💤","Lazy"],hungry:["🍖","Hungry"],loyal:["❤️","Loyal"]};
+const R=[["Living Room",0],["Backyard",1000],["Kitchen",5000],["Master Bedroom",20000]];
+const K=[["wings","🕊️","Angel Wings",5],["melon","🍉","Watermelon Suit",10],["hat","🎩","Fancy Top Hat",15],["crown","👑","Golden Crown",25]];
+const NM=["Biscuit","Mochi","Waffles","Pickles","Bean","Peanut","Nugget","Cookie","Maple","Ziggy","Pancake","Toast","Luna","Bobo","Churro","Noodle"];
+let S,tab=0;
+const fresh=()=>({coins:200,bones:0,paws:0,dogs:[],rooms:[0],skins:[],sh:[],t:0});
+try{S=JSON.parse(localStorage.getItem("doggy1"))}catch(e){}
+S=S||fresh();S.v=S.v||[];S.pr=S.pr||0;
+const save=()=>{try{localStorage.setItem("doggy1",JSON.stringify(S))}catch(e){}window.cloudSave&&window.cloudSave()};
+const ks=Object.keys(B),G=()=>1+S.paws*.1,f=n=>Math.floor(n).toLocaleString();
+const roll=()=>{S.sh=ks.filter(k=>(B[k].u||0)<=(S.pr||0)).sort(()=>Math.random()-.5).slice(0,3)};
+if(!S.sh.length)roll();
+const starter=()=>S.dogs.push({id:"d"+Math.random().toString(36).slice(2,8),k:"lab",n:"Biscuit",p:"loyal",l:1,x:0,r:0,sk:"",pa:0});
+if(!S.dogs.length)starter();
+const toast=m=>{const t=document.getElementById("ts");t.textContent=m;t.style.opacity=1;clearTimeout(t.h);t.h=setTimeout(()=>t.style.opacity=0,1800)};
+const mates=d=>S.dogs.filter(o=>o!==d&&o.r===d.r);
+const tr=(d,k)=>1+.15*((d.t||{})[k]||0);
+const ST=[["a","💪 Stamina","+15% passive"],["b","🎾 Charm","+15% pet"],["c","🧠 Smarts","+15% XP"]];
+const mult=d=>G()*(mates(d).some(o=>o.k=="cor")?1.2:1)*(d.k=="shi"?1.25:1)*(mates(d).some(o=>o.k=="sam")?1.3:1)*(d.sh?2:1);
+const pass=d=>d.l*mult(d)*tr(d,"a")*(d.k=="aki"?2:1)*(d.p=="lazy"?1.3:1)*(d.p=="loyal"?1.2:1)*(d.k=="hus"?1.5:1);
+function sprite(k,sk,sh){const b=B[k],w='font-size:32px;top:36px;';
+return `<div class="dg${k=="pom"||k=="sam"?" pom":""}${sh?" shy":""}" style="--c:${b.c};--e:${b.e};--s:${b.s}">${sh?'<span class=sk style="left:4px;top:4px;font-size:16px;animation:tw 1.2s infinite">✨</span><span class=sk style="right:2px;top:26px;font-size:12px;animation:tw 1.2s .6s infinite">✨</span>':""}${sk=="wings"?`<span class=sk style="${w}left:-10px;z-index:0">🕊️</span><span class=sk style="${w}right:-10px;z-index:0;transform:scaleX(-1)">🕊️</span>`:""}<i class=tl></i><i class=bd></i><i class=pw style="left:26px"></i><i class=pw style="left:54px"></i><i class="ea l ${b.t}"></i><i class="ea r ${b.t}"></i><i class=hd></i>${b.x||""}<i class=sn></i><i class=ey style="left:32px"></i><i class=ey style="left:55px"></i><i class=nz></i><i class=tg></i><i class=ch style="left:24px"></i><i class=ch style="left:63px"></i>${sk=="melon"?'<span class=sk style="font-size:28px;left:34px;top:52px">🍉</span>':""}${sk=="hat"?'<span class=sk style="font-size:34px;left:30px;top:-12px">🎩</span>':""}${sk=="crown"?'<span class=sk style="font-size:32px;left:32px;top:-10px">👑</span>':""}</div>`}
+function card(d){const b=B[d.k],p=P[d.p];
+return `<div class=dc><div class=sp>${sprite(d.k,d.sk,d.sh)}<div class=hr id=h${d.id}></div></div><input class=nm value="${d.n}" maxlength=14 title="Tap to rename" onchange="ren('${d.id}',this.value)"><small>${d.sh?"✨ Shiny ":""}${b.n} · ${p[0]} ${p[1]}</small><small>Level ${d.l} · ${f(pass(d))}/min</small><div class=xp><u style="width:${d.x/(d.l*40)*100}%"></u></div><div class=bt><button id=p${d.id} onclick="pet('${d.id}')">Pet</button><button onclick="feed('${d.id}')">🦴 Feed</button></div><div class=bt><button class=g onclick="mv('${d.id}')">Move</button><button class=g title="Store in Vault" onclick="store('${d.id}')">📦</button><select onchange="skin('${d.id}',this.value)"><option value="">No skin</option>${S.skins.map(s=>`<option value=${s} ${d.sk==s?"selected":""}>${K.find(x=>x[0]==s)[1]} ${K.find(x=>x[0]==s)[2]}</option>`).join("")}</select></div></div>`}
+function hud(){document.getElementById("hud").innerHTML=`<span>🪙 ${f(S.coins)}</span><span>🦴 ${S.bones}</span><span>🐾 ${S.paws}</span><span title="Passive income arrives every 60 seconds">⏱ Pack pays in ${60-S.t}s</span>`;
+const n=Date.now();S.dogs.forEach(d=>{const b=document.getElementById("p"+d.id);if(!b)return;const c=Math.ceil(((d.k=="pug"?4e3:1e4)-(n-(d.pa||0)))/1e3);b.disabled=c>0;b.textContent=c>0?c+"s":"Pet"})}
+function render(){
+document.getElementById("nv").innerHTML=["🏠 Mansion","🛒 Shop","✨ Prestige","⚙️ Train","📦 Vault"].map((t,i)=>`<button class="${tab==i?"on":""}" onclick="tab=${i};render()">${t}</button>`).join("");
+let h="";
+if(tab==0){if(!S.dogs.length)h+='<p>No dogs yet! Head to the Shop and adopt your first pup 🐾</p>';
+S.rooms.forEach(r=>{const ds=S.dogs.filter(d=>d.r==r);h+=`<h2>${R[r][0]} (${ds.length}/3)</h2><div class=grid>${ds.map(card).join("")}${ds.length<3?'<div class="dc em">🛏️ Empty bed</div>':""}</div>`})}
+if(tab==1){h+=`<h2>Bone shop</h2><div class=bt><button onclick="bone(1)">Buy 1 · 15 🪙</button><button onclick="bone(10)">Buy 10 · 150 🪙</button></div><h2>Shelter</h2><div class=grid>${S.sh.map((k,i)=>`<div class=dc><div class=sp>${sprite(k)}</div><b>${B[k].n}</b><small>${B[k].d}</small><input class=nm id=nm${i} placeholder="Name your pup" maxlength=14><select id=ps${i}>${Object.keys(P).map(p=>`<option value=${p}>${P[p][0]} ${P[p][1]}</option>`).join("")}</select><button class=b onclick="adopt(${i})">Adopt · ${f(B[k].$)} 🪙</button></div>`).join("")}</div><p><button class=b onclick="spend(50)&&(roll(),render())">🔄 Refresh · 50 🪙</button></p><p><small>🔒 ${ks.filter(k=>(B[k].u||0)>(S.pr||0)).length?"Move house to unlock rare breeds!":"All breeds unlocked!"}</small></p><h2>Mansion rooms</h2><div class=grid>${R.map((r,i)=>`<div class=dc><b>${r[0]}</b><small>Holds 3 dogs</small>${S.rooms.includes(i)?"<small>✅ Owned</small>":`<button class=b onclick="room(${i})">Unlock · ${f(r[1])} 🪙</button>`}</div>`).join("")}</div>`}
+if(tab==2){const tl=S.dogs.reduce((a,d)=>a+d.l,0),pg=Math.floor(tl/5);
+h+=`<h2>Move to a new house</h2><p>📦 Store dogs in the Vault first to keep them! Each move unlocks rarer breeds (you’ve moved ${S.pr||0} times).</p><p>Combined dog level: <b>${tl}</b> (need 10). Moving resets dogs, rooms and coins but grants <b>${tl>=10?pg:0} 🐾</b>. Each 🐾 gives a permanent +10% coins (currently +${Math.round((G()-1)*100)}%).</p><button class=b ${tl<10?"disabled":""} onclick="prestige(${pg})">🏡 Move house</button><h2>Skin shop</h2><div class=grid>${K.map(k=>`<div class=dc><div style="font-size:40px">${k[1]}</div><b>${k[2]}</b>${S.skins.includes(k[0])?"<small>✅ Owned</small>":`<button class=b onclick="buyskin('${k[0]}')">${k[3]} 🐾</button>`}</div>`).join("")}</div>`}
+if(tab==3){h+='<h2>Training grounds</h2><p>Spend coins to make your dogs better. Each level adds +15%, up to level 5.</p><div class=grid>'+(S.dogs.length?S.dogs.map(d=>`<div class=dc><div class=sp style="height:72px"><div style="transform:scale(.75);transform-origin:top center">${sprite(d.k,d.sk,d.sh)}</div></div><b>${d.n}</b>${ST.map(s=>{const lv=(d.t||{})[s[0]]||0;return `<small>${s[1]} ${"▰".repeat(lv)}${"▱".repeat(5-lv)}</small><button class=b ${lv>=5?"disabled":""} onclick="train('${d.id}','${s[0]}')">${lv>=5?"MAX":s[2]+" · "+f(200*2**lv)+" 🪙"}</button>`}).join("")}</div>`).join(""):"<p>Adopt a dog first!</p>")+"</div>"}if(tab==4){h+=`<h2>Dog Vault (${S.v.length}/25)</h2><p>Stored dogs survive moving house and keep their ✨ shiny status, name and skin (levels and training reset). Tap 📦 on a dog card to store it.</p><div class=grid>${S.v.length?S.v.map(d=>`<div class=dc><div class=sp style="height:72px"><div style="transform:scale(.75);transform-origin:top center">${sprite(d.k,d.sk,d.sh)}</div></div><b>${d.n}</b><small>${d.sh?"✨ Shiny ":""}${B[d.k].n} · ${P[d.p][0]} ${P[d.p][1]}</small><small>Level ${d.l}</small><button class=b onclick="take('${d.id}')">Take out</button></div>`).join(""):"<p>Your vault is empty.</p>"}</div>`}
+document.getElementById("app").innerHTML=h;hud();save()}
+const spend=n=>S.coins>=n?(S.coins-=n,true):(toast("Not enough coins 🪙"),false);
+function bone(n){if(spend(15*n)){S.bones+=n;render()}}
+function room(i){if(spend(R[i][1])){S.rooms.push(i);render()}}
+function adopt(i){const k=S.sh[i];if(!S.rooms.some(r=>S.dogs.filter(d=>d.r==r).length<3))return toast("No room! Unlock a new room 🏠");
+if(!spend(B[k].$))return;const r=S.rooms.find(r=>S.dogs.filter(d=>d.r==r).length<3);
+S.dogs.push({id:"d"+Math.random().toString(36).slice(2,8),k,n:document.getElementById("nm"+i).value.trim()||NM[Math.floor(Math.random()*NM.length)],p:document.getElementById("ps"+i).value,l:1,x:0,r,sk:"",pa:0,sh:Math.random()<.1});if(S.dogs[S.dogs.length-1].sh)toast("✨ WOW, a SHINY "+B[k].n+"! 2x coins!");else toast(B[k].n+" joined the family! 🐶");render()}
+function pet(id){const d=S.dogs.find(x=>x.id==id);if(Date.now()-(d.pa||0)<(d.k=="pug"?4e3:1e4))return;d.pa=Date.now();
+let a=d.l*mult(d)*tr(d,"b")*(d.k=="dac"?3:1)*(d.p=="playful"?2:1)*(d.k=="poo"?1.5:1)*(d.k=="hus"?0:1),lucky=d.k=="bea"&&Math.random()<.2;if(lucky)a*=5;
+S.coins+=a;const s=document.createElement("span");s.className="fl";s.textContent=(lucky?"🍀 ":"❤️ ")+"+"+f(a);document.getElementById("h"+id).appendChild(s);setTimeout(()=>s.remove(),1000);hud();save()}
+function feed(id){const d=S.dogs.find(x=>x.id==id);if(S.bones<1)return toast("No bones! Buy some in the Shop 🦴");
+if(d.k=="gol"&&Math.random()<.5)toast("Goldie kept the bone! 🦴");else S.bones--;
+d.x+=20*tr(d,"c")*(d.p=="hungry"?2:1)*(d.k=="dal"?2:1);
+while(d.x>=d.l*40){d.x-=d.l*40;d.l++;const b=d.l*50*(d.k=="pom"?3:1);S.coins+=b;toast(`${d.n} reached level ${d.l}! +${f(b)} 🪙`)}render()}
+function mv(id){const d=S.dogs.find(x=>x.id==id);const o=S.rooms.filter(r=>r!=d.r&&S.dogs.filter(x=>x.r==r).length<3);if(!o.length)return toast("No other room has space");d.r=o[0];render()}
+function ren(id,v){const d=S.dogs.find(x=>x.id==id);d.n=v.trim()||d.n;render()}
+function store(id){const i=S.dogs.findIndex(x=>x.id==id);if(S.v.length>=25)return toast("Vault is full (25)");S.v.push(S.dogs.splice(i,1)[0]);toast("Stored in the vault 📦");render()}
+function take(id){const i=S.v.findIndex(x=>x.id==id);const r=S.rooms.find(r=>S.dogs.filter(d=>d.r==r).length<3);if(r===undefined)return toast("No room space! Unlock a room 🏠");const d=S.v.splice(i,1)[0];d.r=r;S.dogs.push(d);render()}
+function train(id,k){const d=S.dogs.find(x=>x.id==id);d.t=d.t||{};const lv=d.t[k]||0;if(lv>=5)return;if(spend(200*2**lv)){d.t[k]=lv+1;render()}}
+function skin(id,v){S.dogs.find(x=>x.id==id).sk=v;render()}
+function buyskin(k){const c=K.find(x=>x[0]==k)[3];if(S.paws<c)return toast("Not enough paw prints 🐾");S.paws-=c;S.skins.push(k);render()}
+function prestige(g){if(!window.cf){window.cf=1;toast("Tap again to move house (you lose dogs, rooms and coins)");setTimeout(()=>window.cf=0,4000);return}window.cf=0;const o=S;S=fresh();S.paws=o.paws+g;S.skins=o.skins;S.v=(o.v||[]).map(d=>({...d,l:1,x:0,t:{}}));S.pr=(o.pr||0)+1;starter();roll();tab=0;toast("Welcome to your new house! +"+g+" 🐾");render()}
+setInterval(()=>{S.t++;if(S.t>=60){S.t=0;const a=S.dogs.reduce((s,d)=>s+pass(d),0);if(a>0){S.coins+=a;toast("Your pack earned "+f(a)+" 🪙")}save()}hud()},1000);
+render();
+</script><script type="module">
+/* ===== ARCADE CLOUD SAVE (saves/{uid}.doggySave + totalXP/level) =====
+   Reuses your already-initialised Firebase app if there is one;
+   otherwise fill in firebaseConfig. */
+import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const firebaseConfig={apiKey:"YOUR_KEY",authDomain:"YOUR_PROJECT.firebaseapp.com",projectId:"YOUR_PROJECT"};
+const app=getApps().length?getApp():initializeApp(firebaseConfig);
+const auth=getAuth(app),db=getFirestore(app);
+let isSaving=false,timer,lastXP=0;
+async function saveGame(){
+  if(!auth.currentUser||isSaving)return;
+  isSaving=true;
+  try{
+    const docRef=doc(db,"saves",auth.currentUser.uid);
+    const docSnap=await getDoc(docRef);
+    const cur=docSnap.exists()?docSnap.data():{};
+    let xp=cur.totalXP||0;
+    const now=Date.now();
+    if(now-lastXP>=60000){xp+=5;lastXP=now} // +5 XP, at most once a minute
+    await setDoc(docRef,{doggySave:JSON.parse(JSON.stringify(S)),totalXP:xp,level:Math.floor(xp/500)+1},{merge:true});
+  }catch(e){console.error("Save failed",e)}
+  finally{isSaving=false}
+}
+window.cloudSave=()=>{clearTimeout(timer);timer=setTimeout(saveGame,3000)};
+onAuthStateChanged(auth,async user=>{
+  if(!user)return;
+  try{
+    const snap=await getDoc(doc(db,"saves",user.uid));
+    const d=snap.exists()&&snap.data().doggySave;
+    if(d){S=d;S.v=S.v||[];S.pr=S.pr||0;if(!S.sh||!S.sh.length)roll();if(!S.dogs.length)starter();render()}
+    else window.cloudSave();
+  }catch(e){console.error("Load failed",e)}
+});
 </script>
-</body>
-</html>
+</body></html>
