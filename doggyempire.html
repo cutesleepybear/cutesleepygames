@@ -319,11 +319,12 @@
         const btn = document.getElementById(`pet-btn-${dog.id}`);
         if (btn) {
           const remaining = Math.ceil((dog.petCooldown - Date.now()) / 1000);
+          
           if (remaining > 0) {
             btn.innerText = `Wait ${remaining}s...`;
             btn.disabled = true;
           } else {
-            // Update reward calculation here!
+            // Recalculate the correct reward for the button text
             let reward = dog.level;
             if (dog.personality === 'Playful') reward *= 2;
             
@@ -339,16 +340,19 @@
     const dog = state.dogs.find(d => d.id === id);
     if (!dog || dog.petCooldown > Date.now()) return;
     
-    // Petting gives coins equal to their level (Playful dogs get double!)
+    // Base reward is the dog's level
     let reward = dog.level; 
+    
+    // Playful dogs get double coins!
     if (dog.personality === 'Playful') reward *= 2;
     
     state.coins += reward;
-    dog.petCooldown = Date.now() + 10000; // 10s
+    dog.petCooldown = Date.now() + 10000; // 10 seconds
+    
     updateUI();
     saveGame();
     
-    // Instantly update the button visual
+    // Instantly update the button so you see it working
     const btn = document.getElementById(`pet-btn-${dog.id}`);
     if (btn) {
       btn.innerText = `Wait 10s...`;
