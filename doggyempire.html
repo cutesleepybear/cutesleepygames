@@ -293,7 +293,7 @@
     renameDogId: null
   };
 
-  let saveTimeout;
+  let isSaving = false;
 
   async function loadGame() {
     if (!auth.currentUser) return;
@@ -313,18 +313,17 @@
     startCooldownTicker();
   }
 
-  function saveGame() {
-    if (!auth.currentUser) return;
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(async () => {
-      const docRef = doc(db, "saves", auth.currentUser.uid);
-      const docSnap = await getDoc(docRef);
-      let currentData = docSnap.exists() ? docSnap.data() : {};
-      currentData.doggySave = state;
-      currentData.totalXP = (currentData.totalXP || 0) + 5; 
-      currentData.level = Math.floor(currentData.totalXP / 500) + 1;
-      await setDoc(docRef, currentData);
-    }, 1000);
+  async function saveGame() {
+    if (!auth.currentUser || isSaving) return;
+    isSaving = true;
+    const docRef = doc(db, "saves", auth.currentUser.uid);
+    const docSnap = await getDoc(docRef);
+    let currentData = docSnap.exists() ? docSnap.data() : {};
+    currentData.doggySave = state;
+    currentData.totalXP = (currentData.totalXP || 0) + 5; 
+    currentData.level = Math.floor(currentData.totalXP / 500) + 1;
+    await setDoc(docRef, currentData);
+    isSaving = false;
   }
 
   function generateShelter() {
@@ -332,20 +331,19 @@
     state.shelter = shuffled.slice(0, 3);
   }
 
-  window.refreshShelter = function() {
+  window.refreshShelter = async function() {
     if (state.coins < 50) return alert("Not enough coins!");
     state.coins -= 50;
     generateShelter();
     renderAll();
-    saveGame();
+    await saveGame();
   }
 
   function calculateIncome(dog) {
     let base = dog.level; 
     if (dog.personality === 'Loyal') base *= 1.2;
     if (dog.personality === 'Lazy') base *= 1.3;
-    if (dog.isShiny) base *= 2; // Shiny 2x bonus
-    
+    if (dog.isShiny) base *= 2; 
     const multiplier = 1 + (state.pawPrints * 0.1);
     return Math.max(1, Math.floor(base * multiplier)); 
   }
@@ -360,7 +358,7 @@
         updateUI();
         saveGame();
       }
-    }, 60000); // Every 60 seconds
+    }, 60000); 
   }
 
   function startCooldownTicker() {
@@ -369,15 +367,13 @@
         const btn = document.getElementById(`pet-btn-${dog.id}`);
         if (btn) {
           const remaining = Math.ceil((dog.petCooldown - Date.now()) / 1000);
-          
           if (remaining > 0) {
             btn.innerText = `Wait ${remaining}s...`;
             btn.disabled = true;
           } else {
             let reward = dog.level;
             if (dog.personality === 'Playful') reward *= 2;
-            if (dog.isShiny) reward *= 2; // Shiny 2x bonus
-            
+            if (dog.isShiny) reward *= 2; 
             btn.innerText = `Pet (+${reward})`;
             btn.disabled = false;
           }
@@ -386,19 +382,16 @@
     }, 1000);
   }
 
-  window.petDog = function(id) {
+  window.petDog = async function(id) {
     const dog = state.dogs.find(d => d.id === id);
     if (!dog || dog.petCooldown > Date.now()) return;
-    
     let reward = dog.level; 
     if (dog.personality === 'Playful') reward *= 2;
-    if (dog.isShiny) reward *= 2; // Shiny 2x bonus
-    
+    if (dog.isShiny) reward *= 2; 
     state.coins += reward;
     dog.petCooldown = Date.now() + 10000; 
     updateUI();
-    saveGame();
-    
+    await saveGame();
     const btn = document.getElementById(`pet-btn-${dog.id}`);
     if (btn) {
       btn.innerText = `Wait 10s...`;
@@ -406,40 +399,35 @@
     }
   }
 
-  window.feedDog = function(id) {
+  window.feedDog = async function(id) {
     if (state.bones <= 0) return alert("You need a bone! Buy one in the shop.");
     const dog = state.dogs.find(d => d.id === id);
     if (!dog) return;
-    
     state.bones--;
     let xpGain = 20; 
     if (dog.personality === 'Hungry') xpGain *= 2;
-    
     dog.xp += xpGain;
-    
     if (dog.xp >= dog.maxXp) {
       dog.xp -= dog.maxXp;
       dog.level++;
       dog.maxXp = Math.floor(dog.maxXp * 1.5);
-      
       const levelUpBonus = dog.level * 50; 
       state.coins += levelUpBonus;
       alert(`${dog.name} leveled up to Level ${dog.level}! You earned ${levelUpBonus} coins! 🪙`);
     }
-    
     updateUI();
     renderRooms();
-    saveGame();
+    await saveGame();
   }
 
-  window.buyItem = function(item) {
+  window.buyItem = async function(item) {
     if (item === 'bone') {
       if (state.coins < 15) return;
       state.coins -= 15;
       state.bones++;
     }
     updateUI();
-    saveGame();
+    await saveGame();
   }
 
   function renderAll() {
@@ -463,17 +451,14 @@
     const container = document.getElementById('mansion-container');
     container.innerHTML = '';
 
-    // GLOBAL MERGE CHECK
     const globalBreedCounts = {};
     state.dogs.forEach(d => {
       if (!d.isShiny) globalBreedCounts[d.breedId] = (globalBreedCounts[d.breedId] || 0) + 1;
     });
-
     let globalMergeBreed = null;
     for (const [bId, count] of Object.entries(globalBreedCounts)) {
       if (count >= 3) { globalMergeBreed = bId; break; }
     }
-
     if (globalMergeBreed) {
       const breedName = BREEDS.find(b => b.id === globalMergeBreed).name;
       const mergeBtn = document.createElement('button');
@@ -498,10 +483,8 @@
     ROOMS.forEach(room => {
       const isUnlocked = state.unlockedRooms.includes(room.id);
       const roomDogs = state.dogs.filter(d => d.room === room.id);
-
       const roomDiv = document.createElement('div');
       roomDiv.className = 'room';
-      
       let roomHeader = `
         <div class="room-header">
           <h2>${room.icon} ${room.name}</h2>
@@ -522,16 +505,12 @@
           const breed = BREEDS.find(b => b.id === dog.breedId);
           const skin = SKINS.find(s => s.id === dog.skinId) || SKINS[0];
           const xpPct = (dog.xp / dog.maxXp) * 100;
-          
           const remaining = Math.ceil((dog.petCooldown - Date.now()) / 1000);
           const isWaiting = remaining > 0;
-          
           let reward = dog.level; 
           if (dog.personality === 'Playful') reward *= 2;
           if (dog.isShiny) reward *= 2;
-          
           const btnText = isWaiting ? `Wait ${remaining}s...` : `Pet (+${reward})`;
-          
           const shinyClass = dog.isShiny ? 'shiny-dog' : '';
           const shinyIcon = dog.isShiny ? `<div class="shiny-sparkle">✨</div>` : '';
 
@@ -549,10 +528,8 @@
               <div class="dog-name">${dog.isShiny ? 'Shiny ' : ''}${dog.name}</div>
               <div class="dog-breed">${breed.name}</div>
               <div class="dog-personality">${dog.personality}</div>
-              
               <div class="xp-bar"><div class="xp-fill" style="width: ${xpPct}%"></div></div>
               <div class="dog-level">Lv. ${dog.level} (${dog.xp}/${dog.maxXp} XP)</div>
-              
               <div class="dog-actions">
                 <button class="btn-pet" id="pet-btn-${dog.id}" onclick="petDog('${dog.id}')" ${isWaiting ? 'disabled' : ''}>${btnText}</button>
                 <button class="btn-feed" id="feed-btn-${dog.id}" onclick="feedDog('${dog.id}')" title="You have ${state.bones} bones">Feed</button>
@@ -573,7 +550,6 @@
   function renderShelter() {
     const container = document.getElementById('dog-shop-container');
     container.innerHTML = '';
-    
     state.shelter.forEach(breed => {
       const div = document.createElement('div');
       div.className = 'shop-item';
@@ -591,11 +567,9 @@
   function renderSkinShop() {
     const container = document.getElementById('skin-list');
     container.innerHTML = '';
-    
     SKINS.forEach(skin => {
       if (skin.id === 'none') return;
       const isUnlocked = state.unlockedSkins.includes(skin.id);
-      
       const div = document.createElement('div');
       div.className = 'skin-opt';
       div.innerHTML = `
@@ -638,10 +612,8 @@
     document.getElementById('adopt-modal').style.display = 'flex';
   }
 
-  window.confirmAdoption = function() {
+  window.confirmAdoption = async function() {
     const name = document.getElementById('dog-name-input').value.trim() || state.pendingAdoptBreed.name;
-    
-    // FIND A ROOM WITH SPACE
     let targetRoom = null;
     for (const roomId of state.unlockedRooms) {
       const room = ROOMS.find(r => r.id === roomId);
@@ -651,12 +623,10 @@
         break;
       }
     }
-
     if (!targetRoom) {
       alert("All your rooms are full! You need to unlock a new room before adopting more dogs.");
       return; 
     }
-    
     state.coins -= state.pendingAdoptBreed.cost;
     state.dogs.push({
       id: Date.now().toString(),
@@ -671,27 +641,22 @@
       petCooldown: 0,
       isShiny: false
     });
-    
     state.shelter = [];
     generateShelter();
     document.getElementById('adopt-modal').style.display = 'none';
     renderAll();
-    saveGame();
+    await saveGame();
   }
 
-  window.mergeDogs = function(breedId) {
+  window.mergeDogs = async function(breedId) {
     const breedName = BREEDS.find(b => b.id === breedId).name;
     if (!confirm(`Are you sure you want to merge 3 ${breedName}s? You will lose the 3 dogs but get a Shiny one!`)) return;
     
-    const dogsToMerge = state.dogs
-      .filter(d => d.breedId === breedId && !d.isShiny)
-      .slice(0, 3);
-      
+    const dogsToMerge = state.dogs.filter(d => d.breedId === breedId && !d.isShiny).slice(0, 3);
     if (dogsToMerge.length < 3) return;
     
     const idsToRemove = dogsToMerge.map(d => d.id);
     state.dogs = state.dogs.filter(d => !idsToRemove.includes(d.id));
-    
     let targetRoom = state.unlockedRooms[0];
     
     const newShiny = {
@@ -707,10 +672,9 @@
       petCooldown: 0,
       isShiny: true 
     };
-    
     state.dogs.push(newShiny);
     renderAll();
-    saveGame();
+    await saveGame();
     alert(`Success! You created a Shiny ${breedName}!`);
   }
 
@@ -718,21 +682,17 @@
     state.movingDogId = dogId;
     const dog = state.dogs.find(d => d.id === dogId);
     document.getElementById('move-dog-name').innerText = dog.name;
-    
     const container = document.getElementById('room-options');
     container.innerHTML = '';
-    
     state.unlockedRooms.forEach(roomId => {
       const room = ROOMS.find(r => r.id === roomId);
       const currentDogs = state.dogs.filter(d => d.room === roomId);
       const isFull = currentDogs.length >= room.max && dog.room !== roomId;
-      
       const btn = document.createElement('button');
       btn.className = 'buy-btn';
       btn.style.background = isFull ? '#ccc' : '#42a5f5';
       btn.innerText = `${room.icon} ${room.name} (${currentDogs.length}/${room.max})`;
       btn.disabled = isFull;
-      
       btn.onclick = () => {
         dog.room = roomId;
         document.getElementById('move-modal').style.display = 'none';
@@ -741,7 +701,6 @@
       };
       container.appendChild(btn);
     });
-    
     document.getElementById('move-modal').style.display = 'flex';
   }
 
@@ -749,13 +708,10 @@
     state.skinDogId = dogId;
     const dog = state.dogs.find(d => d.id === dogId);
     document.getElementById('skin-dog-name').innerText = dog.name;
-    
     const container = document.getElementById('equip-skin-list');
     container.innerHTML = '';
-    
     SKINS.forEach(skin => {
       if (!state.unlockedSkins.includes(skin.id)) return;
-      
       const btn = document.createElement('div');
       btn.className = `skin-opt ${dog.skinId === skin.id ? 'equipped' : ''}`;
       btn.innerHTML = `
@@ -773,7 +729,6 @@
       };
       container.appendChild(btn);
     });
-    
     document.getElementById('skin-modal').style.display = 'flex';
   }
 
@@ -785,34 +740,31 @@
     document.getElementById('rename-modal').style.display = 'flex';
   }
 
-  window.confirmRename = function() {
+  window.confirmRename = async function() {
     const newName = document.getElementById('rename-dog-input').value.trim();
     if (!newName) return alert("Name can't be empty!");
-    
     const dog = state.dogs.find(d => d.id === state.renameDogId);
     if (dog) {
       dog.name = newName;
       document.getElementById('rename-modal').style.display = 'none';
       renderAll();
-      saveGame();
+      await saveGame();
     }
   }
 
-  window.unlockRoom = function(roomId, cost) {
+  window.unlockRoom = async function(roomId, cost) {
     if (state.coins < cost) return;
     state.coins -= cost;
     state.unlockedRooms.push(roomId);
     renderAll();
-    saveGame();
+    await saveGame();
   }
 
-  window.prestige = function() {
+  window.prestige = async function() {
     const totalLevels = state.dogs.reduce((sum, dog) => sum + dog.level, 0);
     if (totalLevels < 10) return alert("You need at least 10 total dog levels to prestige!");
-    
     const earnedPawPrints = Math.floor(totalLevels / 5);
     if (!confirm(`Are you sure? You will lose all your dogs and coins, but you will earn ${earnedPawPrints} 🐾 Paw Prints (permanent bonus).`)) return;
-    
     state.pawPrints += earnedPawPrints;
     state.dogs = [];
     state.coins = 0;
@@ -820,19 +772,19 @@
     state.shelter = [];
     generateShelter();
     renderAll();
-    saveGame();
+    await saveGame();
     alert(`Prestige complete! You now have ${state.pawPrints} 🐾. Every Paw Print gives +10% permanent coin bonus.`);
   }
 
-  window.buySkin = function(skinId, cost) {
+  window.buySkin = async function(skinId, cost) {
     if (state.pawPrints < cost) return;
     state.pawPrints -= cost;
     state.unlockedSkins.push(skinId);
     renderAll();
-    saveGame();
+    await saveGame();
   }
 
-  window.getStarterPack = function() {
+  window.getStarterPack = async function() {
     state.dogs.push({
       id: Date.now().toString(),
       breedId: 'lab',
@@ -848,7 +800,7 @@
     });
     state.coins += 20;
     renderAll();
-    saveGame();
+    await saveGame();
   }
 
   onAuthStateChanged(auth, (user) => {
