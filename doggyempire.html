@@ -20,6 +20,20 @@ nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
 .xp{height:6px;border-radius:3px;background:var(--bd);overflow:hidden}.xp u{display:block;height:100%;background:#5bc47a}
 .bt{display:flex;gap:4px}
 button,select{font:inherit;font-size:13px}
+  .back-btn { 
+    position: absolute; 
+    top: 15px; 
+    left: 15px; 
+    text-decoration: none; 
+    color: #4caf50; 
+    font-size: 0.8rem; 
+    border: 1px solid #4caf50; 
+    padding: 5px 10px; 
+    border-radius: 6px; 
+    z-index: 100; 
+    background: #fff;
+  }
+  .back-btn:hover { background: #e8f5e9; }
 .bt button,.bt select,.b{flex:1;padding:6px;border-radius:8px;border:1px solid var(--bd);background:var(--ac);color:#fff;cursor:pointer;min-width:0}
 .bt .g{background:var(--cd);color:var(--tx)}.bt select{background:var(--cd);color:var(--tx)}
 button:disabled{opacity:.45;cursor:default}
@@ -51,6 +65,7 @@ button:disabled{opacity:.45;cursor:default}
 <h1>🐶 Doggy Simulator</h1><div id="hud"></div>
 <nav id="nv"></nav><div id="app"></div><div id="ts"></div>
 <script>
+    <a href="index.html" class="back-btn">← Back to Hub</a>
 const B={
 lab:{n:"Labrador",c:"#e9c777",e:"#c89f4d",s:"#f7e6b8",t:"f",$:150,d:"Balanced starter"},
 poo:{n:"Poodle",c:"#f3ece2",e:"#e6d8c3",s:"#fffaf2",t:"o",$:400,d:"+50% pet coins",x:'<i class=x style="left:33px;top:-3px;width:30px;height:26px;border-radius:50%;background:#f3ece2;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08)"></i>'},
