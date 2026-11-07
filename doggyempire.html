@@ -8,106 +8,133 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #e8f5e9; color: #2e7d32; min-height: 100vh; padding: 20px;
+    background: #e8f5e9; color: #2e7d32; min-height: 100vh; padding: 15px;
     display: flex; flex-direction: column; align-items: center;
   }
-  .back-btn { position: absolute; top: 20px; left: 20px; text-decoration: none; color: #4caf50; font-size: 0.9rem; border: 1px solid #4caf50; padding: 5px 10px; border-radius: 6px; z-index: 100; background: #fff;}
+  .back-btn { position: absolute; top: 15px; left: 15px; text-decoration: none; color: #4caf50; font-size: 0.8rem; border: 1px solid #4caf50; padding: 5px 10px; border-radius: 6px; z-index: 100; background: #fff;}
   .back-btn:hover { background: #e8f5e9; }
 
-  #game-container { display: none; width: 100%; max-width: 1200px; margin-top: 20px; }
+  #game-container { display: none; width: 100%; max-width: 1200px; margin-top: 30px; }
   
-  .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 15px 25px; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
-  .header h1 { font-size: 1.8rem; color: #1b5e20; }
-  .stats { display: flex; gap: 20px; font-weight: bold; font-size: 1.2rem; }
+  /* HEADER */
+  .header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
+  .header h1 { font-size: 1.4rem; color: #1b5e20; }
+  .stats { display: flex; gap: 15px; font-weight: bold; font-size: 1.1rem; flex-wrap: wrap;}
   .coins { color: #f57f17; }
+  .bones { color: #8d6e63; }
   .paw-prints { color: #ab47bc; display: flex; align-items: center; gap: 5px;}
 
+  /* LAYOUT */
   .main-layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
-  .mansion { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 15px; }
+  .mansion { flex: 1; min-width: 100%; display: flex; flex-direction: column; gap: 15px; }
   
-  .room { background: #fff; border-radius: 16px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #c8e6c9; position: relative; }
-  .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-  .room-header h2 { font-size: 1.2rem; color: #2e7d32; display: flex; gap: 10px; align-items: center; }
-  .room-limit { font-size: 0.9rem; color: #777; }
-  .dog-grid { display: flex; gap: 15px; flex-wrap: wrap; min-height: 120px; }
+  /* ROOMS */
+  .room { background: #fff; border-radius: 12px; padding: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 2px solid #c8e6c9; position: relative; }
+  .room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+  .room-header h2 { font-size: 1.1rem; color: #2e7d32; display: flex; gap: 5px; align-items: center; }
+  .room-limit { font-size: 0.8rem; color: #777; }
+  .dog-grid { display: flex; gap: 10px; flex-wrap: wrap; }
   
+  /* DOG CARDS */
   .dog-card {
-    background: #f1f8e9; border: 2px solid #aed581; border-radius: 12px;
-    padding: 10px; width: 170px; text-align: center; position: relative; transition: transform 0.2s;
+    background: #f1f8e9; border: 2px solid #aed581; border-radius: 10px;
+    padding: 8px; width: calc(50% - 5px); min-width: 140px; max-width: 180px; 
+    text-align: center; position: relative; transition: transform 0.2s;
+    display: flex; flex-direction: column; align-items: center;
   }
-  .dog-card:hover { transform: translateY(-3px); }
+  .dog-card:hover { transform: translateY(-2px); }
   
   .sprite-container {
-    width: 100px; height: 100px; margin: 0 auto 10px auto; position: relative;
-    background: #fff; border-radius: 12px; border: 2px solid #ccc;
+    width: 70px; height: 70px; margin: 0 auto 8px auto; position: relative;
+    background: #fff; border-radius: 10px; border: 2px solid #ccc;
     display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
   }
   
   .sprite-dog {
-    width: 60px; height: 60px; background-color: #a1887f; 
+    width: 45px; height: 45px; background-color: #a1887f; 
     border-radius: 40% 40% 20% 20%; position: relative; margin-bottom: 5px;
   }
   .sprite-dog::before, .sprite-dog::after {
-    content: ''; position: absolute; width: 20px; height: 30px; background-color: #795548;
-    border-radius: 50% 50% 0 0; top: -10px;
+    content: ''; position: absolute; width: 15px; height: 22px; background-color: #795548;
+    border-radius: 50% 50% 0 0; top: -8px;
   }
-  .sprite-dog::before { left: -5px; transform: rotate(-20deg); }
-  .sprite-dog::after { right: -5px; transform: rotate(20deg); }
-  .dog-eye { position: absolute; width: 8px; height: 8px; background: #000; border-radius: 50%; top: 20px; }
-  .eye-left { left: 15px; }
-  .eye-right { right: 15px; }
-  .dog-nose { position: absolute; width: 14px; height: 10px; background: #000; border-radius: 50%; top: 35px; left: 23px; }
+  .sprite-dog::before { left: -4px; transform: rotate(-20deg); }
+  .sprite-dog::after { right: -4px; transform: rotate(20deg); }
+  .dog-eye { position: absolute; width: 6px; height: 6px; background: #000; border-radius: 50%; top: 15px; }
+  .eye-left { left: 10px; }
+  .eye-right { right: 10px; }
+  .dog-nose { position: absolute; width: 10px; height: 8px; background: #000; border-radius: 50%; top: 25px; left: 18px; }
+  .sprite-skin { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
 
-  .sprite-skin {
-    position: absolute; inset: 0; z-index: 10; pointer-events: none;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 4rem;
-  }
-
-  .dog-name { font-size: 1rem; font-weight: bold; color: #1b5e20; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-  .dog-breed { font-size: 0.7rem; color: #689f38; font-weight: bold; text-transform: uppercase; }
-  .dog-personality { font-size: 0.7rem; color: #8d6e63; font-style: italic; margin-bottom: 5px; }
+  .dog-name { font-size: 0.9rem; font-weight: bold; color: #1b5e20; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
+  .dog-breed { font-size: 0.65rem; color: #689f38; font-weight: bold; text-transform: uppercase; }
+  .dog-personality { font-size: 0.65rem; color: #8d6e63; font-style: italic; margin-bottom: 5px; }
   
-  .xp-bar { height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; margin: 5px 0; }
+  .xp-bar { height: 6px; background: #e0e0e0; border-radius: 3px; overflow: hidden; margin: 5px 0; width: 100%;}
   .xp-fill { height: 100%; background: #66bb6a; transition: width 0.3s; }
-  .dog-level { font-size: 0.7rem; color: #666; margin-bottom: 10px; font-weight: bold; }
+  .dog-level { font-size: 0.65rem; color: #666; margin-bottom: 8px; font-weight: bold; }
   
-  .dog-actions { display: flex; gap: 5px; flex-wrap: wrap;}
+  .dog-actions { display: flex; gap: 4px; flex-wrap: wrap; width: 100%; justify-content: center;}
   .dog-actions button {
-    flex: 1; padding: 6px; font-size: 0.7rem; border: none; border-radius: 6px;
-    cursor: pointer; font-weight: bold; transition: 0.2s; min-width: 45%;
+    flex: 1; padding: 6px 2px; font-size: 0.65rem; border: none; border-radius: 4px;
+    cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap;
   }
   .btn-pet { background: #ff8a65; color: white; }
   .btn-feed { background: #66bb6a; color: white; }
   .btn-move { background: #42a5f5; color: white; }
-  .btn-skin { background: #ab47bc; color: white; }
+  .btn-skin { background: #ab47bc; color: white; flex: 100% !important; margin-top: 4px;}
   .btn-pet:disabled { background: #ccc; cursor: not-allowed; }
 
-  .shop { width: 350px; background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-  .shop h2 { margin-bottom: 15px; font-size: 1.3rem; border-bottom: 2px solid #c8e6c9; padding-bottom: 10px; color: #1b5e20;}
+  /* SHOP */
+  .shop { width: 100%; background: #fff; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+  .shop h2 { margin-bottom: 15px; font-size: 1.2rem; border-bottom: 2px solid #c8e6c9; padding-bottom: 10px; color: #1b5e20;}
   
-  .shop-item { display: flex; justify-content: space-between; align-items: center; background: #fafafa; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #eee;}
-  .shop-item-info h3 { font-size: 1rem; margin-bottom: 2px; }
-  .shop-item-info p { font-size: 0.8rem; color: #777; }
-  .buy-btn { background: #66bb6a; color: #fff; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+  .shop-item { display: flex; justify-content: space-between; align-items: center; background: #fafafa; padding: 8px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #eee;}
+  .shop-item-info h3 { font-size: 0.9rem; margin-bottom: 2px; }
+  .shop-item-info p { font-size: 0.7rem; color: #777; }
+  .buy-btn { background: #66bb6a; color: #fff; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; white-space: nowrap; font-size: 0.8rem;}
   .buy-btn:hover { background: #4caf50; }
-  .buy-btn:disabled { background: #ccc; cursor: not-allowed; }
   .buy-btn.paw { background: #ab47bc; }
   .buy-btn.paw:hover { background: #8e24aa; }
 
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;}
-  .modal-content { background: #fff; padding: 30px; border-radius: 16px; width: 100%; max-width: 400px; text-align: center; }
-  .modal-content h2 { color: #2e7d32; margin-bottom: 5px; }
-  .modal-content h3 { color: #689f38; margin-bottom: 15px; font-size: 1rem; text-transform: uppercase;}
-  .modal-content input { width: 100%; padding: 10px; border: 2px solid #c8e6c9; border-radius: 8px; font-size: 1rem; margin-bottom: 15px; text-align: center; }
-  .personality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-  .pers-btn { padding: 10px; border: 2px solid #c8e6c9; background: #fff; border-radius: 8px; cursor: pointer; font-weight: bold; color: #2e7d32; font-size: 0.8rem;}
+  /* MODALS */
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 15px;}
+  .modal-content { background: #fff; padding: 20px; border-radius: 12px; width: 100%; max-width: 350px; text-align: center; }
+  .modal-content h2 { color: #2e7d32; margin-bottom: 5px; font-size: 1.2rem;}
+  .modal-content h3 { color: #689f38; margin-bottom: 15px; font-size: 0.9rem; text-transform: uppercase;}
+  .modal-content input { width: 100%; padding: 8px; border: 2px solid #c8e6c9; border-radius: 6px; font-size: 0.9rem; margin-bottom: 15px; text-align: center; }
+  .personality-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+  .pers-btn { padding: 8px; border: 2px solid #c8e6c9; background: #fff; border-radius: 6px; cursor: pointer; font-weight: bold; color: #2e7d32; font-size: 0.8rem;}
   .pers-btn.selected { background: #e8f5e9; border-color: #2e7d32; }
 
-  .skin-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; max-height: 300px; overflow-y: auto;}
-  .skin-opt { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; background: #fff; }
-  .skin-opt:hover { background: #f5f5f5; }
+  .skin-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; max-height: 250px; overflow-y: auto;}
+  .skin-opt { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 2px solid #ccc; border-radius: 6px; cursor: pointer; background: #fff; font-size: 0.8rem;}
   .skin-opt.equipped { border-color: #ab47bc; background: #f3e5f5; }
+
+  /* DESKTOP RESPONSIVE RULES */
+  @media (min-width: 800px) {
+    .header h1 { font-size: 1.8rem; }
+    .mansion { min-width: 600px; }
+    .shop { width: 350px; position: sticky; top: 20px; }
+    .dog-card { width: 160px; padding: 10px; }
+    .sprite-container { width: 90px; height: 90px; }
+    .sprite-dog { width: 55px; height: 55px; }
+    .sprite-dog::before { width: 18px; height: 26px; top: -10px; left: -5px;}
+    .sprite-dog::after { width: 18px; height: 26px; top: -10px; right: -5px;}
+    .dog-eye { width: 7px; height: 7px; top: 18px;}
+    .eye-left { left: 13px; }
+    .eye-right { right: 13px; }
+    .dog-nose { width: 12px; height: 9px; top: 30px; left: 21px; }
+    .sprite-skin { font-size: 4rem; }
+    
+    .dog-actions button { font-size: 0.75rem; padding: 8px 4px;}
+    .btn-skin { flex: 1 !important; margin-top: 0;}
+    .shop { padding: 20px; }
+    .shop-item { padding: 10px; }
+    .shop-item-info h3 { font-size: 1rem; }
+    .shop-item-info p { font-size: 0.8rem; }
+    .buy-btn { padding: 8px 12px; font-size: 0.9rem;}
+  }
 </style>
 </head>
 <body>
