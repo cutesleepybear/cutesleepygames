@@ -16,8 +16,7 @@
   .back-btn { position: absolute; top: 15px; left: 15px; text-decoration: none; color: #9ab89a; font-size: 0.8rem; border: 1px solid #5a4a2f; padding: 5px 10px; border-radius: 6px; z-index: 100; background: rgba(0,0,0,0.5);}
   .back-btn:hover { color: #f0c060; border-color: #f0c060; }
 
-  #game-container { display: none; width: 100%; max-width: 1100px; margin-top: 20px; }
-  
+  #game-container { display: none; width: 100%; max-width: 1100px; margin: 20px auto 0 auto; }  
   .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 10px;}
   h1 { font-size: 1.5rem; margin-bottom: 4px; letter-spacing: 1px; color: #f0c060;}
   .subtitle { font-size: 0.8rem; color: #9ab89a; }
@@ -27,8 +26,7 @@
   .give-up-btn:hover { background: rgba(255,51,51,0.2); }
 
   /* LAYOUT */
-  .layout { display: flex; gap: 20px; align-items: flex-start; width: 100%;}
-  .battlefield { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 300px; }
+  .layout { display: flex; gap: 20px; align-items: flex-start; width: 100%; justify-content: center; }  .battlefield { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 300px; }
   
   .side { display: flex; flex-direction: column; gap: 8px; }
   .side-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; color: #9ab89a; padding-left: 4px; }
@@ -94,6 +92,7 @@
       width: 100%; position: fixed; bottom: 0; left: 0; right: 0; 
       background: #1a2e1a; padding: 10px; border-top: 2px solid #5a4a2f; 
       z-index: 1000; box-shadow: 0 -4px 15px rgba(0,0,0,0.5);
+      display: flex; flex-direction: column; align-items: center;
     }
     .log { display: none; } 
     .actions { flex-direction: row; justify-content: center; gap: 10px;}
