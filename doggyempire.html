@@ -131,16 +131,12 @@
 
     <div class="main-layout">
       <div class="mansion" id="mansion-container"></div>
-        <div id="empty-state" style="display: none; text-align: center; padding: 40px; background: #fff; border-radius: 16px; border: 2px dashed #aed581; margin-bottom: 20px;">
-        <h2>Your mansion is empty!</h2>
-        <p style="margin-bottom: 20px; color: #666;">It looks like you don't have any dogs yet.</p>
-        <button class="buy-btn" style="font-size: 1.2rem; padding: 12px 24px;" onclick="getStarterPack()">Claim Free Starter Dog 🐶</button>
-      </div>
+
       <div class="shop">
         <h2>🛒 Supply Shop</h2>
         <div class="shop-item">
-          <div class="shop-item-info"><h3>🦴 Bone</h3><p>Feeds a dog for +50 XP</p></div>
-          <button class="buy-btn" onclick="buyItem('bone')">10 🪙</button>
+          <div class="shop-item-info"><h3>🦴 Bone</h3><p>Feeds a dog for +20 XP</p></div>
+          <button class="buy-btn" onclick="buyItem('bone')">15 🪙</button>
         </div>
         
         <h2 style="margin-top: 20px;">🏠 Rotating Shelter</h2>
@@ -215,10 +211,10 @@
   const db = getFirestore(app);
 
   const BREEDS = [
-    { id: 'lab', name: 'Labrador', emoji: '🦮', cost: 100, color: '#ffb74d' },
-    { id: 'poodle', name: 'Poodle', emoji: '🐩', cost: 250, color: '#f48fb1' },
-    { id: 'husky', name: 'Husky', emoji: '🐺', cost: 500, color: '#90caf9' },
-    { id: 'corgi', name: 'Corgi', emoji: '🐕', cost: 1000, color: '#ffd54f' }
+    { id: 'lab', name: 'Labrador', emoji: '🦮', cost: 150, color: '#ffb74d' },
+    { id: 'poodle', name: 'Poodle', emoji: '🐩', cost: 400, color: '#f48fb1' },
+    { id: 'husky', name: 'Husky', emoji: '🐺', cost: 1000, color: '#90caf9' },
+    { id: 'corgi', name: 'Corgi', emoji: '🐕', cost: 2500, color: '#ffd54f' }
   ];
 
   const PERSONALITIES = ['Playful', 'Lazy', 'Hungry', 'Loyal'];
@@ -233,9 +229,9 @@
 
   const ROOMS = [
     { id: 'living', name: 'Living Room', max: 3, cost: 0, icon: '🛋️' },
-    { id: 'backyard', name: 'Backyard', max: 3, cost: 500, icon: '🌳' },
-    { id: 'kitchen', name: 'Kitchen', max: 3, cost: 1500, icon: '🍳' },
-    { id: 'bedroom', name: 'Master Bedroom', max: 3, cost: 5000, icon: '🛏️' }
+    { id: 'backyard', name: 'Backyard', max: 3, cost: 1000, icon: '🌳' },
+    { id: 'kitchen', name: 'Kitchen', max: 3, cost: 5000, icon: '🍳' },
+    { id: 'bedroom', name: 'Master Bedroom', max: 3, cost: 20000, icon: '🛏️' }
   ];
 
   let state = {
@@ -249,8 +245,7 @@
     pendingAdoptBreed: null,
     selectedPersonality: null,
     movingDogId: null,
-    skinDogId: null,
-    hasStarterDog: false
+    skinDogId: null
   };
 
   let saveTimeout;
@@ -263,25 +258,6 @@
     if (docSnap.exists()) {
       const data = docSnap.data().doggySave;
       if (data) state = { ...state, ...data };
-    }
-    
-    // Give starter dog if they don't have one
-    if (!state.hasStarterDog && state.dogs.length === 0) {
-      state.hasStarterDog = true;
-      state.dogs.push({
-        id: Date.now().toString(),
-        breedId: 'lab',
-        name: 'Teddy',
-        personality: 'Playful',
-        level: 1,
-        xp: 0,
-        maxXp: 100,
-        room: 'living',
-        skinId: 'none',
-        petCooldown: 0
-      });
-      state.coins = 15; // Give them a few coins to buy a bone
-      saveGame();
     }
     
     if (state.shelter.length === 0) generateShelter();
@@ -319,11 +295,11 @@
   }
 
   function calculateIncome(dog) {
-    let base = dog.level * 2;
+    let base = dog.level; // 1 coin per level
     if (dog.personality === 'Loyal') base *= 1.2;
     if (dog.personality === 'Lazy') base *= 1.3;
     const multiplier = 1 + (state.pawPrints * 0.1);
-    return Math.floor(base * multiplier);
+    return Math.max(1, Math.floor(base * multiplier)); // Minimum 1
   }
 
   function startPassiveIncome() {
@@ -336,15 +312,16 @@
         updateUI();
         saveGame();
       }
-    }, 10000);
+    }, 60000); // Generates money every 60 seconds
   }
 
   window.petDog = function(id) {
     const dog = state.dogs.find(d => d.id === id);
     if (!dog || dog.petCooldown > Date.now()) return;
-    const reward = dog.personality === 'Playful' ? 3 : 1;
+    
+    const reward = dog.personality === 'Playful' ? 2 : 1;
     state.coins += reward;
-    dog.petCooldown = Date.now() + 3000;
+    dog.petCooldown = Date.now() + 10000; // 10-second cooldown
     updateUI();
     renderRooms();
     saveGame();
@@ -356,15 +333,23 @@
     if (!dog) return;
     
     state.bones--;
-    let xpGain = 50;
+    let xpGain = 20; // Takes 5 bones to level up
     if (dog.personality === 'Hungry') xpGain *= 2;
     
     dog.xp += xpGain;
+    
+    // Check for Level Up
     if (dog.xp >= dog.maxXp) {
       dog.xp -= dog.maxXp;
       dog.level++;
-      dog.maxXp = Math.floor(dog.maxXp * 1.5);
+      dog.maxXp = Math.floor(dog.maxXp * 1.5); // Each level requires more XP
+      
+      // Big Coin Reward for Leveling!
+      const levelUpBonus = dog.level * 50; 
+      state.coins += levelUpBonus;
+      alert(`${dog.name} leveled up to Level ${dog.level}! You earned ${levelUpBonus} coins! 🪙`);
     }
+    
     updateUI();
     renderRooms();
     saveGame();
@@ -372,8 +357,8 @@
 
   window.buyItem = function(item) {
     if (item === 'bone') {
-      if (state.coins < 10) return;
-      state.coins -= 10;
+      if (state.coins < 15) return;
+      state.coins -= 15;
       state.bones++;
     }
     updateUI();
@@ -397,17 +382,9 @@
     }
   }
 
-function renderRooms() {
-    // NEW: Check if empty
-    if (state.dogs.length === 0) {
-      document.getElementById('empty-state').style.display = 'block';
-    } else {
-      document.getElementById('empty-state').style.display = 'none';
-    }
-
+  function renderRooms() {
     const container = document.getElementById('mansion-container');
     container.innerHTML = '';
-    // ... rest of the renderRooms code
 
     ROOMS.forEach(room => {
       const isUnlocked = state.unlockedRooms.includes(room.id);
@@ -456,7 +433,7 @@ function renderRooms() {
               <div class="dog-level">Lv. ${dog.level} (${dog.xp}/${dog.maxXp} XP)</div>
               
               <div class="dog-actions">
-                <button class="btn-pet" onclick="petDog('${dog.id}')" ${!canPet ? 'disabled' : ''}>Pet (+${dog.personality === 'Playful' ? 3 : 1} 🪙)</button>
+                <button class="btn-pet" onclick="petDog('${dog.id}')" ${!canPet ? 'disabled' : ''}>Pet (+${dog.personality === 'Playful' ? 2 : 1} 🪙)</button>
                 <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed</button>
                 <button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>
                 <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
@@ -638,9 +615,9 @@ function renderRooms() {
 
   window.prestige = function() {
     const totalLevels = state.dogs.reduce((sum, dog) => sum + dog.level, 0);
-    if (totalLevels < 5) return alert("You need at least 5 total dog levels to prestige!");
+    if (totalLevels < 10) return alert("You need at least 10 total dog levels to prestige!");
     
-    const earnedPawPrints = Math.floor(totalLevels / 2);
+    const earnedPawPrints = Math.floor(totalLevels / 5);
     if (!confirm(`Are you sure? You will lose all your dogs and coins, but you will earn ${earnedPawPrints} 🐾 Paw Prints (permanent bonus).`)) return;
     
     state.pawPrints += earnedPawPrints;
@@ -661,7 +638,8 @@ function renderRooms() {
     renderAll();
     saveGame();
   }
-    window.getStarterPack = function() {
+
+  window.getStarterPack = function() {
     state.dogs.push({
       id: Date.now().toString(),
       breedId: 'lab',
@@ -674,10 +652,11 @@ function renderRooms() {
       skinId: 'none',
       petCooldown: 0
     });
-    state.coins += 15;
+    state.coins += 20;
     renderAll();
     saveGame();
   }
+
   onAuthStateChanged(auth, (user) => {
     if (user) {
       loadGame();
