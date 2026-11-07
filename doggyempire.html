@@ -67,17 +67,9 @@
   .sprite-skin { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; align-items: center; justify-content: center; font-size: 3rem; }
 
   /* SHINY CSS */
-  .shiny-dog {
-    filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 5px gold);
-  }
-  .shiny-sparkle {
-    position: absolute; top: 2px; right: 2px; font-size: 1.2rem; z-index: 20;
-    animation: sparkle 1.5s infinite;
-  }
-  @keyframes sparkle {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.2); }
-  }
+  .shiny-dog { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 5px gold); }
+  .shiny-sparkle { position: absolute; top: 2px; right: 2px; font-size: 1.2rem; z-index: 20; animation: sparkle 1.5s infinite; }
+  @keyframes sparkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
 
   .dog-name { font-size: 0.9rem; font-weight: bold; color: #1b5e20; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;}
   .dog-breed { font-size: 0.65rem; color: #689f38; font-weight: bold; text-transform: uppercase; }
@@ -96,6 +88,7 @@
   .btn-feed { background: #66bb6a; color: white; }
   .btn-move { background: #42a5f5; color: white; }
   .btn-skin { background: #ab47bc; color: white; }
+  .btn-name { background: #78909c; color: white; flex: 100% !important; margin-top: 4px;}
   .btn-pet:disabled { background: #ccc; cursor: not-allowed; }
 
   .btn-merge {
@@ -149,6 +142,7 @@
     .sprite-skin { font-size: 4rem; }
     
     .dog-actions button { font-size: 0.75rem; padding: 8px 4px;}
+    .btn-name { flex: 1 !important; margin-top: 0;}
     .shop-item { padding: 10px; }
     .shop-item-info h3 { font-size: 1rem; }
     .shop-item-info p { font-size: 0.8rem; }
@@ -232,6 +226,16 @@
     </div>
   </div>
 
+  <div class="modal" id="rename-modal">
+    <div class="modal-content">
+      <h2>Rename Dog</h2>
+      <p style="margin-bottom: 15px; color: #666;">Give <span id="rename-dog-old" style="font-weight: bold; color: #d84315;"></span> a new name!</p>
+      <input type="text" id="rename-dog-input" placeholder="Enter new name..." maxlength="15">
+      <button class="buy-btn" style="width: 100%; padding: 12px; font-size: 1rem; margin-bottom: 10px;" onclick="confirmRename()">Save Name</button>
+      <button style="width: 100%; padding: 10px; background: none; border: none; color: #999; cursor: pointer;" onclick="document.getElementById('rename-modal').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -285,7 +289,8 @@
     pendingAdoptBreed: null,
     selectedPersonality: null,
     movingDogId: null,
-    skinDogId: null
+    skinDogId: null,
+    renameDogId: null
   };
 
   let saveTimeout;
@@ -553,6 +558,7 @@
                 <button class="btn-feed" id="feed-btn-${dog.id}" onclick="feedDog('${dog.id}')" title="You have ${state.bones} bones">Feed</button>
                 ${state.unlockedRooms.length > 1 ? `<button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>` : ''}
                 <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
+                <button class="btn-name" onclick="openRenameModal('${dog.id}')">Name</button>
               </div>
             </div>
           `;
@@ -769,6 +775,27 @@
     });
     
     document.getElementById('skin-modal').style.display = 'flex';
+  }
+
+  window.openRenameModal = function(dogId) {
+    const dog = state.dogs.find(d => d.id === dogId);
+    state.renameDogId = dogId;
+    document.getElementById('rename-dog-old').innerText = dog.name;
+    document.getElementById('rename-dog-input').value = dog.name;
+    document.getElementById('rename-modal').style.display = 'flex';
+  }
+
+  window.confirmRename = function() {
+    const newName = document.getElementById('rename-dog-input').value.trim();
+    if (!newName) return alert("Name can't be empty!");
+    
+    const dog = state.dogs.find(d => d.id === state.renameDogId);
+    if (dog) {
+      dog.name = newName;
+      document.getElementById('rename-modal').style.display = 'none';
+      renderAll();
+      saveGame();
+    }
   }
 
   window.unlockRoom = function(roomId, cost) {
