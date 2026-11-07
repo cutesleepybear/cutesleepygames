@@ -384,6 +384,11 @@
     
     updateUI();
     renderRooms();
+        // Update all feed buttons on the screen instantly
+    state.dogs.forEach(d => {
+      const fBtn = document.getElementById(`feed-btn-${d.id}`);
+      if (fBtn) fBtn.innerText = `Feed (${state.bones})`;
+    });
     saveGame();
   }
 
@@ -394,6 +399,13 @@
       state.bones++;
     }
     updateUI();
+    
+    // Update all feed buttons on the screen instantly
+    state.dogs.forEach(d => {
+      const fBtn = document.getElementById(`feed-btn-${d.id}`);
+      if (fBtn) fBtn.innerText = `Feed (${state.bones})`;
+    });
+    
     saveGame();
   }
 
@@ -491,8 +503,7 @@
               
               <div class="dog-actions">
                 <button class="btn-pet" id="pet-btn-${dog.id}" onclick="petDog('${dog.id}')" ${isWaiting ? 'disabled' : ''}>${btnText}</button>
-                <button class="btn-feed" onclick="feedDog('${dog.id}')">Feed (${state.bones} 🦴)</button>                <button class="btn-move" onclick="openMoveModal('${dog.id}')">Move</button>
-                <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
+<button class="btn-feed" id="feed-btn-${dog.id}" onclick="feedDog('${dog.id}')">Feed (${state.bones})</button>                <button class="btn-skin" onclick="openSkinModal('${dog.id}')">Skin</button>
               </div>
             </div>
           `;
