@@ -129,66 +129,112 @@ function prestige(g){if(!window.cf){window.cf=1;toast("Tap again to move house (
 setInterval(()=>{S.t++;if(S.t>=60){S.t=0;const a=S.dogs.reduce((s,d)=>s+pass(d),0);if(a>0){S.coins+=a;toast("Your pack earned "+f(a)+" 🪙")}save()}hud()},1000);
 render();
 </script>
+<!-- MY DOGS v3: replace your whole existing <script type="module"> ... </script> block (the last one in the file) with this block. -->
 <script type="module">
 import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import{getFirestore,doc,getDoc,runTransaction}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-const firebaseConfig={
-  apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",
-  authDomain:"cute-sleepy-games.firebaseapp.com",
-  projectId:"cute-sleepy-games",
-  storageBucket:"cute-sleepy-games.firebasestorage.app",
-  messagingSenderId:"249264537283",
-  appId:"1:249264537283:web:811dce511556eda6a96c76"
-};
+const firebaseConfig={apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",authDomain:"cute-sleepy-games.firebaseapp.com",projectId:"cute-sleepy-games",storageBucket:"cute-sleepy-games.firebasestorage.app",messagingSenderId:"249264537283",appId:"1:249264537283:web:811dce511556eda6a96c76"};
 const REQUIRE_LOGIN=true;
+const need=l=>500+250*(l-1),lvl=x=>{let l=1;while(x>=need(l)){x-=need(l);l++}return[l,x,need(l)]}; // account XP: 500, 750, 1000 ...
 const app=getApps().length?getApp():initializeApp(firebaseConfig);
 const auth=getAuth(app),db=getFirestore(app);
 const badge=document.createElement("div");
 badge.style.cssText="position:fixed;left:8px;bottom:8px;font:12px system-ui;background:#000b;color:#fff;padding:4px 10px;border-radius:12px;z-index:50;max-width:80vw";
 document.body.appendChild(badge);
 const say=t=>{badge.textContent=t};
+const st=document.createElement("style");
+st.textContent="nav{flex-wrap:wrap}nav button{min-width:23%}#ts{bottom:58px!important}#pc{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}#pc>div{background:var(--cd);color:var(--tx);border:1px solid var(--bd);border-radius:16px;padding:18px;max-width:340px;text-align:center}.rv{display:flex;justify-content:space-between;padding:4px 8px;border-radius:8px}.rv.me{background:var(--ac);color:#fff;font-weight:700}";
+document.head.appendChild(st);
  
-/* ===== CARE XP =====
-   S.care is a running "how well did you look after your dogs" score.
-   The cloud awards account XP only for care points above the highest total it has already paid for,
-   so nothing is double counted across devices, reloads or moving house. */
+/* ===== helpers: care points (-> account XP), counters (-> quests) ===== */
 const care=n=>{S.care=(S.care||0)+n};
-if(S.care===undefined)S.care=[...S.dogs,...S.v].reduce((a,d)=>a+5*d.l*(d.l+1)-10,0); // credit for dogs you already raised
-const wrap=(n,fn)=>{const o=window[n];window[n]=(...a)=>{const r=fn(o,...a);save();return r}};
-wrap("pet",(o,id)=>{const d=S.dogs.find(x=>x.id==id),b=d&&d.pa;const r=o(id);if(d&&d.pa!==b)care(1);return r});                       // petting: +1
-wrap("feed",(o,id)=>{const d=S.dogs.find(x=>x.id==id);if(!d)return o(id);const x=d.x,l=d.l;const r=o(id);
-  if(d.x!==x||d.l!==l){care(3);for(let n=l+1;n<=d.l;n++)care(10*n)}return r});                                                    // feeding: +3, level up: +10 x new level
-wrap("train",(o,id,k)=>{const d=S.dogs.find(x=>x.id==id),lv=d&&((d.t||{})[k]||0);const r=o(id,k);if(d&&((d.t||{})[k]||0)>lv)care(5*(lv+1));return r}); // training
-wrap("adopt",(o,i)=>{const n=S.dogs.length;const r=o(i);if(S.dogs.length>n){care(5);if(S.dogs[S.dogs.length-1].sh)care(30)}return r});          // new dog (+30 if shiny)
-wrap("prestige",(o,g)=>{const c=S.care||0,p=S.pr;const r=o(g);S.care=c;if(S.pr>p)care(100+25*g);return r});                              // moving house keeps your care score
+const bump=(k,n=1)=>{S.cnt=S.cnt||{};S.cnt[k]=(S.cnt[k]||0)+n};
+const tlv=()=>S.dogs.reduce((a,d)=>a+d.l,0);
+const scale=()=>1+tlv()/8;
+if(S.care===undefined)S.care=[...S.dogs,...S.v].reduce((a,d)=>a+5*d.l*(d.l+1)-10,0);
  
-let busy=false,again=false,timer,failed=false;
+/* ===== quests ===== */
+const QP=[{k:"pet",g:12,t:"Pet your dogs 12 times",c:120},{k:"feed",g:6,t:"Feed 6 bones",c:150,b:2},{k:"lvl",g:2,t:"Level up dogs 2 times",c:300},{k:"walk",g:2,t:"Finish 2 walks",c:200,b:2},{k:"train",g:1,t:"Train a skill",c:250},{k:"show",g:1,t:"Enter the Dog Show",c:200},{k:"adopt",g:1,t:"Adopt a new dog",c:150}];
+const newQ=()=>{const used=(S.q||[]).map(x=>x.i),pool=QP.map((_,i)=>i).filter(i=>!used.includes(i)),i=pool[Math.random()*pool.length|0];return{i,b:(S.cnt||{})[QP[i].k]||0}};
+const ensureQ=()=>{S.q=S.q||[];S.cnt=S.cnt||{};while(S.q.length<3)S.q.push(newQ())};
+const prog=q=>Math.min(QP[q.i].g,((S.cnt||{})[QP[q.i].k]||0)-q.b);
+function claim(n){const q=S.q[n],p=QP[q.i];if(prog(q)<p.g)return;const c=Math.round(p.c*scale());S.coins+=c;S.bones+=p.b||0;care(10);S.q[n]=newQ();toast("✅ Quest complete! +"+f(c)+" 🪙"+(p.b?" +"+p.b+" 🦴":""));render()}
+ 
+/* ===== walks ===== */
+const WK=[[1,"Short stroll"],[5,"Park trip"],[15,"Big hike"]];
+const ft=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+function startWalk(id,t){const d=S.dogs.find(x=>x.id==id);S.walks=S.walks||{};if(!d||S.walks[id])return;S.walks[id]={e:Date.now()+WK[t][0]*60000,t};toast("🦮 "+d.n+" went for a "+WK[t][1].toLowerCase()+"!");render()}
+function claimWalk(id){const w=(S.walks||{})[id],d=S.dogs.find(x=>x.id==id);if(!w||Date.now()<w.e)return;delete S.walks[id];if(!d){render();return}
+  const m=WK[w.t][0],c=Math.round(pass(d)*m*1.5+m*5),b=m>=5?1+(Math.random()*3|0):Math.random()<.3?1:0,rare=m>=15&&Math.random()<.1;
+  S.coins+=c;S.bones+=b;if(rare)S.paws+=1;care(3*m);bump("walk");toast("🦮 "+d.n+" is home! +"+f(c)+" 🪙"+(b?" +"+b+" 🦴":"")+(rare?" +1 🐾 rare find!":""));render()}
+ 
+/* ===== dog show ===== */
+function enterShow(id){const d=S.dogs.find(x=>x.id==id);if(!d)return;if(Date.now()<(S.showAt||0))return toast("The next show starts in "+ft(S.showAt-Date.now())+" ⏳");if(S.coins<100)return toast("Entry costs 100 🪙");
+  S.coins-=100;S.showAt=Date.now()+3*60000;
+  const t=Object.values(d.t||{}).reduce((a,b)=>a+b,0),base=d.l*5+t*8,me=base+(d.sh?25:0)+Math.random()*40;
+  const rivals=["Rex","Bella","Max","Coco","Duke","Ruby"].sort(()=>Math.random()-.5).slice(0,3).map(n=>({n,s:base*(.6+Math.random()*.7)+Math.random()*40}));
+  const all=[{n:d.n,s:me,me:1},...rivals].sort((a,b)=>b.s-a.s),pos=all.findIndex(x=>x.me),coins=Math.round([500,250,100,0][pos]*scale());
+  S.coins+=coins;if(pos==0)S.bones+=3;care([40,25,15,8][pos]);bump("show");S.lastShow={all,pos,coins};render()}
+ 
+/* ===== fully rebuilt Train and Move House (with visible feedback) ===== */
+function train(id,k){const d=S.dogs.find(x=>x.id==id);if(!d)return;d.t=d.t||{};const lv=d.t[k]||0;if(lv>=5)return toast("Already maxed!");
+  const cost=200*2**lv;if(S.coins<cost)return toast("Need "+f(cost)+" 🪙 to train (you have "+f(S.coins)+")");
+  S.coins-=cost;d.t[k]=lv+1;care(5*(lv+1));bump("train");toast(ST.find(s=>s[0]==k)[1]+" is now level "+(lv+1)+"! 💪");render()}
+function prestige(){const tl=tlv(),g=Math.floor(tl/5);if(tl<10)return toast("You need combined dog level 10 (you have "+tl+")");
+  const p=document.createElement("div");p.id="pc";
+  p.innerHTML='<div><h3>🏡 Move to a new house?</h3><p>You <b>keep</b>: 🐾 paw prints, skins and the 📦 Vault.<br>You <b>lose</b>: dogs in rooms, rooms, coins and bones.</p><p>You will earn <b>'+g+' 🐾</b> and unlock a new breed.</p><div class=bt><button class=g id=pcn>Stay</button><button id=pcy>Move!</button></div></div>';
+  document.body.appendChild(p);document.getElementById("pcn").onclick=()=>p.remove();
+  document.getElementById("pcy").onclick=()=>{p.remove();
+    const o=S,n=fresh();Object.assign(n,{paws:o.paws+g,skins:o.skins,v:(o.v||[]).map(d=>({...d,l:1,x:0,t:{}})),pr:(o.pr||0)+1,care:o.care,cnt:o.cnt,q:o.q,showAt:o.showAt});
+    S=n;starter();roll();tab=0;care(100+25*g);toast("🏡 Welcome to your new house! +"+g+" 🐾");render()}}
+const wrap=(n,fn)=>{const o=window[n];window[n]=(...a)=>{const r=fn(o,...a);save();return r}};
+wrap("pet",(o,id)=>{const d=S.dogs.find(x=>x.id==id),b=d&&d.pa;const r=o(id);if(d&&d.pa!==b){care(1);bump("pet")}return r});
+wrap("feed",(o,id)=>{const d=S.dogs.find(x=>x.id==id);if(!d)return o(id);const x=d.x,l=d.l;const r=o(id);if(d.x!==x||d.l!==l){care(3);bump("feed");for(let n=l+1;n<=d.l;n++){care(10*n);bump("lvl")}}return r});
+wrap("adopt",(o,i)=>{const n=S.dogs.length;const r=o(i);if(S.dogs.length>n){care(5);bump("adopt");if(S.dogs[S.dogs.length-1].sh)care(30)}return r});
+Object.assign(window,{claim,startWalk,claimWalk,enterShow,train,prestige});
+ 
+/* ===== new tabs ===== */
+const TABS=["🏠 Mansion","🛒 Shop","✨ Prestige","⚙️ Train","📦 Vault","🏆 Quests","🦮 Walks","🎪 Show"];
+function extra(){let h="";
+  if(tab==5){h+='<h2>🏆 Quests</h2><p><small>Finish quests for coins and bones. Rewards grow with your dogs’ levels.</small></p><div class=grid>'+S.q.map((q,n)=>{const p=QP[q.i],pr=prog(q),ok=pr>=p.g;return '<div class=dc><b>'+p.t+'</b><div class=xp><u style="width:'+pr/p.g*100+'%"></u></div><small>'+pr+'/'+p.g+' · reward '+f(p.c*scale())+' 🪙'+(p.b?' + '+p.b+' 🦴':'')+'</small><button class=b '+(ok?'':'disabled')+' onclick="claim('+n+')">'+(ok?'Claim!':'In progress')+'</button></div>'}).join("")+'</div>'}
+  if(tab==6){S.walks=S.walks||{};h+='<h2>🦮 Walks</h2><p><small>Send a dog out for a while. Longer walks pay more, and big hikes can find a rare 🐾.</small></p><div class=grid>'+S.dogs.map(d=>{const w=S.walks[d.id];
+    return '<div class=dc><div class=sp style="height:72px"><div style="transform:scale(.75);transform-origin:top center">'+sprite(d.k,d.sk,d.sh)+'</div></div><b>'+d.n+'</b>'+(w?(Date.now()>=w.e?'<small>Back home!</small><button class=b onclick="claimWalk(\''+d.id+'\')">🎁 Collect</button>':'<small>Out for a '+WK[w.t][1].toLowerCase()+'</small><b class=wt data-e="'+w.e+'">'+ft(w.e-Date.now())+'</b>'):'<div class=bt>'+WK.map((x,t)=>'<button onclick="startWalk(\''+d.id+'\','+t+')">'+x[0]+'m</button>').join("")+'</div>')+'</div>'}).join("")+'</div>'}
+  if(tab==7){const cd=(S.showAt||0)-Date.now(),ls=S.lastShow;h+='<h2>🎪 Dog Show</h2><p><small>Entry 100 🪙. Higher level, training and shiny coats score better. '+(cd>0?'Next show in <b>'+ft(cd)+'</b>.':'A show is starting now!')+'</small></p>';
+    if(ls)h+='<div class=dc style="margin-bottom:10px"><b>'+['🥇 1st place!','🥈 2nd place','🥉 3rd place','4th place'][ls.pos]+'</b>'+ls.all.map((x,i)=>'<div class="rv'+(x.me?' me':'')+'"><span>'+(i+1)+'. '+x.n+'</span><span>'+Math.round(x.s)+'</span></div>').join("")+'<small>Prize: '+f(ls.coins)+' 🪙</small></div>';
+    h+='<div class=grid>'+S.dogs.map(d=>'<div class=dc><b>'+d.n+'</b><small>Level '+d.l+(d.sh?' ✨':'')+'</small><button class=b '+(cd>0?'disabled':'')+' onclick="enterShow(\''+d.id+'\')">Enter · 100 🪙</button></div>').join("")+'</div>'}
+  return h}
+const _r=window.render;
+window.render=function(){_r();ensureQ();
+  document.getElementById("nv").innerHTML=TABS.map((t,i)=>'<button class="'+(tab==i?"on":"")+'" onclick="tab='+i+';render()">'+t+'</button>').join("");
+  if(tab>=5)document.getElementById("app").innerHTML=extra();
+  if(tab==2){const b=document.querySelector('#app button[onclick^="prestige"]'),tl=tlv();if(b)b.insertAdjacentHTML("beforebegin",'<div class=xp style="margin:8px 0"><u style="width:'+Math.min(100,tl*10)+'%"></u></div><small>Combined level '+tl+'/10'+(tl>=10?' ✅ ready to move!':' · feed your dogs to level them up')+'</small><br><br>')}};
+setInterval(()=>{if(tab!=6)return;let done=false;document.querySelectorAll(".wt").forEach(e=>{const r=+e.dataset.e-Date.now();if(r<=0)done=true;else e.textContent=ft(r)});if(done)render()},1000);
+ 
+/* ===== cloud save + hub XP (care points / 4, high-water mark, new level curve) ===== */
+let busy=false,again=false,timer;
 async function push(){
   const u=auth.currentUser;if(!u||window.cloudReady!==true)return;
   if(busy){again=true;return}
   busy=true;
   try{
-    const ref=doc(db,"saves",u.uid),copy=JSON.parse(JSON.stringify(S)),now=S.care||0;
+    const ref=doc(db,"saves",u.uid),copy=JSON.parse(JSON.stringify(S)),now=Math.floor((S.care||0)/4);
     const xp=await runTransaction(db,async tx=>{
-      const cur=(await tx.get(ref)).data()||{},hw=cur.doggyCareHW||0,total=(cur.totalXP||0)+Math.max(0,now-hw);
-      tx.set(ref,{doggySave:copy,doggyTs:S.ts||Date.now(),doggyCareHW:Math.max(hw,now),totalXP:total,level:Math.floor(total/500)+1},{merge:true});
+      const cur=(await tx.get(ref)).data()||{},ok=cur.xpVer===2,hw=ok?(cur.doggyXP||0):0,total=(ok?(cur.totalXP||0):0)+Math.max(0,now-hw);
+      tx.set(ref,{doggySave:copy,doggyTs:S.ts||Date.now(),doggyXP:Math.max(hw,now),xpVer:2,totalXP:total,level:lvl(total)[0]},{merge:true});
       return total;
     });
-    failed=false;say("☁️ Saved · Account Lv "+(Math.floor(xp/500)+1)+" ("+(xp%500)+"/500 XP)");
-  }catch(e){failed=true;console.error(e);say("⚠️ Cloud save failed: "+(e.code||e.message))}
+    const[l,c,n]=lvl(xp);say("☁️ Saved · Account Lv "+l+" ("+c+"/"+n+" XP)");
+  }catch(e){console.error(e);say("⚠️ Cloud save failed: "+(e.code||e.message))}
   finally{busy=false;if(again){again=false;window.cloudSave()}}
 }
 window.cloudSave=()=>{clearTimeout(timer);timer=setTimeout(push,3000)};
 addEventListener("pagehide",()=>{clearTimeout(timer);push()});
- 
 onAuthStateChanged(auth,async user=>{
   if(!user){if(REQUIRE_LOGIN)location.href="index.html";else say("Not signed in: playing offline");return}
   say("☁️ Loading...");
   try{
-    const snap=await getDoc(doc(db,"saves",user.uid));
-    const data=snap.exists()?snap.data():{};
-    const d=data.doggySave;
+    const snap=await getDoc(doc(db,"saves",user.uid)),data=snap.exists()?snap.data():{},d=data.doggySave;
     if(d&&typeof d==="object"&&(!S.ts||(data.doggyTs||0)>S.ts)){
       S=Object.assign(fresh(),d);
       ["dogs","skins","sh","v"].forEach(k=>{if(!Array.isArray(S[k]))S[k]=[]});
@@ -203,4 +249,6 @@ onAuthStateChanged(auth,async user=>{
     say("☁️ Connected");
   }catch(e){console.error(e);say("⚠️ Cloud load failed: "+(e.code||e.message))}
 });
+render();
 </script>
+ </body> </html>
