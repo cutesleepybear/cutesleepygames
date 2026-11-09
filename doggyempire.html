@@ -130,7 +130,6 @@ setInterval(()=>{S.t++;if(S.t>=60){S.t=0;const a=S.dogs.reduce((s,d)=>s+pass(d),
 render();
 </script>
 <!-- MY DOGS v3: replace your whole existing <script type="module"> ... </script> block (the last one in the file) with this block. -->
-<!-- MY DOGS v3: replace your whole existing <script type="module"> ... </script> block (the last one in the file) with this block. -->
 <script type="module">
 import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -152,7 +151,7 @@ document.head.appendChild(st);
 const care=n=>{S.care=(S.care||0)+n};
 const bump=(k,n=1)=>{S.cnt=S.cnt||{};S.cnt[k]=(S.cnt[k]||0)+n};
 const tlv=()=>S.dogs.reduce((a,d)=>a+d.l,0);
-const scale=()=>1+tlv()/8;
+const scale=()=>1+tlv()/20;
 /* ===== save repair: fixes broken dog entries (missing breed/level) so nothing crashes or shows NaN ===== */
 function clean(){
   S.dogs=(S.dogs||[]).filter(d=>d&&typeof d==="object");S.v=(S.v||[]).filter(d=>d&&typeof d==="object");
@@ -168,6 +167,23 @@ function clean(){
 clean();
 if(S.care===undefined)S.care=[...S.dogs,...S.v].reduce((a,d)=>a+5*d.l*(d.l+1)-10,0);
  
+/* ===== new dogs, skins, rooms ===== */
+Object.assign(B,{
+ chi:{n:"Chihuahua",c:"#e6c08a",e:"#e6c08a",s:"#f7e3c4",t:"p",$:1200,d:"10% chance pets pay 3x"},
+ cav:{n:"Cavalier",c:"#c4652d",e:"#a14e20",s:"#fff",t:"f",$:3500,d:"10% chance to find a bone when petted",x:'<i class=x style="left:43px;top:12px;width:10px;height:22px;border-radius:5px;background:#fff;z-index:2"></i>'},
+ bul:{n:"Bulldog",c:"#d9bf9c",e:"#8a6a4a",s:"#f2e2cc",t:"o",$:12000,d:"+25% pet coins"},
+ bor:{n:"Border Collie",c:"#fafafa",e:"#2b2b2b",s:"#fff",t:"f",$:18000,u:1,d:"+40% XP from bones",x:'<i class=x style="left:22px;top:10px;width:30px;height:24px;border-radius:50%;background:#2b2b2b;z-index:2"></i>'},
+ dan:{n:"Great Dane",c:"#9aa0a6",e:"#6d7379",s:"#d7dadd",t:"f",$:30000,u:1,d:"+60% passive income",x:'<i class=x style="left:58px;top:14px;width:10px;height:10px;border-radius:50%;background:#3a3f45;z-index:2"></i><i class=x style="left:26px;top:60px;width:12px;height:12px;border-radius:50%;background:#3a3f45;z-index:1"></i>'},
+ gsd:{n:"German Shepherd",c:"#c58a3b",e:"#2b2b2b",s:"#3a2a1a",t:"p",$:45000,u:2,d:"+15% passive income to roommates",x:'<i class=x style="left:20px;top:10px;width:56px;height:20px;border-radius:28px 28px 0 0;background:#2b2b2b;z-index:2"></i>'},
+ stb:{n:"Saint Bernard",c:"#fff",e:"#b05a2b",s:"#f3d9b8",t:"f",$:70000,u:2,d:"Walks pay +50%",x:'<i class=x style="left:22px;top:12px;width:22px;height:20px;border-radius:50%;background:#b05a2b;z-index:2"></i>'},
+ gre:{n:"Greyhound",c:"#cfd3d8",e:"#9aa0a6",s:"#f0f1f3",t:"p",$:100000,u:3,d:"+30 score at the Dog Show"}});
+["chi","cav","bul","bor","dan","gsd","stb","gre"].forEach(k=>ks.push(k));
+K.push(["bow","🎀","Pretty Bow",8],["shades","🕶️","Cool Shades",12],["scarf","🧣","Cozy Scarf",18],["flower","🌸","Flower Crown",22],["stars","⭐","Star Sparkle",35],["halo","😇","Golden Halo",40],["rainbow","🌈","Rainbow Aura",55]);
+const SKX={bow:'<span class=sk style="font-size:26px;left:58px;top:-2px">🎀</span>',shades:'<span class=sk style="font-size:34px;left:28px;top:16px;z-index:8">🕶️</span>',scarf:'<span class=sk style="font-size:32px;left:30px;top:48px">🧣</span>',flower:'<span class=sk style="font-size:30px;left:32px;top:-10px">🌸</span><span class=sk style="font-size:20px;left:12px;top:4px">🌸</span><span class=sk style="font-size:20px;left:64px;top:4px">🌸</span>',stars:'<span class=sk style="font-size:16px;left:0;top:8px;animation:tw 1.2s infinite">⭐</span><span class=sk style="font-size:16px;right:0;top:30px;animation:tw 1.2s .6s infinite">⭐</span><span class=sk style="font-size:12px;left:6px;top:60px;animation:tw 1.2s .3s infinite">⭐</span>',halo:'<i style="position:absolute;left:28px;top:-8px;width:40px;height:11px;border:4px solid #ffd54a;border-radius:50%;z-index:6;box-shadow:0 0 10px #ffd54a"></i>',rainbow:'<span class=sk style="font-size:70px;left:12px;top:-26px;z-index:0;opacity:.85">🌈</span>'};
+const _sp=window.sprite;window.sprite=(k,sk,sh)=>{const h=_sp(k,sk,sh);return SKX[sk]?h.replace(/<\/div>$/,SKX[sk]+"</div>"):h};
+R.push(["Garden Suite",50000],["Dog Resort",150000]);
+function grant(d,xp){d.x+=xp;while(d.x>=d.l*40){d.x-=d.l*40;d.l++;S.coins+=Math.round(d.l*50*(d.k=="pom"?3:1)*.4);care(10*d.l);bump("lvl")}}
+ 
 /* ===== quests ===== */
 const QP=[{k:"pet",g:12,t:"Pet your dogs 12 times",c:120},{k:"feed",g:6,t:"Feed 6 bones",c:150,b:2},{k:"lvl",g:2,t:"Level up dogs 2 times",c:300},{k:"walk",g:2,t:"Finish 2 walks",c:200,b:2},{k:"train",g:1,t:"Train a skill",c:250},{k:"show",g:1,t:"Enter the Dog Show",c:200},{k:"adopt",g:1,t:"Adopt a new dog",c:150}];
 const newQ=()=>{const used=(S.q||[]).map(x=>x.i),pool=QP.map((_,i)=>i).filter(i=>!used.includes(i)),i=pool[Math.random()*pool.length|0];return{i,b:(S.cnt||{})[QP[i].k]||0}};
@@ -175,54 +191,77 @@ const ensureQ=()=>{S.q=S.q||[];S.cnt=S.cnt||{};while(S.q.length<3)S.q.push(newQ(
 const prog=q=>Math.min(QP[q.i].g,((S.cnt||{})[QP[q.i].k]||0)-q.b);
 function claim(n){const q=S.q[n],p=QP[q.i];if(prog(q)<p.g)return;const c=Math.round(p.c*scale());S.coins+=c;S.bones+=p.b||0;care(10);S.q[n]=newQ();toast("✅ Quest complete! +"+f(c)+" 🪙"+(p.b?" +"+p.b+" 🦴":""));render()}
  
-/* ===== walks ===== */
+/* ===== walks (nerfed: 2 at a time, dogs rest afterwards, smaller rewards) ===== */
 const WK=[[1,"Short stroll"],[5,"Park trip"],[15,"Big hike"]];
 const ft=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
-function startWalk(id,t){const d=S.dogs.find(x=>x.id==id);S.walks=S.walks||{};if(!d||S.walks[id])return;S.walks[id]={e:Date.now()+WK[t][0]*60000,t};toast("🦮 "+d.n+" went for a "+WK[t][1].toLowerCase()+"!");render()}
+function startWalk(id,t){const d=S.dogs.find(x=>x.id==id);S.walks=S.walks||{};S.rest=S.rest||{};if(!d||S.walks[id])return;
+  if(Object.keys(S.walks).length>=2)return toast("Only 2 dogs can be out walking at once");
+  if((S.rest[id]||0)>Date.now())return toast(d.n+" is resting for "+ft(S.rest[id]-Date.now()));
+  S.walks[id]={e:Date.now()+WK[t][0]*60000,t};toast("🦮 "+d.n+" went for a "+WK[t][1].toLowerCase()+"!");render()}
 function claimWalk(id){const w=(S.walks||{})[id],d=S.dogs.find(x=>x.id==id);if(!w||Date.now()<w.e)return;delete S.walks[id];if(!d){render();return}
-  const m=WK[w.t][0],c=Math.round(pass(d)*m*1.5+m*5),b=m>=5?1+(Math.random()*3|0):Math.random()<.3?1:0,rare=m>=15&&Math.random()<.1;
-  S.coins+=c;S.bones+=b;if(rare)S.paws+=1;care(3*m);bump("walk");toast("🦮 "+d.n+" is home! +"+f(c)+" 🪙"+(b?" +"+b+" 🦴":"")+(rare?" +1 🐾 rare find!":""));render()}
+  S.rest=S.rest||{};S.rest[id]=Date.now()+5*60000;
+  const m=WK[w.t][0],c=Math.round((pass(d)*m*.5+m*2)*(d.k=="stb"?1.5:1)),b=m>=5?(Math.random()<.5?1:0)+(m>=15&&Math.random()<.5?1:0):0,rare=m>=15&&Math.random()<.03;
+  S.coins+=c;S.bones+=b;if(rare)S.paws+=1;care(2*m);bump("walk");toast("🦮 "+d.n+" is home! +"+f(c)+" 🪙"+(b?" +"+b+" 🦴":"")+(rare?" +1 🐾 rare find!":""));render()}
  
-/* ===== dog show ===== */
-function enterShow(id){const d=S.dogs.find(x=>x.id==id);if(!d)return;if(Date.now()<(S.showAt||0))return toast("The next show starts in "+ft(S.showAt-Date.now())+" ⏳");if(S.coins<100)return toast("Entry costs 100 🪙");
-  S.coins-=100;S.showAt=Date.now()+3*60000;
-  const t=Object.values(d.t||{}).reduce((a,b)=>a+b,0),base=d.l*5+t*8,me=base+(d.sh?25:0)+Math.random()*40;
-  const rivals=["Rex","Bella","Max","Coco","Duke","Ruby"].sort(()=>Math.random()-.5).slice(0,3).map(n=>({n,s:base*(.6+Math.random()*.7)+Math.random()*40}));
-  const all=[{n:d.n,s:me,me:1},...rivals].sort((a,b)=>b.s-a.s),pos=all.findIndex(x=>x.me),coins=Math.round([500,250,100,0][pos]*scale());
-  S.coins+=coins;if(pos==0)S.bones+=3;care([40,25,15,8][pos]);bump("show");S.lastShow={all,pos,coins};render()}
+/* ===== dog show (nerfed: entry fee grows with your dogs, 10 min cooldown, tougher rivals) ===== */
+const sfee=()=>50+10*tlv();
+function enterShow(id){const d=S.dogs.find(x=>x.id==id);if(!d)return;const fee=sfee();if(Date.now()<(S.showAt||0))return toast("The next show starts in "+ft(S.showAt-Date.now())+" ⏳");if(S.coins<fee)return toast("Entry costs "+f(fee)+" 🪙");
+  S.coins-=fee;S.showAt=Date.now()+10*60000;
+  const t=Object.values(d.t||{}).reduce((a,b)=>a+b,0),base=d.l*5+t*8,me=base+(d.sh?20:0)+(d.k=="gre"?30:0)+Math.random()*40;
+  const rivals=["Rex","Bella","Max","Coco","Duke","Ruby"].sort(()=>Math.random()-.5).slice(0,3).map(n=>({n,s:base*(.8+Math.random()*.45)+Math.random()*40}));
+  const all=[{n:d.n,s:me,me:1},...rivals].sort((a,b)=>b.s-a.s),pos=all.findIndex(x=>x.me),coins=Math.round([2.2,1.2,.4,0][pos]*fee);
+  S.coins+=coins;if(pos==0)S.bones+=1;care([30,18,10,5][pos]);bump("show");S.lastShow={all,pos,coins,fee};render()}
  
-/* ===== fully rebuilt Train and Move House (with visible feedback) ===== */
+/* ===== train + move house (harder prestige) ===== */
+const REQ=()=>40+20*(S.pr||0),PAWS=tl=>Math.floor(tl/8);
 function train(id,k){const d=S.dogs.find(x=>x.id==id);if(!d)return;d.t=d.t||{};const lv=d.t[k]||0;if(lv>=5)return toast("Already maxed!");
   const cost=200*2**lv;if(S.coins<cost)return toast("Need "+f(cost)+" 🪙 to train (you have "+f(S.coins)+")");
   S.coins-=cost;d.t[k]=lv+1;care(5*(lv+1));bump("train");toast(ST.find(s=>s[0]==k)[1]+" is now level "+(lv+1)+"! 💪");render()}
-function prestige(){const tl=tlv(),g=Math.floor(tl/5);if(tl<10)return toast("You need combined dog level 10 (you have "+tl+")");
+function prestige(){const tl=tlv(),req=REQ(),g=PAWS(tl);if(tl<req)return toast("You need combined dog level "+req+" (you have "+tl+")");
   const p=document.createElement("div");p.id="pc";
-  p.innerHTML='<div><h3>🏡 Move to a new house?</h3><p>You <b>keep</b>: 🐾 paw prints, skins and the 📦 Vault.<br>You <b>lose</b>: dogs in rooms, rooms, coins and bones.</p><p>You will earn <b>'+g+' 🐾</b> and unlock a new breed.</p><div class=bt><button class=g id=pcn>Stay</button><button id=pcy>Move!</button></div></div>';
+  p.innerHTML='<div><h3>🏡 Move to a new house?</h3><p>You <b>keep</b>: 🐾 paw prints, skins and the 🍼 Puppy Daycare.<br>You <b>lose</b>: dogs in rooms, rooms, coins and bones.</p><p>You will earn <b>'+g+' 🐾</b> and unlock rarer breeds. The next move needs level '+(req+20)+'.</p><div class=bt><button class=g id=pcn>Stay</button><button id=pcy>Move!</button></div></div>';
   document.body.appendChild(p);document.getElementById("pcn").onclick=()=>p.remove();
   document.getElementById("pcy").onclick=()=>{p.remove();
     const o=S,n=fresh();Object.assign(n,{paws:o.paws+g,skins:o.skins,v:(o.v||[]).map(d=>({...d,l:1,x:0,t:{}})),pr:(o.pr||0)+1,care:o.care,cnt:o.cnt,q:o.q,showAt:o.showAt});
     S=n;starter();roll();tab=0;care(100+25*g);toast("🏡 Welcome to your new house! +"+g+" 🐾");render()}}
+ 
+/* ===== hooks on the original actions (balance + breed abilities) ===== */
 const wrap=(n,fn)=>{const o=window[n];window[n]=(...a)=>{const r=fn(o,...a);save();return r}};
-wrap("pet",(o,id)=>{const d=S.dogs.find(x=>x.id==id),b=d&&d.pa;const r=o(id);if(d&&d.pa!==b){care(1);bump("pet")}return r});
-wrap("feed",(o,id)=>{const d=S.dogs.find(x=>x.id==id);if(!d)return o(id);const x=d.x,l=d.l;const r=o(id);if(d.x!==x||d.l!==l){care(3);bump("feed");for(let n=l+1;n<=d.l;n++){care(10*n);bump("lvl")}}return r});
+wrap("pet",(o,id)=>{const d=S.dogs.find(x=>x.id==id),b=d&&d.pa,c0=S.coins;const r=o(id);
+  if(d&&d.pa!==b){care(1);bump("pet");let g=S.coins-c0,m=.75;                    // petting income x0.75
+    if(d.k=="bul")m+=.25;if(d.k=="chi"&&Math.random()<.1)m+=2;if(d.k=="cav"&&Math.random()<.1)S.bones++;
+    S.coins+=g*(m-1)}return r});
+wrap("feed",(o,id)=>{const d=S.dogs.find(x=>x.id==id);if(!d)return o(id);const x=d.x,l=d.l;const r=o(id);
+  if(d.x!==x||d.l!==l){care(3);bump("feed");let net=0;
+    for(let n=l+1;n<=d.l;n++){const bb=n*50*(d.k=="pom"?3:1);S.coins-=Math.round(bb*.6);net=Math.round(bb*.4);care(10*n);bump("lvl")}   // level-up coin bonus x0.4
+    if(d.l>l)document.getElementById("ts").textContent=d.n+" reached level "+d.l+"! +"+f(net)+" 🪙";
+    if(d.k=="bor")grant(d,Math.round(8*tr(d,"c")))}return r});
 wrap("adopt",(o,i)=>{const n=S.dogs.length;const r=o(i);if(S.dogs.length>n){care(5);bump("adopt");if(S.dogs[S.dogs.length-1].sh)care(30)}return r});
+const fixT=()=>{const t=document.getElementById("ts");t.textContent=t.textContent.replace(/vault/gi,m=>m[0]=="V"?"Daycare":"daycare").replace(/📦/g,"🍼")};
+["store","take"].forEach(n=>{const o=window[n];window[n]=(...a)=>{const r=o(...a);fixT();return r}});
+setInterval(()=>{let x=0;S.dogs.forEach(d=>{if(d.k=="dan")x+=pass(d)*.6;if(d.k=="gsd")x+=mates(d).reduce((a,o)=>a+pass(o)*.15,0)});if(x>0){S.coins+=x;save()}},60000); // Great Dane / Shepherd passive bonus
 Object.assign(window,{claim,startWalk,claimWalk,enterShow,train,prestige});
  
-/* ===== new tabs ===== */
-const TABS=["🏠 Mansion","🛒 Shop","✨ Prestige","⚙️ Train","📦 Vault","🏆 Quests","🦮 Walks","🎪 Show"];
+/* ===== tabs ===== */
+const TABS=["🏠 Mansion","🛒 Shop","✨ Prestige","⚙️ Train","🍼 Daycare","🏆 Quests","🦮 Walks","🎪 Show"];
 function extra(){let h="";
   if(tab==5){h+='<h2>🏆 Quests</h2><p><small>Finish quests for coins and bones. Rewards grow with your dogs’ levels.</small></p><div class=grid>'+S.q.map((q,n)=>{const p=QP[q.i],pr=prog(q),ok=pr>=p.g;return '<div class=dc><b>'+p.t+'</b><div class=xp><u style="width:'+pr/p.g*100+'%"></u></div><small>'+pr+'/'+p.g+' · reward '+f(p.c*scale())+' 🪙'+(p.b?' + '+p.b+' 🦴':'')+'</small><button class=b '+(ok?'':'disabled')+' onclick="claim('+n+')">'+(ok?'Claim!':'In progress')+'</button></div>'}).join("")+'</div>'}
-  if(tab==6){S.walks=S.walks||{};h+='<h2>🦮 Walks</h2><p><small>Send a dog out for a while. Longer walks pay more, and big hikes can find a rare 🐾.</small></p><div class=grid>'+S.dogs.map(d=>{const w=S.walks[d.id];
-    return '<div class=dc><div class=sp style="height:72px"><div style="transform:scale(.75);transform-origin:top center">'+sprite(d.k,d.sk,d.sh)+'</div></div><b>'+d.n+'</b>'+(w?(Date.now()>=w.e?'<small>Back home!</small><button class=b onclick="claimWalk(\''+d.id+'\')">🎁 Collect</button>':'<small>Out for a '+WK[w.t][1].toLowerCase()+'</small><b class=wt data-e="'+w.e+'">'+ft(w.e-Date.now())+'</b>'):'<div class=bt>'+WK.map((x,t)=>'<button onclick="startWalk(\''+d.id+'\','+t+')">'+x[0]+'m</button>').join("")+'</div>')+'</div>'}).join("")+'</div>'}
-  if(tab==7){const cd=(S.showAt||0)-Date.now(),ls=S.lastShow;h+='<h2>🎪 Dog Show</h2><p><small>Entry 100 🪙. Higher level, training and shiny coats score better. '+(cd>0?'Next show in <b>'+ft(cd)+'</b>.':'A show is starting now!')+'</small></p>';
-    if(ls)h+='<div class=dc style="margin-bottom:10px"><b>'+['🥇 1st place!','🥈 2nd place','🥉 3rd place','4th place'][ls.pos]+'</b>'+ls.all.map((x,i)=>'<div class="rv'+(x.me?' me':'')+'"><span>'+(i+1)+'. '+x.n+'</span><span>'+Math.round(x.s)+'</span></div>').join("")+'<small>Prize: '+f(ls.coins)+' 🪙</small></div>';
-    h+='<div class=grid>'+S.dogs.map(d=>'<div class=dc><b>'+d.n+'</b><small>Level '+d.l+(d.sh?' ✨':'')+'</small><button class=b '+(cd>0?'disabled':'')+' onclick="enterShow(\''+d.id+'\')">Enter · 100 🪙</button></div>').join("")+'</div>'}
+  if(tab==6){S.walks=S.walks||{};S.rest=S.rest||{};h+='<h2>🦮 Walks</h2><p><small>Only 2 dogs can walk at once, and each dog rests 5 minutes afterwards. Big hikes can very rarely find a 🐾.</small></p><div class=grid>'+S.dogs.map(d=>{const w=S.walks[d.id],rs=(S.rest[d.id]||0)-Date.now();
+    return '<div class=dc><div class=sp style="height:72px"><div style="transform:scale(.75);transform-origin:top center">'+sprite(d.k,d.sk,d.sh)+'</div></div><b>'+d.n+'</b>'+(w?(Date.now()>=w.e?'<small>Back home!</small><button class=b onclick="claimWalk(\''+d.id+'\')">🎁 Collect</button>':'<small>Out for a '+WK[w.t][1].toLowerCase()+'</small><b class=wt data-e="'+w.e+'">'+ft(w.e-Date.now())+'</b>'):rs>0?'<small>Resting…</small><b class=wt data-e="'+(Date.now()+rs)+'">'+ft(rs)+'</b>':'<div class=bt>'+WK.map((x,t)=>'<button onclick="startWalk(\''+d.id+'\','+t+')">'+x[0]+'m</button>').join("")+'</div>')+'</div>'}).join("")+'</div>'}
+  if(tab==7){const cd=(S.showAt||0)-Date.now(),ls=S.lastShow,fee=sfee();h+='<h2>🎪 Dog Show</h2><p><small>Entry '+f(fee)+' 🪙 (grows with your dogs). Prizes: 1st ×2.2, 2nd ×1.2, 3rd ×0.4 of the fee. Level, training and shiny coats score higher. '+(cd>0?'Next show in <b>'+ft(cd)+'</b>.':'A show is starting now!')+'</small></p>';
+    if(ls)h+='<div class=dc style="margin-bottom:10px"><b>'+['🥇 1st place!','🥈 2nd place','🥉 3rd place','4th place'][ls.pos]+'</b>'+ls.all.map((x,i)=>'<div class="rv'+(x.me?' me':'')+'"><span>'+(i+1)+'. '+x.n+'</span><span>'+Math.round(x.s)+'</span></div>').join("")+'<small>Prize: '+f(ls.coins)+' 🪙 (entry was '+f(ls.fee||0)+')</small></div>';
+    h+='<div class=grid>'+S.dogs.map(d=>'<div class=dc><b>'+d.n+'</b><small>Level '+d.l+(d.sh?' ✨':'')+'</small><button class=b '+(cd>0?'disabled':'')+' onclick="enterShow(\''+d.id+'\')">Enter · '+f(fee)+'</button></div>').join("")+'</div>'}
   return h}
 const _r=window.render;
 window.render=function(){clean();try{_r()}catch(e){console.error(e);clean();_r()}ensureQ();
+  const a=document.getElementById("app");
   document.getElementById("nv").innerHTML=TABS.map((t,i)=>'<button class="'+(tab==i?"on":"")+'" onclick="tab='+i+';render()">'+t+'</button>').join("");
-  if(tab>=5)document.getElementById("app").innerHTML=extra();
-  if(tab==2){const b=document.querySelector('#app button[onclick^="prestige"]'),tl=tlv();if(b)b.insertAdjacentHTML("beforebegin",'<div class=xp style="margin:8px 0"><u style="width:'+Math.min(100,tl*10)+'%"></u></div><small>Combined level '+tl+'/10'+(tl>=10?' ✅ ready to move!':' · feed your dogs to level them up')+'</small><br><br>')}};
+  if(tab>=5){a.innerHTML=extra();return}
+  const tl=tlv(),req=REQ();let h=a.innerHTML;
+  if(tab==2)h=h.replace(/\(need 10\)/,"(need "+req+")").replace(/grants <b>\d+ /,"grants <b>"+(tl>=req?PAWS(tl):0)+" ");
+  h=h.replace(/Dog Vault/g,"Puppy Daycare").replace(/Vault/g,"Puppy Daycare").replace(/📦/g,"🍼");
+  if(h!==a.innerHTML){a.innerHTML=h;hud()}
+  if(tab==2){const b=document.querySelector('#app button[onclick^="prestige"]');if(b){b.disabled=tl<req;b.insertAdjacentHTML("beforebegin",'<div class=xp style="margin:8px 0"><u style="width:'+Math.min(100,tl/req*100)+'%"></u></div><small>Combined level '+tl+'/'+req+(tl>=req?' ✅ ready to move!':' · keep levelling your dogs')+'</small><br><br>')}}};
 setInterval(()=>{if(tab!=6)return;let done=false;document.querySelectorAll(".wt").forEach(e=>{const r=+e.dataset.e-Date.now();if(r<=0)done=true;else e.textContent=ft(r)});if(done)render()},1000);
  
 /* ===== cloud save + hub XP (care points / 4, high-water mark, new level curve) ===== */
