@@ -130,6 +130,33 @@ setInterval(()=>{S.t++;if(S.t>=60){S.t=0;const a=S.dogs.reduce((s,d)=>s+pass(d),
 render();
 </script>
 <!-- MY DOGS v3: replace your whole existing <script type="module"> ... </script> block (the last one in the file) with this block. -->
+Claude
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+My dogs v3 module · HTML
+<!-- MY DOGS v3: replace your whole existing <script type="module"> ... </script> block (the last one in the file) with this block. -->
 <script type="module">
 import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -152,6 +179,19 @@ const care=n=>{S.care=(S.care||0)+n};
 const bump=(k,n=1)=>{S.cnt=S.cnt||{};S.cnt[k]=(S.cnt[k]||0)+n};
 const tlv=()=>S.dogs.reduce((a,d)=>a+d.l,0);
 const scale=()=>1+tlv()/8;
+/* ===== save repair: fixes broken dog entries (missing breed/level) so nothing crashes or shows NaN ===== */
+function clean(){
+  S.dogs=(S.dogs||[]).filter(d=>d&&typeof d==="object");S.v=(S.v||[]).filter(d=>d&&typeof d==="object");
+  if(!Array.isArray(S.rooms)||!S.rooms.length)S.rooms=[0];
+  [...S.dogs,...S.v].forEach(d=>{if(!B[d.k])d.k="lab";d.l=Math.max(1,Math.floor(+d.l)||1);d.x=isFinite(+d.x)?+d.x:0;d.n=String(d.n||"Pup").slice(0,14);if(!P[d.p])d.p="loyal";
+    if(!d.id)d.id="d"+Math.random().toString(36).slice(2,8);if(!d.t||typeof d.t!=="object")d.t={}});
+  S.dogs.forEach(d=>{if(!S.rooms.includes(d.r))d.r=S.rooms[0]});
+  S.rooms.forEach(r=>S.dogs.filter(d=>d.r==r).slice(3).forEach(d=>{const o=S.rooms.find(x=>S.dogs.filter(y=>y.r==x).length<3);if(o!==undefined)d.r=o;else if(S.v.length<25){S.v.push(d);S.dogs.splice(S.dogs.indexOf(d),1)}}));
+  ["coins","bones","paws"].forEach(k=>{if(!isFinite(S[k]))S[k]=0});
+  S.sh=(S.sh||[]).filter(k=>B[k]);if(!S.sh.length)roll();
+  if(!S.dogs.length)starter();
+}
+clean();
 if(S.care===undefined)S.care=[...S.dogs,...S.v].reduce((a,d)=>a+5*d.l*(d.l+1)-10,0);
  
 /* ===== quests ===== */
@@ -205,7 +245,7 @@ function extra(){let h="";
     h+='<div class=grid>'+S.dogs.map(d=>'<div class=dc><b>'+d.n+'</b><small>Level '+d.l+(d.sh?' ✨':'')+'</small><button class=b '+(cd>0?'disabled':'')+' onclick="enterShow(\''+d.id+'\')">Enter · 100 🪙</button></div>').join("")+'</div>'}
   return h}
 const _r=window.render;
-window.render=function(){_r();ensureQ();
+window.render=function(){clean();try{_r()}catch(e){console.error(e);clean();_r()}ensureQ();
   document.getElementById("nv").innerHTML=TABS.map((t,i)=>'<button class="'+(tab==i?"on":"")+'" onclick="tab='+i+';render()">'+t+'</button>').join("");
   if(tab>=5)document.getElementById("app").innerHTML=extra();
   if(tab==2){const b=document.querySelector('#app button[onclick^="prestige"]'),tl=tlv();if(b)b.insertAdjacentHTML("beforebegin",'<div class=xp style="margin:8px 0"><u style="width:'+Math.min(100,tl*10)+'%"></u></div><small>Combined level '+tl+'/10'+(tl>=10?' ✅ ready to move!':' · feed your dogs to level them up')+'</small><br><br>')}};
@@ -243,6 +283,7 @@ onAuthStateChanged(auth,async user=>{
       if(S.care===undefined)S.care=[...S.dogs,...S.v].reduce((a,x)=>a+5*x.l*(x.l+1)-10,0);
       if(!S.sh.length)roll();
       if(!S.dogs.length)starter();
+      clean();
     }
     window.cloudReady=true;
     render();
@@ -251,4 +292,4 @@ onAuthStateChanged(auth,async user=>{
 });
 render();
 </script>
- </body> </html>
+</body> </html>
