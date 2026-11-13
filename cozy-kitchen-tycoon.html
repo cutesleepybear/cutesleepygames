@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cozy Kitchen Tycoon</title>
+<style>
+:root{--red:#b3261e;--deep:#8a1c14;--org:#f4a259;--yel:#ffd97d;--cream:#fff3dc;--brn:#5a2d1f;--wood:#e9b97a}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Trebuchet MS",system-ui,sans-serif;background:linear-gradient(160deg,#ffe3b3,#ffb877);color:var(--brn);min-height:100vh;padding:8px}
+body.rush::after{content:"";position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 40px 14px rgba(255,110,0,.85);animation:pulse 1s infinite alternate;z-index:50}
+@keyframes pulse{from{opacity:.35}to{opacity:1}}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--red);color:var(--cream);padding:8px 12px;border-radius:16px;box-shadow:0 4px 0 var(--deep)}
+header .grow{flex:1}
+.pill{background:rgba(255,255,255,.18);padding:5px 12px;border-radius:99px;font-weight:700}
+.btn{background:var(--yel);color:var(--brn);border:0;padding:8px 14px;border-radius:12px;font-weight:800;cursor:pointer;text-decoration:none;font-size:15px;box-shadow:0 3px 0 #d9a441;transition:transform .12s,filter .12s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.07)}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn.cant{opacity:.5;filter:grayscale(.5)}
+#banner{display:none;text-align:center;margin:8px 0;background:var(--red);color:#fff;font-size:22px;font-weight:900;padding:8px;border-radius:14px;animation:pulse .7s infinite alternate}
+main{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+section.card{background:var(--cream);border-radius:18px;padding:12px;box-shadow:0 4px 0 #e0a35c}
+#kitchen{background:linear-gradient(#ffe9c2,#ffd49a)}
+#dining{background:repeating-linear-gradient(90deg,#f6cf93 0 40px,#efc383 40px 80px)}
+h2,h3{margin:0 0 8px}
+#recipes,#counter,#stations{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.rbtn{flex:1;min-width:84px;text-align:center;line-height:1.2}
+.rbtn span{font-size:30px;display:block}
+.rbtn small{opacity:.75}
+.station{flex:1;min-width:130px;background:#fff;border:3px solid var(--org);border-radius:14px;padding:8px;display:flex;gap:8px;align-items:center}
+.station.locked,.tbl.locked{opacity:.25;pointer-events:none;filter:grayscale(1)}
+.sico{font-size:34px}.sinfo{flex:1;font-size:13px}
+.bar{height:10px;background:#f0dcc0;border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--org);transition:width .1s linear}
+.slot{width:70px;height:70px;background:#fff;border:3px dashed var(--org);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:34px;cursor:pointer;position:relative;transition:transform .12s}
+.slot:hover{transform:scale(1.07)}
+.slot.sel{border:3px solid var(--red);background:var(--yel);transform:scale(1.12)}
+.slot .bar{width:56px;height:6px;position:absolute;bottom:3px}
+.slot.burnt{background:#d8cfc8;border-color:#555}
+#room{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tbl{background:rgba(255,255,255,.65);border:3px solid #c98a47;border-radius:16px;min-height:150px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative;cursor:pointer;transition:transform .12s}
+.tbl:hover{transform:translateY(-3px)}
+.tbl .bubble{position:absolute;top:2px;right:4px;background:#fff;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.tbl .bubble:empty{display:none}
+.tbl .cust{font-size:44px;height:54px}
+.tbl .bar{width:80%}
+.tbl .ti{font-size:30px}
+.tbl .tag{font-size:11px;font-weight:900;color:var(--red);height:14px}
+.tbl .wt{position:absolute;top:4px;left:6px;font-size:20px}
+.shake{animation:sh .3s}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pop{position:absolute;left:50%;top:20px;font-weight:900;color:var(--red);animation:fl 1.3s forwards;pointer-events:none;white-space:nowrap;text-shadow:0 1px #fff;z-index:5}
+@keyframes fl{from{transform:translate(-50%,0)}to{transform:translate(-50%,-60px);opacity:0}}
+#extras{margin-top:10px;font-size:34px;min-height:44px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+#shop{margin-top:10px}
+#tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+#tabs .btn.on{background:var(--red);color:#fff;box-shadow:0 3px 0 var(--deep)}
+#items{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.item{background:#fff;border:2px solid var(--org);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.item b{font-size:16px}.item small{opacity:.8}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--brn);color:#fff;padding:10px 18px;border-radius:14px;font-weight:700;transition:transform .3s;z-index:99;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#rname{background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);color:var(--cream);font:800 18px "Trebuchet MS",sans-serif;border-radius:10px;padding:4px 10px;width:220px;max-width:60vw}
+#rname::placeholder{color:rgba(255,243,220,.6)}
+#floor{position:relative;min-height:340px;border-radius:14px}
+#room{position:relative;z-index:1}
+#decor{position:absolute;inset:0;z-index:0;pointer-events:none}
+#floor.edit #decor{z-index:3;pointer-events:auto;background:rgba(255,255,255,.25);outline:3px dashed var(--red);border-radius:14px}
+#floor.edit #room{pointer-events:none}
+.dec{position:absolute;font-size:34px;line-height:1;transform:translate(-50%,-50%);user-select:none;-webkit-user-select:none;touch-action:none}
+#floor.edit .dec{cursor:grab}
+.dec.sel{outline:2px solid var(--red);border-radius:8px;filter:drop-shadow(0 0 6px var(--red))}
+#dtools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+#floor.up #room{display:none}
+#floor.up::before{content:'VIP lounge – decorate freely 🎨';position:absolute;top:8px;left:12px;font-weight:800;opacity:.45}
+#fSel{padding:7px 10px}
+@media(max-width:800px){main{grid-template-columns:1fr}#room{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <a class="btn" href="index.html">⬅ Back to Hub</a>
+  <span style="font-size:22px">🍳</span><input id="rname" maxlength="24" placeholder="Name your restaurant" title="Click to rename your restaurant">
+  <span class="grow"></span>
+  <span class="pill" id="coins"></span>
+  <span class="pill" id="stars"></span>
+  <span class="pill" id="served"></span>
+  <span class="pill" id="saveS" style="font-size:12px"></span>
+</header>
+<div id="banner"></div>
+<main>
+  <section class="card" id="kitchen">
+    <h2>👩‍🍳 Kitchen</h2>
+    <div id="recipes"></div>
+    <div id="stations"></div>
+    <h3>🍽️ Counter <small style="font-weight:400">(click food, then a customer · click 🔥 to trash)</small></h3>
+    <div id="counter"></div>
+  </section>
+  <section class="card" id="dining">
+    <h2 id="dh">🪑 Dining Room</h2>
+    <div id="dtools">
+      <button class="btn" id="fPrev">◀</button><select id="fSel" class="btn"></select><button class="btn" id="fNext">▶</button>
+      <button class="btn" id="editBtn">🎨 Decorate</button>
+      <b id="dcount"></b>
+      <button class="btn" id="sellDec" style="display:none">🗑 Sell selected (50%)</button>
+      <small id="fwarn" style="color:var(--red);font-weight:800"></small>
+      <small id="dhint" style="display:none">Drag items anywhere on the floor · tap one to select it</small>
+    </div>
+    <div id="floor"><div id="decor"></div><div id="room"></div></div>
+    <div id="extras"></div>
+  </section>
+</main>
+<section class="card" id="shop">
+  <h2>🛒 Shop &amp; Upgrades</h2>
+  <div id="tabs"></div>
+  <div id="items"></div>
+</section>
+<div id="toast"></div>
+
+<script>
+/* ===== CONFIG ===== */
+// Firebase is expected to be initialised already in index.html (window.firebaseAuth / window.firebaseDb).
+// Set this to the same Firebase JS SDK version your index.html uses (Firestore instances must match).
+const FS_VER = '10.12.2';
+/* Floor n pays floorCost(n)/INCOME_DIV times more than floor 1. Floor prices: 1K, 100K, 1M, 100M, 1B, 100B ... */
+const INCOME_DIV = 10;
+function floorCost(n){ let e = 3; for (let k=3;k<=n;k++) e += k%2 ? 2 : 1; return Math.pow(10, e); }
+const mult = f => f < 2 ? 1 : floorCost(f)/INCOME_DIV;
+const SUF = ['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','Ud','Dd','Td','Qad','Qid','Sxd','Spd','Ocd','Nod','Vg','Uvg','Dvg','Tvg'];
+function fmt(n){
+  n = Math.floor(n); if (n < 1000) return ''+n;
+  const i = Math.floor(Math.log10(n)/3); if (i >= SUF.length) return n.toExponential(2).replace('+','');
+  const v = n/Math.pow(1000,i); return (v<10 ? v.toFixed(2) : v<100 ? v.toFixed(1) : v.toFixed(0)) + SUF[i];
+}
+// 4 dishes per floor, 12 floors of different menus, then it cycles with fancier names
+const POOL = [['🥗','Salad'],['🍔','Burger'],['🍕','Pizza'],['🍣','Sushi'],['🍝','Pasta'],['🥪','Sandwich'],['🌮','Taco'],['🍜','Ramen'],
+['🥘','Paella'],['🍛','Curry'],['🥟','Dumplings'],['🍤','Shrimp'],['🥩','Steak'],['🍗','Chicken'],['🍖','Ribs'],['🌭','Hot Dog'],
+['🥞','Pancakes'],['🧇','Waffles'],['🥐','Croissant'],['🍳','Omelette'],['🍰','Cake'],['🧁','Cupcake'],['🍩','Donut'],['🍪','Cookies'],
+['🍦','Ice Cream'],['🍮','Flan'],['🍫','Chocolate'],['🍡','Mochi'],['🥧','Pie'],['🍲','Stew'],['🍠','Sweet Potato'],['🥙','Gyro'],
+['🦞','Lobster'],['🦀','Crab'],['🦪','Oysters'],['🐟','Fish'],['🍱','Bento'],['🍙','Onigiri'],['🍢','Skewers'],['🥠','Fortune Cookie'],
+['🧀','Cheese Board'],['🥓','Bacon'],['🥨','Pretzel'],['🥯','Bagel'],['🍾','Champagne'],['🍷','Wine'],['🍸','Cocktail'],['🍵','Matcha']];
+const ADJ = ['Gourmet','Premium','Royal','Golden','Platinum','Diamond','Mythic','Cosmic','Legendary'];
+const BP = [8,16,28,44], BT = [5,8,11,14], BC = [0,200,600,1500];
+function dish(f,j){ const [e,n] = POOL[((f-1)*4+j) % POOL.length]; return {e, n:(f>1 ? ADJ[(f-2)%9]+' ' : '')+n, p:BP[j]*mult(f), cost:BC[j]*mult(f)}; }
+// 8 decorations per floor, 6 floors of different themes, then it cycles. Piece 0 is the big floor rug.
+const DP = [['🟥','Cozy Rug'],['🌸','Flowers'],['🪴','Plant'],['🕯️','Candle'],['📚','Bookshelf'],['🖼️','Painting'],['⛲','Fountain'],['🎹','Piano'],
+['🟦','Blue Rug'],['🛋️','Sofa'],['🕰️','Clock'],['🧸','Teddy'],['🪞','Mirror'],['🎨','Easel'],['🦜','Parrot'],['🍷','Wine Rack'],
+['🟩','Green Mat'],['🌵','Cactus'],['🌻','Sunflowers'],['🐠','Fish Tank'],['🏺','Vase'],['🎸','Guitar'],['🎻','Violin'],['🗿','Statue'],
+['🟨','Gold Carpet'],['🎄','Tree'],['⛄','Snowman'],['🔔','Bell'],['🎁','Gift'],['🎈','Balloons'],['🎊','Confetti'],['🎆','Fireworks'],
+['🟧','Sunset Rug'],['🌴','Palm'],['🐚','Shells'],['🏄','Surfboard'],['⛱️','Parasol'],['🐢','Turtle'],['🦩','Flamingo'],['🍍','Pineapple'],
+['🟪','Royal Rug'],['🏮','Paper Lamp'],['🎎','Dolls'],['🎍','Bamboo'],['⛩️','Shrine'],['🐉','Dragon'],['🎐','Wind Chime'],['🍶','Sake Set']];
+const DB = [1,1,1.5,1.5,2,2.5,4,6], DC = [60,90,110,140,200,260,500,900];  // tip bonus % per piece, base price
+function decItem(f,i){ const [e,n] = DP[((f-1)*8+i) % DP.length]; return {e, n, b:DB[i], cost:DC[i]*mult(f)}; }
+
+const FACES = ['🧑','👩','👨','👵','👴','🧒','👧','👱','🧔','🐱','🐶','🐻'];
+const DEF = () => ({name:'My Cozy Kitchen',coins:30,stars:0.5,floors:1,fl:[{tables:2,dishes:1,decor:[]}],stations:1,stoveLevel:1,waiterLevel:0,stats:{totalServed:0,totalTrash:0}});
+const PER_FLOOR = 12, MAX_FLOORS = 50, BURN_AFTER = 15, CRIT_TIME = 5, COUNTER_MAX = 6;
+
+/* ===== STATE ===== */
+let S = DEF(), uid = null, fs = null;
+const stn = [{r:null,p:0},{r:null,p:0},{r:null,p:0}];
+let ct = [], sel = null, tb = null, cuMap = {};   // tb = customers of the floor you're viewing
+let t = 0, sp = 5, cr = 180 + Math.random()*120, critWarned = false, wasRush = false, rush = false, tab = 'upgrades';
+
+const $ = s => document.querySelector(s);
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+function setT(e, v){ if (e.textContent !== String(v)) e.textContent = v; }
+let toastT;
+function toast(m){ const e = $('#toast'); e.textContent = m; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>e.classList.remove('show'), 2400); }
+function stars(d){ S.stars = clamp(S.stars + d, 0.5, 5); }
+function pop(e, txt){ const p = el('div','pop',txt); e.appendChild(p); setTimeout(()=>p.remove(), 1300); }
+
+/* ===== SAVING ===== */
+let saveTimer;
+function setStat(m){ setT($('#saveS'), m); }
+function queueSave(){ clearTimeout(saveTimer); setStat('💾 saving…'); saveTimer = setTimeout(doSave, 1000); }
+async function doSave(){
+  const data = JSON.parse(JSON.stringify(S));
+  try { localStorage.setItem('kitchenSave', JSON.stringify(data)); } catch(e){}
+  if (uid && fs) {
+    try { await fs.setDoc(fs.doc(window.firebaseDb,'saves',uid), {kitchenSave:data}, {merge:true}); setStat('☁️ saved'); }
+    catch(e){ console.error(e); setStat('⚠️ save failed'); }
+  } else setStat('💾 saved locally (guest)');
+}
+window.addEventListener('pagehide', ()=>{ if (saveTimer){ clearTimeout(saveTimer); doSave(); } });
+function migrate(o){   // converts old single-floor saves into per-floor data
+  const OK = ['rug','flowers','plant','candle','books','painting','fountain','piano'];
+  if (!Array.isArray(o.fl)){
+    const n = clamp(+o.floors||1,1,MAX_FLOORS); o.fl = [];
+    for (let f=1;f<=n;f++) o.fl.push({tables:f===1?+o.tables||2:2, dishes:f===1?(o.unlockedRecipes||[0]).length:1, decor:[]});
+    (Array.isArray(o.decor)?o.decor:[]).forEach(d=>{
+      const i = OK.indexOf(typeof d==='string' ? d : d.k); if (i<0) return;
+      o.fl[clamp((d&&d.f)||1,1,n)-1].decor.push({i, x:(d&&d.x)||15+Math.random()*70, y:(d&&d.y)||20+Math.random()*60});
+    });
+  }
+  delete o.decor; delete o.unlockedRecipes; delete o.tables;
+  o.fl = o.fl.slice(0,MAX_FLOORS);
+  o.fl.forEach(F=>{ F.tables = clamp(+F.tables||2,2,6); F.dishes = clamp(+F.dishes||1,1,4); F.decor = (F.decor||[]).slice(0,PER_FLOOR); });
+  o.floors = o.fl.length; return o;
+}
+async function load(){
+  let loaded = null;
+  try {
+    const auth = window.firebaseAuth, db = window.firebaseDb;
+    if (auth && db) {
+      const user = await new Promise(res => {
+        if (auth.currentUser) return res(auth.currentUser);
+        const un = auth.onAuthStateChanged(u => { un(); res(u); });
+        setTimeout(()=>res(null), 6000);
+      });
+      if (user) {
+        uid = user.uid;
+        fs = await import(`https://www.gstatic.com/firebasejs/${FS_VER}/firebase-firestore.js`);
+        const snap = await fs.getDoc(fs.doc(db,'saves',uid));
+        if (snap.exists() && snap.data().kitchenSave) loaded = snap.data().kitchenSave;
+        setStat('☁️ loaded');
+      } else setStat('👤 guest – local save only');
+    } else setStat('👤 no Firebase – local save only');
+  } catch(e){ console.error(e); setStat('⚠️ cloud load failed'); uid = null; }
+  if (!loaded) { try { const l = localStorage.getItem('kitchenSave'); if (l && !uid) loaded = JSON.parse(l); } catch(e){} }
+  if (loaded) { loaded = migrate(loaded); const d = DEF(); S = Object.assign(d, loaded); S.stats = Object.assign(d.stats, loaded.stats||{}); }
+}
+
+/* ===== BUILD STATIC DOM ===== */
+const stEls = [], tbEls = [], ctEls = [];
+for (let i=0;i<3;i++){
+  const d = el('div','station',`<div class="sico">🍳</div><div class="sinfo"><b>Stove ${i+1}</b><div class="lbl">Idle</div><div class="bar"><i></i></div></div>`);
+  d.ico = d.querySelector('.sico'); d.lbl = d.querySelector('.lbl'); d.fill = d.querySelector('i');
+  $('#stations').appendChild(d); stEls.push(d);
+}
+for (let i=0;i<COUNTER_MAX;i++){
+  const d = el('div','slot','<span class="f"></span><div class="bar" style="display:none"><i></i></div>');
+  d.f = d.querySelector('.f'); d.bar = d.querySelector('.bar'); d.fill = d.querySelector('i');
+  d.onclick = () => onSlot(i);
+  $('#counter').appendChild(d); ctEls.push(d);
+}
+for (let i=0;i<6;i++){
+  const d = el('div','tbl','<div class="wt"></div><div class="bubble"></div><div class="tag"></div><div class="cust"></div><div class="bar"><i></i></div><div class="ti">🍽️</div>');
+  d.wt = d.querySelector('.wt'); d.bub = d.querySelector('.bubble'); d.tag = d.querySelector('.tag');
+  d.cu = d.querySelector('.cust'); d.fill = d.querySelector('i');
+  d.onclick = () => onTable(i);
+  $('#room').appendChild(d); tbEls.push(d);
+}
+
+/* ===== ACTIONS ===== */
+const FL = f => S.fl[f-1];
+function tipMul(){ return 1 + Math.min(3, S.fl.reduce((a,F)=>a+F.decor.reduce((b,d)=>b+DB[d.i],0),0)/100) + .02*(S.floors-1); }
+function arrMul(){ return 1 + .03*(S.floors-1); }
+function rep(d){ stars(d * clamp(1.2 - S.stars/5, .15, 1.2)); }  // reputation gains shrink as you climb
+function starMul(){ return 0.5 + S.stars*0.25; }
+function startCook(j){
+  const free = stn.findIndex((s,i)=>i<S.stations && !s.r);
+  if (free < 0) return toast('All stoves are busy! 🔥');
+  const cooking = stn.filter((s,i)=>i<S.stations && s.r).length;
+  if (ct.length + cooking >= COUNTER_MAX) return toast('Counter is full! Serve or trash something.');
+  stn[free].r = {f:viewFloor, j}; stn[free].p = 0;
+}
+function onSlot(i){
+  const it = ct[i]; if (!it) return;
+  if (it.burnt){
+    ct.splice(i,1); if (sel === it) sel = null;
+    S.stats.totalTrash++; toast('🗑️ Thrown away!'); queueSave(); return;
+  }
+  sel = sel === it ? null : it;
+}
+function onTable(i){
+  const c = tb[i]; if (!c || c.leave) return;
+  if (!sel) { toast('Click a dish on the counter first 👆'); return; }
+  if (sel.f !== c.f || sel.j !== c.j){ tbEls[i].classList.remove('shake'); void tbEls[i].offsetWidth; tbEls[i].classList.add('shake'); toast('Wrong dish! They want '+dish(c.f,c.j).e); return; }
+  serve(i, ct.indexOf(sel));
+}
+function serve(i, ii){
+  const c = tb[i], f = dish(c.f,c.j), frac = c.pat / c.max, e = tbEls[i];
+  const rm = rush ? 2 : 1;
+  let tip = 0, txt;
+  if (c.crit){
+    tip = Math.round(120 * mult(c.f) * tipMul() * rm); stars(.5);
+    txt = `🕴️ +${fmt(f.p)} +${fmt(tip)} MASSIVE TIP! ⭐`; toast('The critic loved it! +½ ⭐');
+  } else {
+    if (frac > .4) tip = Math.round(f.p * frac * .5 * tipMul() * starMul() * rm);
+    rep(frac > .5 ? .05 : .015);
+    txt = `+${fmt(f.p)}` + (tip ? ` 💰+${fmt(tip)}` : '');
+  }
+  S.coins += f.p + tip; S.stats.totalServed++;
+  pop(e, txt);
+  const it = ct[ii]; ct.splice(ii,1); if (sel === it) sel = null;
+  c.leave = .9; c.face = '😋'; c.crit = false;
+  queueSave(); renderShop();
+}
+
+/* ===== SHOP ===== */
+const TABS = [['upgrades','🔥 Upgrades'],['menu','📖 Menu'],['decor','🪴 Decor'],['expand','🏗️ Expand']];
+function shopList(){
+  const L = [], F = FL(viewFloor), top = mult(S.floors);
+  if (tab === 'upgrades'){
+    const l = S.stoveLevel;
+    L.push({ic:'🔥',n:`Stove Upgrade (Lv ${l}/5)`,d:'Cooks food faster (+20% speed per level)',cost:120*Math.pow(2,l-1)*top,done:l>=5,buy(){S.stoveLevel++; renderRecipes();}});
+    const w = S.waiterLevel;
+    L.push({ic:'🤵',n:`Waiter (Lv ${w}/3)`,d:'Auto-serves matching customers after 4s (faster each level)',cost:([300,800,1800][w]||0)*top,done:w>=3,buy(){S.waiterLevel++}});
+    L.push({ic:'ℹ️',n:'Upgrade prices scale with your top floor',d:'Floor '+S.floors+' pays ×'+fmt(mult(S.floors)),cost:0,done:true,doneTxt:'—'});
+  }
+  if (tab === 'menu') for (let j=1;j<4;j++){
+    const r = dish(viewFloor,j);
+    L.push({ic:r.e,n:r.n,d:`Floor ${viewFloor} dish · sells for ${fmt(r.p)}🪙 · cooks in ${BT[j]}s`,cost:r.cost,done:F.dishes>j || F.dishes<j,doneTxt:F.dishes>j?'✅ Unlocked':'🔒 Unlock the previous dish first',buy(){F.dishes = j+1; renderRecipes();}});
+  }
+  if (tab === 'decor') for (let i=0;i<8;i++){
+    const d = decItem(viewFloor,i), n = F.decor.filter(x=>x.i===i).length;
+    L.push({ic:d.e,n:d.n,d:`+${d.b}% tips each · placed ${n} · Floor ${viewFloor} (${F.decor.length}/${PER_FLOOR})`,cost:d.cost,done:F.decor.length>=PER_FLOOR,doneTxt:`🚫 Floor ${viewFloor} is full`,buy(){placeDecor(i)}});
+  }
+  if (tab === 'expand'){
+    L.push({ic:'🍳',n:`Cooking Station (${S.stations}/3)`,d:'Cook more dishes at once',cost:([0,400,1000][S.stations-1]||0)*top,done:S.stations>=3,buy(){S.stations++}});
+    L.push({ic:'🪑',n:`Table on Floor ${viewFloor} (${F.tables}/6)`,d:'Seat more customers on this floor',cost:([0,0,250,400,650,1000][F.tables-1]||0)*mult(viewFloor),done:F.tables>=6,buy(){F.tables++}});
+    L.push({ic:'🏢',n:`Build Floor ${S.floors+1} (${S.floors}/${MAX_FLOORS})`,d:`New dining floor: own tables, menu & decor · pays ×${fmt(mult(S.floors+1))} · +2% tips, +3% traffic`,cost:floorCost(S.floors+1),done:S.floors>=MAX_FLOORS,buy(){S.floors++; S.fl.push({tables:2,dishes:1,decor:[]}); renderFloorSel(); setFloor(S.floors);}});
+  }
+  return L;
+}
+function renderShop(){
+  const tabs = $('#tabs'); tabs.innerHTML = '';
+  TABS.forEach(([k,n])=>{ const b = el('button','btn'+(k===tab?' on':''),n); b.onclick=()=>{tab=k;renderShop()}; tabs.appendChild(b); });
+  const box = $('#items'); box.innerHTML = '';
+  shopList().forEach(it=>{
+    const d = el('div','item',`<b>${it.ic} ${it.n}</b><small>${it.d}</small>`);
+    const b = el('button','btn', it.done ? (it.doneTxt || '✅ Owned / Max') : `Buy · ${fmt(it.cost)} 🪙`);
+    if (!it.done){
+      b.dataset.cost = it.cost;
+      b.onclick = () => { if (S.coins < it.cost) return toast('Not enough coins 🪙'); S.coins -= it.cost; it.buy(); toast(`Bought ${it.n}!`); queueSave(); renderShop(); };
+    }
+    d.appendChild(b); box.appendChild(d);
+  });
+}
+function cookTime(j){ return BT[j] / (1 + .2*(S.stoveLevel-1)); }
+function renderRecipes(){
+  const box = $('#recipes'); box.innerHTML = '';
+  for (let j=0;j<FL(viewFloor).dishes;j++){
+    const r = dish(viewFloor,j);
+    const b = el('button','btn rbtn',`<span>${r.e}</span>${r.n}<br><small>${cookTime(j).toFixed(1)}s · ${fmt(r.p)}🪙</small>`);
+    b.onclick = () => startCook(j); box.appendChild(b);
+  }
+}
+
+/* ===== DECORATING & FLOORS ===== */
+let editMode = false, selDec = -1, viewFloor = 1;
+function placeDecor(i){
+  FL(viewFloor).decor.push({i, x:12+Math.random()*76, y:15+Math.random()*70});
+  renderDecor(); toast('Placed! Tap 🎨 Decorate to move it anywhere.');
+}
+function markSel(){
+  [...$('#decor').children].forEach(c=>c.classList.toggle('sel', +c.dataset.i === selDec));
+  $('#sellDec').style.display = editMode && selDec>=0 ? '' : 'none';
+}
+function renderDecor(){
+  const box = $('#decor'); box.innerHTML = '';
+  FL(viewFloor).decor.forEach((d,i)=>{
+    const e = el('div','dec',decItem(viewFloor,d.i).e); e.dataset.i = i;
+    e.style.left = d.x+'%'; e.style.top = d.y+'%';
+    e.style.zIndex = d.i===0 ? 0 : 1;
+    if (d.i===0) e.style.fontSize = '58px';
+    e.onpointerdown = ev => {
+      if (!editMode) return;
+      ev.preventDefault(); selDec = i; markSel();
+      e.setPointerCapture(ev.pointerId);
+      const r = $('#floor').getBoundingClientRect();
+      e.onpointermove = m => {
+        d.x = clamp((m.clientX-r.left)/r.width*100, 3, 97);
+        d.y = clamp((m.clientY-r.top)/r.height*100, 4, 96);
+        e.style.left = d.x+'%'; e.style.top = d.y+'%';
+      };
+      e.onpointerup = () => { e.onpointermove = e.onpointerup = null; queueSave(); };
+    };
+    box.appendChild(e);
+  });
+  selDec = -1; markSel();
+}
+function renderFloorSel(){
+  const sl = $('#fSel'); sl.innerHTML = '';
+  for (let i=1;i<=S.floors;i++){ const o = el('option','',`Floor ${i} · pays ×${fmt(mult(i))}`); o.value = i; sl.appendChild(o); }
+  sl.value = viewFloor;
+}
+function setFloor(n){
+  viewFloor = clamp(n,1,S.floors); selDec = -1;
+  tb = cuMap[viewFloor] || (cuMap[viewFloor] = Array(6).fill(null));
+  $('#floor').style.background = viewFloor>1 ? `hsl(${(25+viewFloor*9)%360},65%,86%)` : '';
+  $('#fSel').value = viewFloor; renderDecor(); renderRecipes(); renderShop();
+}
+$('#fSel').onchange = e => setFloor(+e.target.value);
+$('#fPrev').onclick = () => setFloor(viewFloor-1);
+$('#fNext').onclick = () => setFloor(viewFloor+1);
+$('#editBtn').onclick = () => {
+  editMode = !editMode;
+  $('#floor').classList.toggle('edit', editMode);
+  $('#editBtn').textContent = editMode ? '✅ Done decorating' : '🎨 Decorate';
+  $('#dhint').style.display = editMode ? '' : 'none';
+  selDec = -1; markSel();
+};
+$('#sellDec').onclick = () => {
+  if (selDec < 0) return;
+  const arr = FL(viewFloor).decor, d = arr[selDec], v = Math.floor(decItem(viewFloor,d.i).cost/2);
+  S.coins += v; arr.splice(selDec,1); renderDecor(); renderShop(); queueSave();
+  toast('Sold for '+fmt(v)+' 🪙');
+};
+$('#rname').oninput = e => { S.name = e.target.value.slice(0,24); document.title = (S.name||'Cozy Kitchen')+' – Cozy Kitchen Tycoon'; queueSave(); };
+$('#rname').onblur = e => { if (!e.target.value.trim()) { e.target.value = S.name = 'My Cozy Kitchen'; queueSave(); } };
+
+/* ===== GAME LOOP ===== */
+function freeTable(){ const a = []; for (let i=0;i<FL(viewFloor).tables;i++) if (!tb[i]) a.push(i); return a.length ? rnd(a) : -1; }
+function spawn(crit){
+  const i = freeTable(); if (i < 0) return false;
+  const good = ct.filter(x=>!x.burnt && x.f === viewFloor);
+  let j = Math.floor(Math.random()*FL(viewFloor).dishes);
+  if (crit && good.length) j = rnd(good).j;
+  const max = crit ? CRIT_TIME : (rush ? 18 : 22);
+  tb[i] = {e: crit ? '🕴️' : rnd(FACES), f:viewFloor, j, pat:max, max, crit, leave:0, wt:0};
+  return true;
+}
+function tick(dt){
+  t += dt;
+  rush = t >= 600 && (t % 600) < 60;
+  if (rush && !wasRush) toast('🚨 RUSH HOUR! Customers 3x faster, tips doubled!');
+  wasRush = rush;
+  document.body.classList.toggle('rush', rush);
+  const bn = $('#banner'); bn.style.display = rush ? 'block' : 'none';
+  if (rush) setT(bn, `🚨 RUSH HOUR! 🚨 ${Math.ceil(60 - t%600)}s`);
+
+  // customers arrive
+  sp -= dt;
+  if (sp <= 0){ spawn(false); sp = (9 / (.6 + S.stars*.15)) / arrMul() / (rush?3:1) * (.7 + Math.random()*.6); }
+  // critic
+  cr -= dt;
+  if (cr < 8 && !critWarned){ critWarned = true; toast('🕴️ A Food Critic is coming soon! Stock the counter!'); }
+  if (cr <= 0 && spawn(true)){ toast('🕴️ The Critic is here! Serve in 5 seconds!'); cr = 180 + Math.random()*120; critWarned = false; }
+
+  // cooking
+  stn.forEach((s,i)=>{
+    if (i >= S.stations || !s.r) return;
+    s.p += dt / cookTime(s.r.j);
+    if (s.p >= 1){ ct.push({f:s.r.f, j:s.r.j, age:0, burnt:false}); s.r = null; s.p = 0; }
+  });
+  // counter aging / burning
+  ct.forEach(it=>{
+    if (it.burnt) return;
+    it.age += dt;
+    if (it.age > BURN_AFTER){ it.burnt = true; stars(-.4); toast('🔥 Food burnt! Click it to trash it. (-reputation)'); if (sel === it) sel = null; }
+  });
+  // customers
+  const delay = S.waiterLevel ? 4 - .5*(S.waiterLevel-1) : 0;
+  for (let i=0;i<6;i++){
+    const c = tb[i]; if (!c) continue;
+    if (c.leave){ c.leave -= dt; if (c.leave <= 0) tb[i] = null; continue; }
+    c.pat -= dt;
+    if (c.pat <= 0){
+      if (c.crit){ stars(-2); toast('🕴️ The critic left furious! -2 ⭐'); } else { stars(-1); toast('😡 A customer left angry! -1 ⭐'); }
+      c.leave = 1.2; c.face = '😡'; queueSave(); continue;
+    }
+    if (delay){
+      const ii = ct.findIndex(x=>!x.burnt && x.f === c.f && x.j === c.j);
+      if (ii >= 0){ c.wt += dt; if (c.wt >= delay) serve(i, ii); } else c.wt = 0;
+    }
+  }
+  render();
+}
+
+/* ===== RENDER ===== */
+function render(){
+  setT($('#coins'), `🪙 ${fmt(S.coins)}`);
+  const full = Math.floor(S.stars);
+  setT($('#stars'), '⭐'.repeat(full) + '☆'.repeat(5-full) + ' ' + S.stars.toFixed(1));
+  setT($('#dh'), '🪑 ' + (S.name || 'My Cozy Kitchen') + ' · Floor ' + viewFloor);
+  setT($('#dcount'), `🏢 ${S.floors}/${MAX_FLOORS} floors · Decor here ${FL(viewFloor).decor.length}/${PER_FLOOR}`);
+  setT($('#fwarn'), S.floors > 1 ? '⏸ Floors pause while you are not on them' : '');
+  setT($('#served'), `🍽️ Served: ${S.stats.totalServed}`);
+  stn.forEach((s,i)=>{
+    const e = stEls[i]; e.classList.toggle('locked', i >= S.stations);
+    const dd = s.r && dish(s.r.f,s.r.j); setT(e.ico, dd ? dd.e : '🍳'); setT(e.lbl, dd ? 'Cooking '+dd.n+'…' : 'Idle');
+    e.fill.style.width = (s.r ? s.p*100 : 0) + '%';
+  });
+  ctEls.forEach((e,i)=>{
+    const it = ct[i];
+    e.style.visibility = 'visible';
+    setT(e.f, it ? (it.burnt ? '🔥' : dish(it.f,it.j).e) : ''); e.style.opacity = it && !it.burnt && it.f !== viewFloor ? .45 : 1;
+    e.classList.toggle('sel', !!it && it === sel);
+    e.classList.toggle('burnt', !!it && it.burnt);
+    e.bar.style.display = it && !it.burnt ? 'block' : 'none';
+    if (it && !it.burnt){ e.fill.style.width = (100 - it.age/BURN_AFTER*100) + '%'; e.fill.style.background = it.age > 13 ? '#b3261e' : '#f4a259'; }
+  });
+  tb.forEach((c,i)=>{
+    const e = tbEls[i]; e.classList.toggle('locked', i >= FL(viewFloor).tables);
+    if (c){
+      setT(e.cu, c.face || c.e);
+      setT(e.bub, c.leave ? '' : dish(c.f,c.j).e);
+      setT(e.tag, c.crit ? `🕴️ CRITIC ${Math.max(0,c.pat).toFixed(1)}s` : '');
+      const f = c.leave ? 0 : clamp(c.pat/c.max,0,1);
+      e.fill.style.width = f*100 + '%'; e.fill.style.background = `hsl(${f*110},80%,48%)`;
+      setT(e.wt, c.wt > 0 ? '🤵' : '');
+    } else { setT(e.cu,''); setT(e.bub,''); setT(e.tag,''); e.fill.style.width = '0'; setT(e.wt,''); }
+  });
+  const ex = '🤵'.repeat(S.waiterLevel) + ` <small style="font-size:13px">Tip bonus: +${Math.round((tipMul()-1)*100)}% · Foot traffic: +${Math.round((arrMul()-1)*100)}%</small>`;
+  if ($('#extras').dataset.s !== ex){ $('#extras').dataset.s = ex; $('#extras').innerHTML = ex; }
+  document.querySelectorAll('#items .btn[data-cost]').forEach(b=>b.classList.toggle('cant', S.coins < +b.dataset.cost));
+}
+
+/* ===== INIT ===== */
+(async function(){
+  setStat('⏳ loading…');
+  await load();
+  S.floors = S.fl.length;
+  S.name = S.name || 'My Cozy Kitchen'; $('#rname').value = S.name; document.title = S.name+' – Cozy Kitchen Tycoon';
+  renderFloorSel(); setFloor(1); renderRecipes(); render();
+  let last = performance.now();
+  setInterval(()=>{ const n = performance.now(); const dt = Math.min((n-last)/1000, .5); last = n; tick(dt); }, 100);
+})();
+</script>
+</body>
+</html>
