@@ -122,7 +122,14 @@ h2,h3{margin:0 0 8px}
 // Firebase is expected to be initialised already in index.html (window.firebaseAuth / window.firebaseDb).
 // Set this to the same Firebase JS SDK version your index.html uses (Firestore instances must match).
 const FS_VER = '10.12.2';
-/* Floor n pays floorCost(n)/INCOME_DIV times more than floor 1. Floor prices: 1K, 100K, 1M, 100M, 1B, 100B ... */
+// Only needed if THIS page doesn't already create window.firebaseAuth / window.firebaseDb.
+// Paste your Firebase web config object here (Firebase console > Project settings > Your apps), e.g.
+// const FIREBASE_CONFIG = { apiKey:"...", authDomain:"...", projectId:"...", storageBucket:"...", messagingSenderId:"...", appId:"..." };
+import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import{getFirestore,doc,getDoc,runTransaction}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",authDomain:"cute-sleepy-games.firebaseapp.com",projectId:"cute-sleepy-games",storageBucket:"cute-sleepy-games.firebasestorage.app",messagingSenderId:"249264537283",appId:"1:249264537283:web:811dce511556eda6a96c76"};
+const REQUIRE_LOGIN=true;/* Floor n pays floorCost(n)/INCOME_DIV times more than floor 1. Floor prices: 1K, 100K, 1M, 100M, 1B, 100B ... */
 const INCOME_DIV = 10;
 function floorCost(n){ let e = 3; for (let k=3;k<=n;k++) e += k%2 ? 2 : 1; return Math.pow(10, e); }
 const mult = f => f < 2 ? 1 : floorCost(f)/INCOME_DIV;
@@ -203,6 +210,13 @@ function migrate(o){   // converts old single-floor saves into per-floor data
 async function load(){
   let loaded = null;
   try {
+    for (let i=0;i<30 && !(window.firebaseAuth && window.firebaseDb);i++) await new Promise(r=>setTimeout(r,100));  // module scripts load after this one
+    if (!(window.firebaseAuth && window.firebaseDb) && FIREBASE_CONFIG){
+      const base = `https://www.gstatic.com/firebasejs/${FS_VER}/`;
+      const app = await import(base+'firebase-app.js'), au = await import(base+'firebase-auth.js'), f2 = await import(base+'firebase-firestore.js');
+      const inst = app.initializeApp(FIREBASE_CONFIG);
+      window.firebaseAuth = au.getAuth(inst); window.firebaseDb = f2.getFirestore(inst);
+    }
     const auth = window.firebaseAuth, db = window.firebaseDb;
     if (auth && db) {
       const user = await new Promise(res => {
