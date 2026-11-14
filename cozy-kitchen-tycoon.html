@@ -117,19 +117,17 @@ h2,h3{margin:0 0 8px}
 </section>
 <div id="toast"></div>
 
-<script>
+<script type="module">
 /* ===== CONFIG ===== */
-// Firebase is expected to be initialised already in index.html (window.firebaseAuth / window.firebaseDb).
-// Set this to the same Firebase JS SDK version your index.html uses (Firestore instances must match).
-const FS_VER = '10.12.2';
-// Only needed if THIS page doesn't already create window.firebaseAuth / window.firebaseDb.
-// Paste your Firebase web config object here (Firebase console > Project settings > Your apps), e.g.
-// const FIREBASE_CONFIG = { apiKey:"...", authDomain:"...", projectId:"...", storageBucket:"...", messagingSenderId:"...", appId:"..." };
 import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import{getFirestore,doc,getDoc,runTransaction}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 const firebaseConfig={apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",authDomain:"cute-sleepy-games.firebaseapp.com",projectId:"cute-sleepy-games",storageBucket:"cute-sleepy-games.firebasestorage.app",messagingSenderId:"249264537283",appId:"1:249264537283:web:811dce511556eda6a96c76"};
-const REQUIRE_LOGIN=true;/* Floor n pays floorCost(n)/INCOME_DIV times more than floor 1. Floor prices: 1K, 100K, 1M, 100M, 1B, 100B ... */
+const REQUIRE_LOGIN = true;   // true = players who aren't signed in get sent back to index.html
+const fbApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(fbApp), db = getFirestore(fbApp);
+
+/* Floor n pays floorCost(n)/INCOME_DIV times more than floor 1. Floor prices: 1K, 100K, 1M, 100M, 1B, 100B ... */
 const INCOME_DIV = 10;
 function floorCost(n){ let e = 3; for (let k=3;k<=n;k++) e += k%2 ? 2 : 1; return Math.pow(10, e); }
 const mult = f => f < 2 ? 1 : floorCost(f)/INCOME_DIV;
@@ -164,7 +162,7 @@ const DEF = () => ({name:'My Cozy Kitchen',coins:30,stars:0.5,floors:1,fl:[{tabl
 const PER_FLOOR = 12, MAX_FLOORS = 50, BURN_AFTER = 15, CRIT_TIME = 5, COUNTER_MAX = 6;
 
 /* ===== STATE ===== */
-let S = DEF(), uid = null, fs = null;
+let S = DEF(), uid = null;
 const stn = [{r:null,p:0},{r:null,p:0},{r:null,p:0}];
 let ct = [], sel = null, tb = null, cuMap = {};   // tb = customers of the floor you're viewing
 let t = 0, sp = 5, cr = 180 + Math.random()*120, critWarned = false, wasRush = false, rush = false, tab = 'upgrades';
@@ -186,8 +184,8 @@ function queueSave(){ clearTimeout(saveTimer); setStat('💾 saving…'); saveTi
 async function doSave(){
   const data = JSON.parse(JSON.stringify(S));
   try { localStorage.setItem('kitchenSave', JSON.stringify(data)); } catch(e){}
-  if (uid && fs) {
-    try { await fs.setDoc(fs.doc(window.firebaseDb,'saves',uid), {kitchenSave:data}, {merge:true}); setStat('☁️ saved'); }
+  if (uid) {
+    try { await setDoc(doc(db,'saves',uid), {kitchenSave:data}, {merge:true}); setStat('☁️ saved'); }
     catch(e){ console.error(e); setStat('⚠️ save failed'); }
   } else setStat('💾 saved locally (guest)');
 }
@@ -210,30 +208,22 @@ function migrate(o){   // converts old single-floor saves into per-floor data
 async function load(){
   let loaded = null;
   try {
-    for (let i=0;i<30 && !(window.firebaseAuth && window.firebaseDb);i++) await new Promise(r=>setTimeout(r,100));  // module scripts load after this one
-    if (!(window.firebaseAuth && window.firebaseDb) && FIREBASE_CONFIG){
-      const base = `https://www.gstatic.com/firebasejs/${FS_VER}/`;
-      const app = await import(base+'firebase-app.js'), au = await import(base+'firebase-auth.js'), f2 = await import(base+'firebase-firestore.js');
-      const inst = app.initializeApp(FIREBASE_CONFIG);
-      window.firebaseAuth = au.getAuth(inst); window.firebaseDb = f2.getFirestore(inst);
-    }
-    const auth = window.firebaseAuth, db = window.firebaseDb;
-    if (auth && db) {
-      const user = await new Promise(res => {
-        if (auth.currentUser) return res(auth.currentUser);
-        const un = auth.onAuthStateChanged(u => { un(); res(u); });
-        setTimeout(()=>res(null), 6000);
-      });
-      if (user) {
-        uid = user.uid;
-        fs = await import(`https://www.gstatic.com/firebasejs/${FS_VER}/firebase-firestore.js`);
-        const snap = await fs.getDoc(fs.doc(db,'saves',uid));
-        if (snap.exists() && snap.data().kitchenSave) loaded = snap.data().kitchenSave;
-        setStat('☁️ loaded');
-      } else setStat('👤 guest – local save only');
-    } else setStat('👤 no Firebase – local save only');
+    const user = await new Promise(res => {
+      const un = onAuthStateChanged(auth, u => { un(); res(u); }, () => res(null));
+      setTimeout(() => res(auth.currentUser), 8000);
+    });
+    if (user) {
+      uid = user.uid;
+      const snap = await getDoc(doc(db,'saves',uid));
+      if (snap.exists() && snap.data().kitchenSave) loaded = snap.data().kitchenSave;
+      setStat('☁️ loaded');
+    } else if (REQUIRE_LOGIN) {
+      document.body.innerHTML = '<div style="padding:40px;text-align:center;font:800 22px Trebuchet MS,sans-serif;color:#8a1c14">🔒 Please sign in on the hub first…</div>';
+      setTimeout(() => location.href = 'index.html', 1500);
+      return new Promise(() => {});   // stop here, the page is redirecting
+    } else setStat('👤 guest – local save only');
   } catch(e){ console.error(e); setStat('⚠️ cloud load failed'); uid = null; }
-  if (!loaded) { try { const l = localStorage.getItem('kitchenSave'); if (l && !uid) loaded = JSON.parse(l); } catch(e){} }
+  if (!loaded && !uid) { try { const l = localStorage.getItem('kitchenSave'); if (l) loaded = JSON.parse(l); } catch(e){} }
   if (loaded) { loaded = migrate(loaded); const d = DEF(); S = Object.assign(d, loaded); S.stats = Object.assign(d.stats, loaded.stats||{}); }
 }
 
