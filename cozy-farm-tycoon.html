@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cozy Farm Tycoon</title>
+<style>
+:root{--g:#8fcf7a;--gd:#5fa653;--cream:#fffbe6;--sun:#ffe48a;--dirt:#b98560;--dirt2:#9c6b47;--brn:#5b3f2a;--sky:#dff3ff}
+*{box-sizing:border-box}
+body{margin:0;padding:8px;font-family:"Trebuchet MS",system-ui,sans-serif;color:var(--brn);min-height:100vh;background:linear-gradient(#dff3ff 0,#eaf8d8 35%,#cdeaa8 100%)}
+body::before{content:"☀️";position:fixed;right:14px;top:6px;font-size:54px;opacity:.7;pointer-events:none;animation:spin 60s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--cream);padding:8px 12px;border-radius:16px;box-shadow:0 4px 0 #d9d1a0;position:relative;z-index:2}
+.grow{flex:1}
+.pill{background:#f1ecc4;padding:5px 12px;border-radius:99px;font-weight:700;white-space:nowrap}
+.btn{background:var(--sun);color:var(--brn);border:0;padding:8px 13px;border-radius:12px;font-weight:800;cursor:pointer;font-size:14px;text-decoration:none;display:inline-block;box-shadow:0 3px 0 #d9b84a;transition:transform .12s,filter .12s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.06)}
+.btn:active{transform:translateY(2px);box-shadow:none}
+.btn.cant{opacity:.5;filter:grayscale(.5)}
+.btn.green{background:var(--g);box-shadow:0 3px 0 var(--gd)}
+.btn.on{background:var(--gd);color:#fff;box-shadow:0 3px 0 #3f7d38}
+.xp{display:inline-block;vertical-align:middle;width:70px;height:8px;background:#e0d9a8;border-radius:9px;overflow:hidden;margin-left:6px}
+.xp i{display:block;height:100%;background:#f5a623;width:0}
+main{display:grid;grid-template-columns:1.25fr 1fr;gap:10px;margin-top:10px}
+.card{background:var(--cream);border-radius:18px;padding:12px;box-shadow:0 4px 0 #d9d1a0}
+#tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.chip{background:#fff;border:3px solid #e4dfb0;border-radius:12px;padding:5px 10px;font-weight:800;cursor:pointer;font-size:15px}
+.chip.sel{border-color:var(--gd);background:#e6f7d9}
+.chip.lk{opacity:.5}
+#grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:#7fb86a;padding:8px;border-radius:16px}
+.plot{aspect-ratio:1;background:var(--dirt);border:3px solid var(--dirt2);border-radius:12px;position:relative;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,6vw,42px);transition:transform .12s;user-select:none}
+.plot:hover{transform:scale(1.05)}
+.plot.locked{background:#c9c2a8;border-color:#a9a287;filter:saturate(.5)}
+.plot .tm{position:absolute;top:1px;left:0;right:0;text-align:center;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px #0006}
+.plot .pb{position:absolute;bottom:3px;left:6px;right:6px;height:6px;background:#0003;border-radius:6px;overflow:hidden}
+.plot .pb i{display:block;height:100%;width:0;background:#ffe48a}
+.plot.ready .ic{animation:bounce .7s infinite}
+.plot.gold{background:#d9a441;border-color:#ffd54a;animation:glow 1.2s infinite alternate}
+.plot.gold .ic{filter:drop-shadow(0 0 6px gold)}
+.plot.gold::after{content:"✨";position:absolute;top:1px;right:3px;font-size:14px}
+@keyframes bounce{50%{transform:translateY(-8px) scale(1.08)}}
+@keyframes glow{from{box-shadow:0 0 4px 1px #ffd54a}to{box-shadow:0 0 16px 5px #ffe97a}}
+#dog{font-size:28px;display:none;animation:wob 2s ease-in-out infinite}
+@keyframes wob{50%{transform:translateX(12px) scaleX(-1)}}
+#tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+#items{display:flex;flex-direction:column;gap:8px;max-height:560px;overflow:auto}
+.item{background:#fff;border:2px solid #e8e2b5;border-radius:14px;padding:9px;display:flex;flex-direction:column;gap:6px}
+.item small{opacity:.85}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+.tag{background:#e6f7d9;border-radius:8px;padding:1px 7px;font-size:12px;margin-left:4px}
+.pop{position:fixed;transform:translateX(-50%);font-weight:900;color:#3f7d38;text-shadow:0 1px #fff,0 0 4px #fff;pointer-events:none;z-index:99;animation:fl 1.2s forwards;white-space:nowrap}
+@keyframes fl{to{transform:translate(-50%,-55px);opacity:0}}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--brn);color:#fff;padding:10px 18px;border-radius:14px;font-weight:700;transition:transform .3s;z-index:100;max-width:90vw;text-align:center}
+#toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:800px){main{grid-template-columns:1fr}body::before{font-size:36px}#items{max-height:none}}
+</style>
+</head>
+<body>
+<header>
+  <a class="btn" href="index.html">⬅ Back to Hub</a>
+  <b style="font-size:19px">🌻 Cozy Farm Tycoon</b>
+  <span class="grow"></span>
+  <span class="pill" id="coins"></span>
+  <span class="pill"><span id="lvl"></span><span class="xp"><i id="xpb"></i></span></span>
+  <button class="btn green" id="sellAll">💰 Sell All</button>
+  <span class="pill" id="saveS" style="font-size:12px"></span>
+</header>
+<main>
+  <section class="card">
+    <div id="tools">
+      <button class="btn green" id="harvAll">🧺 Harvest All</button>
+      <button class="btn" id="plantAll">🌱 Plant All</button>
+      <span id="chips" style="display:contents"></span>
+      <span class="pill" id="fert"></span>
+      <span id="dog" title="Farm Dog collects ready crops">🐕</span>
+    </div>
+    <div id="grid"></div>
+    <small id="hint" style="display:block;margin-top:6px;opacity:.8">Pick a seed, tap an empty plot to plant, tap a bouncing crop to harvest. ✨ Golden crops sell for 5×!</small>
+  </section>
+  <section class="card">
+    <div id="tabs"></div>
+    <div id="items"></div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+/* ===== FIREBASE ===== */
+const firebaseConfig={apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",authDomain:"cute-sleepy-games.firebaseapp.com",projectId:"cute-sleepy-games",storageBucket:"cute-sleepy-games.firebasestorage.app",messagingSenderId:"249264537283",appId:"1:249264537283:web:811dce511556eda6a96c76"};
+const REQUIRE_LOGIN = true;   // true = players who aren't signed in get sent back to index.html
+let auth = null, db = null, FB = {};   // filled in by load(); the game still works if Firebase can't load
+
+/* ===== DATA ===== */
+const CROPS = {
+  carrot:{e:'🥕',n:'Carrot',cost:10,sell:25,time:10,lvl:1},
+  strawberry:{e:'🍓',n:'Strawberry',cost:25,sell:60,time:30,lvl:2},
+  pumpkin:{e:'🎃',n:'Pumpkin',cost:60,sell:150,time:60,lvl:3},
+  starfruit:{e:'✨',n:'Star Fruit',cost:200,sell:600,time:180,lvl:5}
+};
+const KEYS = Object.keys(CROPS);
+const z = () => ({carrot:0,strawberry:0,pumpkin:0,starfruit:0});
+const DEF = () => ({coins:50,xp:0,inventory:z(),golden:z(),seeds:Object.assign(z(),{carrot:5}),
+  plots:Array.from({length:25},(_,i)=>({id:i+1,unlocked:i<9,crop:null,plantedAt:0,readyAt:0,isGolden:false})),
+  upgrades:{sprinklers:0,farmDog:false,goldenTouch:0},fertilizer:0,stats:{harvested:0,sold:0,goldenFound:0}});
+let S = DEF(), uid = null, sel = 'carrot', tab = 'shop', dogT = 0;
+
+const $ = s => document.querySelector(s);
+const el = (t,c,h) => { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; };
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const now = () => Date.now()/1000;
+const setT = (e,v) => { if (e.textContent !== String(v)) e.textContent = v; };
+function fmt(n){ n = Math.floor(n); if (n < 1e4) return ''+n; const s = ['','K','M','B','T']; let i = 0; while (n >= 1000 && i < 4){ n /= 1000; i++; } return n.toFixed(n<10?2:1)+s[i]; }
+const lvl = () => 1 + Math.floor(Math.sqrt(S.xp/40));
+const xpAt = L => 40*(L-1)*(L-1);
+let toastT;
+function toast(m){ const e = $('#toast'); e.textContent = m; e.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>e.classList.remove('show'), 2400); }
+function pop(e, txt){ const r = e.getBoundingClientRect(), p = el('div','pop'); p.textContent = txt; p.style.left = (r.left+r.width/2)+'px'; p.style.top = r.top+'px'; document.body.appendChild(p); setTimeout(()=>p.remove(), 1300); }
+function addXp(n){ const b = lvl(); S.xp += n; if (lvl() > b){ const u = KEYS.find(k=>CROPS[k].lvl === lvl()); toast(`🎉 Level ${lvl()}!` + (u ? ` ${CROPS[u].e} ${CROPS[u].n} unlocked!` : '')); } }
+function plotCost(){ const k = S.plots.filter(p=>p.unlocked).length - 9; return k >= 16 ? Infinity : k < 4 ? [100,250,500,1000][k] : 1000*Math.pow(2,k-3); }
+
+/* ===== SAVING (same pattern as Cozy Kitchen Tycoon) ===== */
+let saveTimer;
+const setStat = m => setT($('#saveS'), m);
+function queueSave(){ clearTimeout(saveTimer); setStat('💾 saving…'); saveTimer = setTimeout(doSave, 1000); }
+async function doSave(){
+  saveTimer = null;
+  const data = JSON.parse(JSON.stringify(S));
+  try { localStorage.setItem('farmSave', JSON.stringify(data)); } catch(e){}
+  if (uid){
+    try { await FB.setDoc(FB.doc(db,'saves',uid), {farmSave:data}, {merge:true}); setStat('☁️ saved'); }
+    catch(e){ console.error(e); setStat('⚠️ save failed'); }
+  } else setStat('💾 saved locally (guest)');
+}
+window.addEventListener('pagehide', ()=>{ if (saveTimer){ clearTimeout(saveTimer); doSave(); } });
+function norm(o){
+  const d = DEF(), s = Object.assign(d, o);
+  ['inventory','golden','seeds'].forEach(f=>{ s[f] = Object.assign(z(), o[f]||{}); KEYS.forEach(k=>s[f][k] = Math.max(0, +s[f][k]||0)); });
+  s.plots = DEF().plots.map((b,i)=>Object.assign(b, (o.plots||[])[i]||{}, {id:i+1}));
+  s.plots.forEach((p,i)=>{ if (i < 9) p.unlocked = true; if (p.crop && !CROPS[p.crop]) p.crop = null; });
+  s.upgrades = Object.assign({sprinklers:0,farmDog:false,goldenTouch:0}, o.upgrades||{});
+  s.stats = Object.assign({harvested:0,sold:0,goldenFound:0}, o.stats||{});
+  s.coins = +s.coins||0; s.xp = +s.xp||0; s.fertilizer = +s.fertilizer||0;
+  return s;
+}
+async function load(){
+  let loaded = null;
+  try {
+    try {
+      const B = 'https://www.gstatic.com/firebasejs/10.8.0/';
+      const [A,Au,F] = await Promise.all([import(B+'firebase-app.js'), import(B+'firebase-auth.js'), import(B+'firebase-firestore.js')]);
+      const app = A.getApps().length ? A.getApp() : A.initializeApp(firebaseConfig);
+      auth = Au.getAuth(app); db = F.getFirestore(app);
+      FB = {onAuthStateChanged:Au.onAuthStateChanged, doc:F.doc, getDoc:F.getDoc, setDoc:F.setDoc};
+    } catch(e){ console.error('Firebase failed to load', e); }
+    if (!db){ setStat('⚠️ Firebase blocked – local save only'); }
+    else {
+    const user = await new Promise(res => {
+      const un = FB.onAuthStateChanged(auth, u => { un(); res(u); }, () => res(null));
+      setTimeout(() => res(auth.currentUser), 8000);
+    });
+    if (user){
+      uid = user.uid;
+      const snap = await FB.getDoc(FB.doc(db,'saves',uid));
+      if (snap.exists() && snap.data().farmSave) loaded = snap.data().farmSave;
+      setStat('☁️ loaded');
+    } else if (REQUIRE_LOGIN){
+      document.body.innerHTML = '<div style="padding:40px;text-align:center;font:800 22px Trebuchet MS,sans-serif;color:#5b3f2a">🔒 Please sign in on the hub first…</div>';
+      setTimeout(() => location.href = 'index.html', 1500);
+      return new Promise(() => {});
+    } else setStat('👤 guest – local save only');
+    }
+  } catch(e){ console.error(e); setStat('⚠️ cloud load failed'); uid = null; }
+  if (!loaded && !uid){ try { const l = localStorage.getItem('farmSave'); if (l) loaded = JSON.parse(l); } catch(e){} }
+  if (loaded) S = norm(loaded);
+}
+
+/* ===== FARM ACTIONS ===== */
+function plant(p, k){
+  if (S.seeds[k] < 1) return false;
+  S.seeds[k]--;
+  const n = now();
+  p.crop = k; p.plantedAt = n; p.readyAt = n + CROPS[k].time/(1 + .2*S.upgrades.sprinklers);
+  p.isGolden = Math.random() < .10 + .03*S.upgrades.goldenTouch;
+  if (S.fertilizer > 0){ S.fertilizer--; p.readyAt = n; }   // fertilizer: instant growth
+  return true;
+}
+function harvest(p, i){
+  const k = p.crop, c = CROPS[k], g = p.isGolden;
+  (g ? S.golden : S.inventory)[k]++; S.stats.harvested++; if (g) S.stats.goldenFound++;
+  addXp(Math.round(c.sell/5)*(g ? 2 : 1));
+  pop(plotEls[i].el, `${g ? '🌟 ' : ''}${c.e} +1`);
+  Object.assign(p, {crop:null, plantedAt:0, readyAt:0, isGolden:false});
+}
+const isReady = p => p.unlocked && p.crop && now() >= p.readyAt;
+function onPlot(i){
+  const p = S.plots[i];
+  if (!p.unlocked){
+    const c = plotCost(); if (S.coins < c) return toast(`Need ${fmt(c)} 🪙 to unlock this plot`);
+    S.coins -= c; p.unlocked = true; toast('🌾 New plot unlocked!'); queueSave(); renderPanel(); return;
+  }
+  if (!p.crop){
+    if (lvl() < CROPS[sel].lvl) return toast('That seed is still locked 🔒');
+    if (S.seeds[sel] < 1) return toast(`No ${CROPS[sel].n} seeds! Buy some in the shop 🛒`);
+    plant(p, sel); queueSave(); renderPanel(); return;
+  }
+  if (isReady(p)){ harvest(p, i); queueSave(); renderPanel(); return; }
+  toast(`${CROPS[p.crop].e} ready in ${Math.ceil(p.readyAt-now())}s`);
+}
+function harvestAll(auto){
+  let n = 0, rp = 0;
+  S.plots.forEach((p,i)=>{
+    if (!isReady(p)) return;
+    const k = p.crop; harvest(p,i); n++;
+    if (!auto && S.seeds[k] > 0){ plant(p,k); rp++; }
+  });
+  if (n){ if (!auto) toast(`🧺 Harvested ${n}` + (rp ? ` · replanted ${rp}` : '')); queueSave(); renderPanel(); }
+  else if (!auto) toast('Nothing is ready yet 🌱');
+}
+function plantAll(){
+  if (lvl() < CROPS[sel].lvl) return toast('That seed is still locked 🔒');
+  let n = 0;
+  S.plots.forEach(p=>{ if (p.unlocked && !p.crop && plant(p,sel)) n++; });
+  if (n){ toast(`🌱 Planted ${n} ${CROPS[sel].e}`); queueSave(); renderPanel(); } else toast('No seeds or no empty plots');
+}
+function sellItem(k, g, n){
+  const have = (g ? S.golden : S.inventory)[k]; n = Math.min(n, have); if (n < 1) return;
+  const v = n*CROPS[k].sell*(g ? 5 : 1);
+  (g ? S.golden : S.inventory)[k] -= n; S.coins += v; S.stats.sold += n;
+  pop($('#coins'), `+${fmt(v)} Coins 🪙`); queueSave(); renderPanel();
+}
+function sellAll(){
+  let v = 0;
+  KEYS.forEach(k=>{ v += S.inventory[k]*CROPS[k].sell + S.golden[k]*CROPS[k].sell*5; S.stats.sold += S.inventory[k]+S.golden[k]; S.inventory[k] = S.golden[k] = 0; });
+  if (!v) return toast('Your inventory is empty 🎒');
+  S.coins += v; pop($('#coins'), `+${fmt(v)} Coins 🪙`); queueSave(); renderPanel();
+}
+function buy(k, n){
+  const c = CROPS[k]; if (n < 1 || S.coins < n*c.cost) return toast('Not enough coins 🪙');
+  S.coins -= n*c.cost; S.seeds[k] += n; toast(`Bought ${n} × ${c.e}`); queueSave(); renderPanel();
+}
+function upgrade(cost, fn, msg){ if (S.coins < cost) return toast('Not enough coins 🪙'); S.coins -= cost; fn(); toast(msg); queueSave(); renderPanel(); }
+
+/* ===== DOM ===== */
+const plotEls = [], chipEls = {};
+S.plots.forEach((_,i)=>{
+  const e = el('div','plot','<div class="tm"></div><span class="ic"></span><div class="pb"><i></i></div>');
+  const o = {el:e, tm:e.querySelector('.tm'), ic:e.querySelector('.ic'), pb:e.querySelector('.pb'), fill:e.querySelector('i')};
+  e.onclick = () => onPlot(i); $('#grid').appendChild(e); plotEls.push(o);
+});
+KEYS.forEach(k=>{ const c = el('button','chip'); c.onclick = () => { if (lvl() < CROPS[k].lvl) return toast(`🔒 Unlocks at level ${CROPS[k].lvl}`); sel = k; renderPanel(); }; $('#chips').appendChild(c); chipEls[k] = c; });
+$('#sellAll').onclick = sellAll; $('#harvAll').onclick = () => harvestAll(false); $('#plantAll').onclick = plantAll;
+
+function card(title, desc, btns){
+  const d = el('div','item',`<b>${title}</b><small>${desc}</small>`), r = el('div','row');
+  btns.forEach(([t,cost,fn])=>{ const b = el('button','btn',t); if (cost) b.dataset.cost = cost; b.onclick = fn; r.appendChild(b); });
+  if (btns.length) d.appendChild(r); $('#items').appendChild(d);
+}
+function renderPanel(){
+  const tabs = $('#tabs'); tabs.innerHTML = '';
+  [['shop','🛒 Seeds'],['up','⚙️ Upgrades'],['inv','🎒 Inventory']].forEach(([k,n])=>{ const b = el('button','btn'+(k===tab?' on':''),n); b.onclick = () => { tab = k; renderPanel(); }; tabs.appendChild(b); });
+  $('#items').innerHTML = ''; const L = lvl(), U = S.upgrades;
+  if (tab === 'shop') KEYS.forEach(k=>{
+    const c = CROPS[k], pr = c.sell - c.cost;
+    if (L < c.lvl) return card(`${c.e} ${c.n}`, `🔒 Unlocks at level ${c.lvl}`, []);
+    card(`${c.e} ${c.n}<span class="tag">seeds: ${S.seeds[k]}</span>`,
+      `Cost ${c.cost} → sells ${c.sell} · profit +${pr} (+${Math.round(pr/c.cost*100)}%) · ${c.time}s · 🌟 golden ${c.sell*5}`,
+      [['Buy 1',c.cost,()=>buy(k,1)],['Buy 5',c.cost*5,()=>buy(k,5)],['Buy max',c.cost,()=>buy(k,Math.floor(S.coins/c.cost))],[sel===k?'✅ Planting':'Select',0,()=>{sel=k;renderPanel();}]]);
+  });
+  if (tab === 'up'){
+    const sc = Math.round(150*Math.pow(2,U.sprinklers)), gc = Math.round(300*Math.pow(2.5,U.goldenTouch)), pc = plotCost();
+    card(`💦 Sprinklers (Lv ${U.sprinklers}/5)`, `Auto-water: new crops grow 20% faster per level (now +${U.sprinklers*20}%)`, U.sprinklers >= 5 ? [] : [[`Buy · ${fmt(sc)} 🪙`,sc,()=>upgrade(sc,()=>U.sprinklers++,'💦 Sprinklers upgraded!')]]);
+    card(`🐕 Farm Dog ${U.farmDog ? '✅' : ''}`, 'Fetches ready crops into your inventory automatically', U.farmDog ? [] : [['Adopt · 500 🪙',500,()=>upgrade(500,()=>U.farmDog=true,'🐕 Woof! The farm dog joined you!')]]);
+    card(`🌟 Golden Touch (Lv ${U.goldenTouch}/5)`, `Golden mutation chance +3% per level (now ${10+3*U.goldenTouch}%)`, U.goldenTouch >= 5 ? [] : [[`Buy · ${fmt(gc)} 🪙`,gc,()=>upgrade(gc,()=>U.goldenTouch++,'🌟 Golden Touch upgraded!')]]);
+    card(`🧪 Fertilizer<span class="tag">stock: ${S.fertilizer}</span>`, 'Your next planted crop grows instantly', [['Buy 1 · 40 🪙',40,()=>upgrade(40,()=>S.fertilizer++,'🧪 Fertilizer ready!')],['Buy 5 · 200 🪙',200,()=>upgrade(200,()=>S.fertilizer+=5,'🧪 +5 Fertilizer!')]]);
+    card(`🌾 Expand Farm (${S.plots.filter(p=>p.unlocked).length}/25 plots)`, 'Or tap any 🔒 plot to unlock it', pc === Infinity ? [] : [[`Unlock plot · ${fmt(pc)} 🪙`,pc,()=>{ const p = S.plots.find(p=>!p.unlocked); upgrade(pc,()=>p.unlocked=true,'🌾 New plot unlocked!'); }]]);
+  }
+  if (tab === 'inv'){
+    let any = false;
+    KEYS.forEach(k=>[false,true].forEach(g=>{
+      const n = (g ? S.golden : S.inventory)[k]; if (!n) return; any = true;
+      const v = CROPS[k].sell*(g ? 5 : 1);
+      card(`${g ? '🌟 Golden ' : ''}${CROPS[k].e} ${CROPS[k].n} × ${n}`, `${v} 🪙 each · total ${fmt(v*n)} 🪙`, [['Sell 1',0,()=>sellItem(k,g,1)],['Sell all',0,()=>sellItem(k,g,n)]]);
+    }));
+    if (!any) card('🎒 Empty', 'Harvest some crops first!', []);
+    card('📊 Stats', `Harvested ${S.stats.harvested} · Sold ${S.stats.sold} · Golden found ${S.stats.goldenFound}`, []);
+  }
+}
+
+/* ===== LOOP ===== */
+function tick(){
+  const n = now(), L = lvl();
+  S.plots.forEach((p,i)=>{
+    const o = plotEls[i]; let cls = 'plot', ic = '', tm = '', pr = 0;
+    if (!p.unlocked){ cls += ' locked'; ic = '🔒'; const c = plotCost(); tm = c === Infinity ? '' : fmt(c)+'🪙'; }
+    else if (p.crop){
+      if (n >= p.readyAt){ cls += ' ready' + (p.isGolden ? ' gold' : ''); ic = CROPS[p.crop].e; tm = p.isGolden ? 'GOLD!' : 'Ready!'; pr = 100; }
+      else { pr = clamp((n-p.plantedAt)/(p.readyAt-p.plantedAt),0,1); ic = pr < .5 ? '🌱' : '🌿'; const s = Math.ceil(p.readyAt-n); tm = s >= 60 ? Math.floor(s/60)+':'+String(s%60).padStart(2,'0') : s+'s'; pr *= 100; }
+    }
+    if (o.el.className !== cls) o.el.className = cls;
+    setT(o.ic, ic); setT(o.tm, tm); o.pb.style.display = p.crop && p.unlocked ? 'block' : 'none'; o.fill.style.width = pr+'%';
+  });
+  if (S.upgrades.farmDog){ $('#dog').style.display = 'inline-block'; dogT += .25; if (dogT >= 2.5){ dogT = 0; harvestAll(true); } }
+  setT($('#coins'), `🪙 ${fmt(S.coins)}`);
+  setT($('#lvl'), `⭐ Level ${L}`); $('#xpb').style.width = clamp((S.xp-xpAt(L))/(xpAt(L+1)-xpAt(L))*100,0,100)+'%';
+  setT($('#fert'), `🧪 ${S.fertilizer}`);
+  KEYS.forEach(k=>{ const c = chipEls[k]; setT(c, L < CROPS[k].lvl ? '🔒' : `${CROPS[k].e} ${S.seeds[k]}`); c.className = 'chip' + (sel===k ? ' sel' : '') + (L < CROPS[k].lvl ? ' lk' : ''); });
+  document.querySelectorAll('#items .btn[data-cost]').forEach(b=>b.classList.toggle('cant', S.coins < +b.dataset.cost));
+}
+(async function(){
+  setStat('⏳ loading…');
+  await load();
+  if (lvl() < CROPS[sel].lvl) sel = 'carrot';
+  renderPanel(); tick();
+  setInterval(tick, 250);
+})();
+</script>
+</body>
+</html>
