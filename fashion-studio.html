@@ -11,7 +11,7 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}button
 .hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}
 .logo{display:flex;align-items:center;gap:8px;font-size:27px;color:var(--deep)}
 .pill{background:#fff;border:1.5px solid var(--line);border-radius:99px;padding:6px 14px;box-shadow:var(--sh);display:flex;align-items:center;gap:8px}
-.av{width:30px;height:30px;border-radius:50%;background:var(--pink);display:grid;place-items:center;font-weight:800;color:var(--deep)}
+.hub{text-decoration:none;color:var(--deep);font-weight:800;transition:.2s}.hub:hover{transform:translateY(-2px);background:var(--pink)}.av{width:30px;height:30px;border-radius:50%;background:var(--pink);display:grid;place-items:center;font-weight:800;color:var(--deep)}
 .xp{width:110px;height:9px;background:var(--line);border-radius:9px;overflow:hidden}.xp i,.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--peach),var(--rose));transition:width .8s}
 .nav{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.nav button{display:flex;gap:6px;padding:9px 16px;border-radius:99px;background:#fffa;border:1.5px solid var(--line);transition:.2s}.nav button:hover{transform:translateY(-2px)}.nav .on{background:var(--rose);color:#fff;border-color:var(--rose)}
 .card{background:#fff;border:1.5px solid var(--line);border-radius:26px;box-shadow:var(--sh);padding:18px}
@@ -132,7 +132,7 @@ const TR={hi:['You understood the assignment!','This look is giving main-charact
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2800)}
 const modal=h=>{$('#modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="md">${h}</div></div>`},closeM=()=>$('#modal').innerHTML='';
 let CB=null;const ask=(m,fn)=>{CB=fn;modal(`<h3>${m}</h3><div class="row"><button class="btn" onclick="closeM();CB()">Yes</button><button class="btn soft" onclick="closeM()">Cancel</button></div>`)};
-function hdr(){$('#hdr').innerHTML=`${LOGO}<div class="row" style="margin:0"><div class="pill"><span class="av">${S.lvl}</span><div><div class="meta">Level ${S.lvl}, ${S.xp}/${need(S.lvl)} XP</div><div class="xp"><i style="width:${S.xp/need(S.lvl)*100}%"></i></div></div></div><div class="pill">🪙 <b>${S.coins}</b></div><div class="meta" title="Save status">${sync}</div></div>`}
+function hdr(){$('#hdr').innerHTML=`${LOGO}<div class="row" style="margin:0"><a class="pill hub" href="index.html">← Back to Hub</a><div class="pill"><span class="av">${S.lvl}</span><div><div class="meta">Level ${S.lvl}, ${S.xp}/${need(S.lvl)} XP</div><div class="xp"><i style="width:${S.xp/need(S.lvl)*100}%"></i></div></div></div><div class="pill">🪙 <b>${S.coins}</b></div><div class="meta" title="Save status">${sync}</div></div>`}
 const TABS=[['home','Home','🏠'],['challenges','Challenges','🎀'],['studio','Styling Studio','👗'],['wardrobe','Wardrobe','🧺'],['shop','Fashion Shop','🛍️'],['collection','My Collection','💎']];
 function render(){hdr();$('#nav').innerHTML=TABS.map(t=>`<button class="${V==t[0]?'on':''}" onclick="go('${t[0]}')"><b>${t[2]}</b><span>${t[1]}</span></button>`).join('');$('#main').innerHTML=({home:homeH,challenges:chH,studio:studioH,wardrobe:wardH,shop:shopH,collection:colH})[V]();if(V=='wardrobe')wg()}
 const go=t=>{V=t;render();scrollTo(0,0)};
