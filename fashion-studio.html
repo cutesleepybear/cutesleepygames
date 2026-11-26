@@ -77,11 +77,11 @@ const featItems=()=>{const a=L.filter(i=>i.pr>=100);return[0,1,2,3].map(k=>a[(da
 const price=it=>featItems().includes(it.id)?Math.floor(it.pr*.8):it.pr;
 const cn=h=>{const n=parseInt(h.slice(1),16),r=n>>16,g=n>>8&255,b=n&255;let best,bd=1e9;for(const k in COLS){const m=parseInt(COLS[k].slice(1),16),d=(r-(m>>16))**2+(g-(m>>8&255))**2+(b-(m&255))**2;if(d<bd){bd=d;best=k}}return best};
 /* ===== SAVE / FIREBASE ===== */
-const LOGO=`<div class="logo"><svg width="34" height="28" viewBox="0 0 34 28"><path d="M17 14L3 4V24ZM17 14L31 4V24Z" fill="#f4a8bd" stroke="#c9788a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="17" cy="14" r="4" fill="#c9788a"/></svg>Fashion Studio</div>`,LOGIN_URL='/';
+const LOGO=`<div class="logo"><svg width="34" height="28" viewBox="0 0 34 28"><path d="M17 14L3 4V24ZM17 14L31 4V24Z" fill="#f4a8bd" stroke="#c9788a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="17" cy="14" r="4" fill="#c9788a"/></svg>Fashion Studio</div>`,LOGIN_URL='index.html';
 let dirty=false,saving=false,again=false;
-const FB=()=>window.FB,fref=()=>FB().doc(window.firebaseDb,'fashionStudio',uid);
+const FB=()=>window.FB,fref=()=>FB().doc(window.firebaseDb,'saves',uid);
 function authUser(){const a=window.firebaseAuth;if(!a||!FB())return Promise.resolve(null);return new Promise(r=>{const t=setTimeout(()=>r(null),6000);const un=FB().onAuthStateChanged(a,u=>{clearTimeout(t);if(un)un();r(u)})})}
-async function persist(){const data=clone(S);await FB().runTransaction(window.firebaseDb,async tx=>{const snap=await tx.get(fref()),rv=snap.exists()?(snap.data()._v||0):0;if(rv>(S._v||0))throw new Error('stale');data._v=rv+1;tx.set(fref(),data)});S._v=data._v}
+async function persist(){const data=clone(S);await FB().runTransaction(window.firebaseDb,async tx=>{const snap=await tx.get(fref()),cur=snap.exists()?snap.data():{},rv=(cur.fashionSave&&cur.fashionSave._v)||0;if(rv>(S._v||0))throw new Error('stale');data._v=rv+1;tx.set(fref(),{fashionSave:data,fashionTs:Date.now()},{merge:true})});S._v=data._v}
 function save(){chk();if(!ready)return;dirty=true;try{localStorage.setItem('fs_'+uid,JSON.stringify(S))}catch(e){}clearTimeout(tmr);tmr=setTimeout(flush,600)}
 async function flush(){if(!dirty||uid=='guest')return;if(saving){again=true;return}saving=true;dirty=false;try{await persist();sync='Saved to your account'}catch(e){if(e.message=='stale'){toast('This game was updated in another tab. Reloading…');setTimeout(()=>location.reload(),1600);return}console.error(e);dirty=true;sync='Cloud save failed, retrying';toast('Couldn’t save to the cloud. Retrying soon…');clearTimeout(tmr);tmr=setTimeout(flush,8000)}saving=false;hdr();if(again){again=false;flush()}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&ready){clearTimeout(tmr);flush()}});
@@ -90,9 +90,9 @@ function gate(t,m,btn){$('#hdr').innerHTML=LOGO;$('#nav').innerHTML='';$('#main'
 async function boot(){
 if(!window.firebaseAuth||!window.firebaseDb||!FB())return gate('Can’t reach Firebase','Check your connection and reload the page.');
 const u=await authUser();
-if(!u&&window.REQUIRE_LOGIN)return gate('Sign in to play','Fashion Studio saves your wardrobe to your account, so please log in first.',`<button class="btn" onclick="location.href='${LOGIN_URL}'">Go to login</button>`);
+if(!u&&window.REQUIRE_LOGIN)return setTimeout(()=>location.href=LOGIN_URL,2500),gate('Sign in to play','Fashion Studio saves your wardrobe to your account, so please log in first.',`<button class="btn" onclick="location.href='${LOGIN_URL}'">Go to login</button>`);
 uid=u?u.uid:'guest';let d=null;
-if(u){try{const snap=await FB().getDoc(fref());d=snap.exists()?snap.data():null}catch(e){console.error(e);return gate('Couldn’t load your save','Your progress is safe. We just couldn’t reach it, so reload to try again.')}}
+if(u){try{const snap=await FB().getDoc(fref());d=snap.exists()?(snap.data().fashionSave||null):null}catch(e){console.error(e);const pd=e&&e.code=='permission-denied';return gate('Couldn’t load your save',pd?'Firestore is blocking access. In the Firebase console open Firestore Database, then Rules, and add this inside <code>match /databases/{database}/documents</code>, then Publish:<pre style="text-align:left;background:#fff3ea;padding:10px;border-radius:12px;font-size:12px;overflow:auto;margin-top:8px">match /saves/{userId} {\n  allow read, write: if request.auth != null\n    && request.auth.uid == userId;\n}</pre>':'Your progress is safe, we just couldn’t reach it.<br><small>Error: '+((e&&(e.code||e.message))||'unknown')+'</small>')}}
 if(!d){try{d=JSON.parse(localStorage.getItem('fs_'+uid))}catch(e){}}
 sync=u?'Saved to your account':'Playing offline';
 if(d){S={...def(),...d};S.own=[...new Set([...S.own,...def().own])]}
