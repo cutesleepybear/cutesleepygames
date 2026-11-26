@@ -67,7 +67,7 @@ const deco=i=>'<ellipse cx="100" cy="358" rx="78" ry="10" fill="#fff" opacity=".
 const CH=[['First Date','A cute, romantic outfit for a first date at a café.','romantic casual feminine','pink cream red',1],['Summer Vacation','Sunny holiday vibes for a day by the sea.','casual summer beachwear','yellow blue white',1],['Pink Paradise','Make pink the star of the show.','coquette romantic cute','pink',1],['Y2K Party','Early-2000s fashion, turned all the way up.','y2k streetwear','pink silver denim',2],['Red Carpet','A glamorous look for a flashing-camera event.','elegant glam luxury','black red gold silver',3,['shoes'],4],['Cozy Autumn','Warm layers for a chilly, golden day.','cozy casual minimalist','brown orange cream burgundy',1],['School Outfit','Fashionable but comfy for class.','preppy casual minimalist','burgundy cream white blue',1],['Concert Night','Stand out in the crowd and dance all night.','streetwear y2k glam','black silver pink',2],['Winter Wonderland','A cute outfit for snowy strolls.','cozy elegant casual','white blue silver',2,['shoes'],2],['Garden Party','Romantic and breezy for an outdoor party.','cottagecore romantic elegant','peach green cream lavender',2,[],3],['Coffee Date','Comfortable and stylish for a slow morning.','casual minimalist romantic','brown cream peach',1],['Midnight Glam','Evening elegance after dark.','elegant glam','black gold lavender',3,['shoes','bag'],5],['Lavender Dreams','Soft, dreamy and a little bit magical.','cute romantic coquette','lavender pink white',2],['Beach Day','Sand, sun and effortless style.','summer beachwear casual','blue yellow white',1],['Preppy Picnic','Classic charm for a blanket in the park.','preppy cottagecore cute','red white cream',2],['Street Style','Urban, bold and a little rebellious.','streetwear casual y2k','black denim green',2,[],3]].map((a,i)=>({id:i,t:a[0],d:a[1],st:a[2].split(' '),co:a[3].split(' '),df:a[4],rq:a[5]||[],lv:a[6]||1}));
 const A=[['first','First Outfit','Save your first outfit',s=>s.fav.length>0],['c1','First Challenge Completed','Finish a challenge',s=>Object.keys(s.done).length>=1],['i10','10 Items Collected','Own 10 items',s=>s.own.length>=10],['leg','First Legendary Item','Own a legendary piece',s=>s.own.some(i=>IT[i].ra=='l')],['c5','5 Challenges Completed','Finish 5 challenges',s=>Object.keys(s.done).length>=5],['c10','10 Challenges Completed','Finish 10 challenges',s=>Object.keys(s.done).length>=10],['p90','Perfect Eye','Score 90 or more',s=>Object.values(s.done).some(v=>v>=90)]];
 /* ===== STATE ===== */
-const def=()=>({coins:150,xp:0,lvl:1,own:L.filter(i=>!i.pr).map(i=>i.id),outfit:{hair:{id:by('Long Straight'),c:'#3b2a22'},top:{id:by('Basic White Tee'),c:'#ffffff'},bottom:{id:by('Denim Jeans'),c:'#5d82b8'},shoes:{id:by('Sneakers'),c:'#ffffff'}},skin:'#f2c6a5',eye:'#4a3030',bg:0,fav:[],done:{},daily:{},ach:[],recent:[],last:''});
+const def=()=>({coins:150,xp:0,lvl:1,own:L.filter(i=>!i.pr).map(i=>i.id),outfit:{hair:{id:by('Long Straight'),c:'#3b2a22'},top:{id:by('Basic White Tee'),c:'#ffffff'},bottom:{id:by('Denim Jeans'),c:'#5d82b8'},shoes:{id:by('Sneakers'),c:'#ffffff'}},skin:'#f2c6a5',eye:'#4a3030',_v:0,bg:0,fav:[],done:{},daily:{},ach:[],recent:[],last:''});
 let S=def(),V='home',ST={slot:'top'},CUR=null,WF={cat:'',st:'',co:'',ra:'',q:'',so:'name'},SF='',uid='guest',ready=false,FS=null,sync='Loading…',tmr;
 const own=id=>S.own.includes(id),need=l=>80+l*40,pick=a=>a[Math.random()*a.length|0],clone=o=>JSON.parse(JSON.stringify(o));
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()},dayN=()=>Math.floor(new Date().setHours(0,0,0,0)/864e5);
@@ -77,14 +77,27 @@ const featItems=()=>{const a=L.filter(i=>i.pr>=100);return[0,1,2,3].map(k=>a[(da
 const price=it=>featItems().includes(it.id)?Math.floor(it.pr*.8):it.pr;
 const cn=h=>{const n=parseInt(h.slice(1),16),r=n>>16,g=n>>8&255,b=n&255;let best,bd=1e9;for(const k in COLS){const m=parseInt(COLS[k].slice(1),16),d=(r-(m>>16))**2+(g-(m>>8&255))**2+(b-(m&255))**2;if(d<bd){bd=d;best=k}}return best};
 /* ===== SAVE / FIREBASE ===== */
-async function getUid(){const a=window.firebaseAuth;if(!a)return null;return new Promise(r=>{if(a.currentUser)return r(a.currentUser.uid);const t=setTimeout(()=>r(null),3000);if(!a.onAuthStateChanged)return r(null);a.onAuthStateChanged(x=>{clearTimeout(t);r(x?x.uid:null)})})}
-async function remote(op,data){const db=window.firebaseDb;if(!db)throw 0;if(db.collection){const ref=db.collection('fashionStudio').doc(uid);return op=='get'?(await ref.get()).data():ref.set(data)}
-FS=FS||await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');const ref=FS.doc(db,'fashionStudio',uid);if(op=='get'){const s=await FS.getDoc(ref);return s.exists()?s.data():undefined}return FS.setDoc(ref,data)}
-function save(){chk();if(!ready)return;clearTimeout(tmr);tmr=setTimeout(async()=>{try{localStorage.setItem('fs_'+uid,JSON.stringify(S))}catch(e){}if(uid!='guest'){try{await remote('set',clone(S));sync='Saved to cloud'}catch(e){sync='Cloud save failed, saved on this device';toast(sync)}hdr()}},500)}
+const LOGO=`<div class="logo"><svg width="34" height="28" viewBox="0 0 34 28"><path d="M17 14L3 4V24ZM17 14L31 4V24Z" fill="#f4a8bd" stroke="#c9788a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="17" cy="14" r="4" fill="#c9788a"/></svg>Fashion Studio</div>`,LOGIN_URL='/';
+let dirty=false,saving=false,again=false;
+const FB=()=>window.FB,fref=()=>FB().doc(window.firebaseDb,'fashionStudio',uid);
+function authUser(){const a=window.firebaseAuth;if(!a||!FB())return Promise.resolve(null);return new Promise(r=>{const t=setTimeout(()=>r(null),6000);const un=FB().onAuthStateChanged(a,u=>{clearTimeout(t);if(un)un();r(u)})})}
+async function persist(){const data=clone(S);await FB().runTransaction(window.firebaseDb,async tx=>{const snap=await tx.get(fref()),rv=snap.exists()?(snap.data()._v||0):0;if(rv>(S._v||0))throw new Error('stale');data._v=rv+1;tx.set(fref(),data)});S._v=data._v}
+function save(){chk();if(!ready)return;dirty=true;try{localStorage.setItem('fs_'+uid,JSON.stringify(S))}catch(e){}clearTimeout(tmr);tmr=setTimeout(flush,600)}
+async function flush(){if(!dirty||uid=='guest')return;if(saving){again=true;return}saving=true;dirty=false;try{await persist();sync='Saved to your account'}catch(e){if(e.message=='stale'){toast('This game was updated in another tab. Reloading…');setTimeout(()=>location.reload(),1600);return}console.error(e);dirty=true;sync='Cloud save failed, retrying';toast('Couldn’t save to the cloud. Retrying soon…');clearTimeout(tmr);tmr=setTimeout(flush,8000)}saving=false;hdr();if(again){again=false;flush()}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&ready){clearTimeout(tmr);flush()}});
 function chk(){A.forEach(a=>{if(!S.ach.includes(a[0])&&a[3](S)){S.ach.push(a[0]);toast('Achievement unlocked: '+a[1]+' 🏅')}})}
-async function boot(){uid=(await getUid())||'guest';let d;try{d=uid!='guest'?await remote('get'):undefined;sync=uid=='guest'?'Playing offline, progress saved on this device':'Cloud save on'}catch(e){sync='Cloud unavailable, using this device'}
+function gate(t,m,btn){$('#hdr').innerHTML=LOGO;$('#nav').innerHTML='';$('#main').innerHTML=`<div class="card" style="max-width:520px;margin:30px auto;text-align:center"><h1>${t}</h1><p class="sub">${m}</p><div class="row" style="justify-content:center">${btn||''}<button class="btn soft" onclick="location.reload()">Try again</button></div></div>`}
+async function boot(){
+if(!window.firebaseAuth||!window.firebaseDb||!FB())return gate('Can’t reach Firebase','Check your connection and reload the page.');
+const u=await authUser();
+if(!u&&window.REQUIRE_LOGIN)return gate('Sign in to play','Fashion Studio saves your wardrobe to your account, so please log in first.',`<button class="btn" onclick="location.href='${LOGIN_URL}'">Go to login</button>`);
+uid=u?u.uid:'guest';let d=null;
+if(u){try{const snap=await FB().getDoc(fref());d=snap.exists()?snap.data():null}catch(e){console.error(e);return gate('Couldn’t load your save','Your progress is safe. We just couldn’t reach it, so reload to try again.')}}
 if(!d){try{d=JSON.parse(localStorage.getItem('fs_'+uid))}catch(e){}}
-if(d){S={...def(),...d};S.own=[...new Set([...S.own,...def().own])]}ready=true;render();if(!d)save()}
+sync=u?'Saved to your account':'Playing offline';
+if(d){S={...def(),...d};S.own=[...new Set([...S.own,...def().own])]}
+ready=true;render();if(!d)save();
+if(u)FB().onAuthStateChanged(window.firebaseAuth,x=>{if(!x||x.uid!=uid)location.reload()})}
 /* ===== DRAWING ===== */
 const P=(d,c)=>`<path d="${d}" fill="${c}"/>`;
 const hB=h=>h?({buns:`<circle cx="76" cy="18" r="13" fill="${h.c}"/><circle cx="124" cy="18" r="13" fill="${h.c}"/>`,long:P('M66 62Q64 18 100 18Q136 18 134 62L142 205Q100 216 58 205Z',h.c),wavy:P('M66 62Q64 18 100 18Q136 18 134 62Q148 110 132 150Q146 190 128 210L72 210Q54 190 68 150Q52 110 66 62Z',h.c),bob:P('M65 62Q64 18 100 18Q136 18 135 62L139 122Q100 132 61 122Z',h.c),pony:P('M126 38Q176 48 158 132Q148 86 124 66Z',h.c),bun:`<circle cx="100" cy="14" r="16" fill="${h.c}"/>`,braid:P('M68 62L58 205Q66 214 76 205L82 70Z',h.c)+P('M132 62L142 205Q134 214 124 205L118 70Z',h.c)})[h.sh.split('.')[0]]||'':'';
@@ -119,7 +132,7 @@ const TR={hi:['You understood the assignment!','This look is giving main-charact
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2800)}
 const modal=h=>{$('#modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="md">${h}</div></div>`},closeM=()=>$('#modal').innerHTML='';
 let CB=null;const ask=(m,fn)=>{CB=fn;modal(`<h3>${m}</h3><div class="row"><button class="btn" onclick="closeM();CB()">Yes</button><button class="btn soft" onclick="closeM()">Cancel</button></div>`)};
-function hdr(){$('#hdr').innerHTML=`<div class="logo"><svg width="34" height="28" viewBox="0 0 34 28"><path d="M17 14L3 4V24ZM17 14L31 4V24Z" fill="#f4a8bd" stroke="#c9788a" stroke-width="1.5" stroke-linejoin="round"/><circle cx="17" cy="14" r="4" fill="#c9788a"/></svg>Fashion Studio</div><div class="row" style="margin:0"><div class="pill"><span class="av">${S.lvl}</span><div><div class="meta">Level ${S.lvl}, ${S.xp}/${need(S.lvl)} XP</div><div class="xp"><i style="width:${S.xp/need(S.lvl)*100}%"></i></div></div></div><div class="pill">🪙 <b>${S.coins}</b></div><div class="meta" title="Save status">${sync}</div></div>`}
+function hdr(){$('#hdr').innerHTML=`${LOGO}<div class="row" style="margin:0"><div class="pill"><span class="av">${S.lvl}</span><div><div class="meta">Level ${S.lvl}, ${S.xp}/${need(S.lvl)} XP</div><div class="xp"><i style="width:${S.xp/need(S.lvl)*100}%"></i></div></div></div><div class="pill">🪙 <b>${S.coins}</b></div><div class="meta" title="Save status">${sync}</div></div>`}
 const TABS=[['home','Home','🏠'],['challenges','Challenges','🎀'],['studio','Styling Studio','👗'],['wardrobe','Wardrobe','🧺'],['shop','Fashion Shop','🛍️'],['collection','My Collection','💎']];
 function render(){hdr();$('#nav').innerHTML=TABS.map(t=>`<button class="${V==t[0]?'on':''}" onclick="go('${t[0]}')"><b>${t[2]}</b><span>${t[1]}</span></button>`).join('');$('#main').innerHTML=({home:homeH,challenges:chH,studio:studioH,wardrobe:wardH,shop:shopH,collection:colH})[V]();if(V=='wardrobe')wg()}
 const go=t=>{V=t;render();scrollTo(0,0)};
@@ -164,5 +177,15 @@ function colH(){const tot=S.own.length,bar=(n,m)=>`<div class="bar"><i style="wi
 <h2 style="margin-top:20px">Achievements</h2><div class="grid">${A.map(a=>{const h=S.ach.includes(a[0]);return`<div class="bdg ${h?'on':''}"><b>${h?'🏅':'🔒'}</b>${a[1]}<small>${a[2]}</small></div>`}).join('')}</div>
 <h2 style="margin-top:20px">Favorite outfits</h2>${S.fav.length?`<div class="grid">${S.fav.map((f,i)=>`<div class="card" style="padding:10px">${stg(f.o,f.skin,f.bg,f.eye)}<b>${f.n}</b><div class="row"><button class="btn sm" onclick="wear(${i})">Wear</button><button class="btn soft sm" onclick="ask('Delete ${f.n}?',()=>delFav(${i}))">Delete</button></div></div>`).join('')}</div>`:'<p class="hint">Save an outfit from the studio and it will live here.</p>'}`}
 const wear=i=>{const f=S.fav[i];S.outfit=clone(f.o);S.skin=f.skin;S.eye=f.eye||S.eye;S.bg=f.bg;save();go('studio')},delFav=i=>{S.fav.splice(i,1);save();render()};
-boot();
+window.boot=boot;
+</script>
+<script type="module">
+import{initializeApp,getApps,getApp}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import{getAuth,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import{getFirestore,doc,getDoc,runTransaction}from"https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyDQipiNhih4ZqWVh4Nz0LEPd7L_Tm-D_1I",authDomain:"cute-sleepy-games.firebaseapp.com",projectId:"cute-sleepy-games",storageBucket:"cute-sleepy-games.firebasestorage.app",messagingSenderId:"249264537283",appId:"1:249264537283:web:811dce511556eda6a96c76"};
+const REQUIRE_LOGIN=true;
+window.REQUIRE_LOGIN=REQUIRE_LOGIN;
+try{const app=getApps().length?getApp():initializeApp(firebaseConfig);window.firebaseAuth=getAuth(app);window.firebaseDb=getFirestore(app);window.FB={doc,getDoc,runTransaction,onAuthStateChanged}}catch(e){console.error(e)}
+window.boot();
 </script></body></html>
